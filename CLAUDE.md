@@ -16,7 +16,16 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 
 ### Implementation status (as of 2026-05-20)
 
-Skeleton complete: workspace topology (`apps/*`, `server/*`, `packages/*`), Turbo build pipeline, lint/format/CI, `docker-compose` for local services, placeholder `package.json` + `tsconfig.json` per workspace. **No real code yet** — every workspace has a stub `src/index.ts` and `dev`/`build`/`test` scripts that print `echo 'TODO: ...'`. Real implementation starts once the open business numbers (commission %, hold period, refund window, KYC docs, idempotency TTL) are locked. See the `project-open-business-decisions` memory entry.
+Scaffold matrix:
+
+| Workspace    | State                                                                              |
+| ------------ | ---------------------------------------------------------------------------------- |
+| `server`     | NestJS 11 + Fastify bootstrap with `GET /v1/health`; helmet + cors + cookie + pino |
+| `apps/web`   | Next 15 App Router hello page, Tailwind v4, shadcn config (no components yet)      |
+| `apps/admin` | Vite 6 + React 19 hello page, Tailwind v4, shadcn config + `Button` installed      |
+| `packages/*` | Placeholders only — empty `src/index.ts`, scripts print `echo 'TODO: ...'`         |
+
+Domain logic (Prisma schema, auth, services, payments, sdk) **not started**. Unblocked once open business numbers (commission %, hold period, refund window, KYC docs, idempotency TTL) are decided. See `project-open-business-decisions` memory entry.
 
 ---
 
@@ -29,7 +38,7 @@ Skeleton complete: workspace topology (`apps/*`, `server/*`, `packages/*`), Turb
 **Web — `apps/web` (storefront, public)**
 
 - Next.js 15 App Router, React 19, Server Components by default
-- Tailwind v4, shadcn/ui imported from `@repo/ui`
+- Tailwind v4 via **`@tailwindcss/postcss`** plugin (declared in `postcss.config.mjs`). shadcn/ui imported from `@repo/ui`; locally configured with `components.json` (`rsc: true`, `style: new-york`, `baseColor: neutral`, css vars). `cn()` helper in `src/lib/utils.ts`.
 - `next-intl` for i18n (vi/en), route prefix `/vi`, `/en`
 - TanStack Query for client cache (prefer Server Actions / RSC fetch for reads)
 - `react-hook-form` + `@hookform/resolvers/zod` for forms (schemas from `@repo/core`)
@@ -39,7 +48,7 @@ Skeleton complete: workspace topology (`apps/*`, `server/*`, `packages/*`), Turb
 
 - Vite 6 + React 19 + React Router 7
 - TanStack Query (server state), Zustand (UI/local state — modals, filter drafts)
-- Tailwind v4, shadcn/ui from `@repo/ui` (shared)
+- Tailwind v4 via **`@tailwindcss/vite`** plugin (declared in `vite.config.ts`, no postcss config). shadcn/ui from `@repo/ui` (shared); locally configured with `components.json` (`rsc: false`, otherwise same as web). `cn()` helper in `src/lib/utils.ts`.
 - Role-based routing: `/platform/*` (PLATFORM_ADMIN, PLATFORM_STAFF), `/vendor/*` (VENDOR_OWNER, VENDOR_STAFF)
 
 **API — `server/` (package `@server/api`)**
