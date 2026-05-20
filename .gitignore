@@ -1,0 +1,47 @@
+# dependencies
+node_modules/
+
+# build output
+.next/
+.turbo/
+.vite/
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# test / coverage
+coverage/
+playwright-report/
+test-results/
+.nyc_output/
+
+# misc
+.cache/
+.vercel
+*.pem
+*.key
+
+# prisma local
+packages/db/prisma/dev.db*
