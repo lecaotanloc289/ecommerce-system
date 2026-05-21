@@ -1,3 +1,22 @@
-// shadcn/ui components + Tailwind preset.
-// Pure components: no API calls, no awareness of auth. Used by web + admin.
-export {};
+export { cn } from './lib/cn';
+
+export * from './components/button';
+export * from './components/input';
+export * from './components/textarea';
+export * from './components/label';
+export * from './components/badge';
+export * from './components/tag';
+export * from './components/avatar';
+export * from './components/checkbox';
+export * from './components/radio-group';
+export * from './components/switch';
+export * from './components/select';
+export * from './components/card';
+export * from './components/alert';
+export * from './components/dialog';
+export * from './components/drawer';
+export * from './components/popover';
+export * from './components/tooltip';
+export * from './components/table';
+export * from './components/pagination';
+export * from './components/toast';
