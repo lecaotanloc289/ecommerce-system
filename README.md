@@ -98,7 +98,7 @@ pnpm build         # Turbo: build all workspaces
 
 CI runs these on GitHub Actions before merge. The pre-commit hook (`husky` + `lint-staged`) runs `lint` + `typecheck` on changed files.
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org). Branches: `feat/`, `fix/`, `chore/`, `refactor/`. Default base: `main`; active work branches off `dev`.
+Commits follow [Conventional Commits](https://www.conventionalcommits.org). Branches: `feat/`, `fix/`, `chore/`, `refactor/`. Default base: `prod` (renamed from `main`); active work branches off `dev`.
 
 ---
 
@@ -136,6 +136,26 @@ Migrations are **forward-only**. Destructive changes (drop column, rename) requi
 - [`packages/ui/src/styles/tokens.css`](./packages/ui/src/styles/tokens.css) — runtime design tokens (`@theme` block).
 
 ---
+
+## Deploy
+
+CI/CD is driven by GitHub Actions. Two branches → two environments:
+
+| Branch | Trigger                  | Environment    | Web                      | Admin                      | API                     |
+| ------ | ------------------------ | -------------- | ------------------------ | -------------------------- | ----------------------- |
+| `dev`  | push (incl. merged PRs)  | **dev**        | `dev.elma-web.pages.dev` | `dev.elma-admin.pages.dev` | `elma-api-dev.fly.dev`  |
+| `prod` | push (merged from `dev`) | **production** | `elma-web.pages.dev`     | `elma-admin.pages.dev`     | `elma-api-prod.fly.dev` |
+
+Workflows live in `.github/workflows/`:
+
+- `ci.yml` — lint + typecheck + test + build (runs on PRs + every push to `dev` / `prod`)
+- `deploy-web.yml` — `pnpm build` → `wrangler pages deploy apps/web/out` (Next.js static export)
+- `deploy-admin.yml` — `vite build` → `wrangler pages deploy apps/admin/dist`
+- `deploy-server.yml` — `flyctl deploy --remote-only --app elma-api-${{ github.ref_name }}` → smoke check `/v1/health`
+
+Each deploy workflow only fires when files in the relevant workspace change (path filters).
+
+Full architecture, secret inventory, and one-time external-account setup steps live in [`docs/ci-cd-plan.md`](./docs/ci-cd-plan.md). Rollback drill: revert the last commit on `prod` and push — workflow redeploys the previous artifact in ~3 minutes.
 
 ## License
 
