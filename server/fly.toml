@@ -1,0 +1,32 @@
+# Fly app config — overridden per env at deploy time via `flyctl deploy --app elma-api-{dev|prod}`.
+# Default app name here is the dev placeholder; the deploy workflow always passes --app explicitly.
+app = "elma-api-dev"
+primary_region = "sin"
+
+[build]
+  # Build context is the repo root (set in workflow: working-directory: server, dockerfile: Dockerfile)
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "3001"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "get"
+    path = "/v1/health"
+    timeout = "5s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256

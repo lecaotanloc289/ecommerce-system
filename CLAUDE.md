@@ -16,7 +16,9 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 
 ### Implementation status (as of 2026-05-20)
 
-Skeleton complete: workspace topology (`apps/*`, `server/*`, `packages/*`), Turbo build pipeline, lint/format/CI, `docker-compose` for local services, placeholder `package.json` + `tsconfig.json` per workspace. **No real code yet** — every workspace has a stub `src/index.ts` and `dev`/`build`/`test` scripts that print `echo 'TODO: ...'`. Real implementation starts once the open business numbers (commission %, hold period, refund window, KYC docs, idempotency TTL) are locked. See the `project-open-business-decisions` memory entry.
+All three app/server workspaces are scaffold-only; `packages/*` are placeholders (empty `src/index.ts`, scripts print `echo 'TODO: ...'`). Per-workspace scaffold state lives in each workspace's own `CLAUDE.md` (`apps/client`, `apps/admin`, `server`).
+
+Domain logic (Prisma schema, auth, services, payments, sdk) **not started**. Unblocked once open business numbers (commission %, hold period, refund window, KYC docs, idempotency TTL) are decided. See `project-open-business-decisions` memory entry.
 
 ---
 
@@ -26,31 +28,11 @@ Skeleton complete: workspace topology (`apps/*`, `server/*`, `packages/*`), Turb
 
 - pnpm workspaces + Turborepo (cache + pipeline `build → typecheck → lint → test`)
 
-**Web — `apps/web` (storefront, public)**
+**App / server stacks** — details live in each workspace's own `CLAUDE.md`:
 
-- Next.js 15 App Router, React 19, Server Components by default
-- Tailwind v4, shadcn/ui imported from `@repo/ui`
-- `next-intl` for i18n (vi/en), route prefix `/vi`, `/en`
-- TanStack Query for client cache (prefer Server Actions / RSC fetch for reads)
-- `react-hook-form` + `@hookform/resolvers/zod` for forms (schemas from `@repo/core`)
-- API calls go through `@repo/sdk` (typed)
-
-**Admin — `apps/admin` (platform admin + vendor dashboard)**
-
-- Vite 6 + React 19 + React Router 7
-- TanStack Query (server state), Zustand (UI/local state — modals, filter drafts)
-- Tailwind v4, shadcn/ui from `@repo/ui` (shared)
-- Role-based routing: `/platform/*` (PLATFORM_ADMIN, PLATFORM_STAFF), `/vendor/*` (VENDOR_OWNER, VENDOR_STAFF)
-
-**API — `server/` (package `@server/api`)**
-
-- NestJS 11 + Fastify adapter, prefix `/v1`
-- `nestjs-zod` pipe (validation from schemas in `@repo/core`)
-- Auth: `@nestjs/passport` + `passport-google-oauth20` + `passport-facebook` + `@nestjs/jwt`
-- Logger: `nestjs-pino`
-- Security: `@fastify/helmet`, `@fastify/cors` (credentials true), `@fastify/cookie`
-- OpenAPI: `@nestjs/swagger` → generates the client used by `@repo/sdk`
-- Queue: BullMQ (Redis) for the outbox worker, payout scheduler, email sender
+- **Storefront** — `apps/client/CLAUDE.md` (package `@apps/web`): Next.js 15 App Router, next-intl, Tailwind v4 via `@tailwindcss/postcss`.
+- **Admin** — `apps/admin/CLAUDE.md` (`@apps/admin`): Vite 6 + React Router 7, Zustand, Tailwind v4 via `@tailwindcss/vite`.
+- **API** — `server/CLAUDE.md` (`@server/api`): NestJS 11 + Fastify `/v1`, Passport OAuth + JWT, nestjs-zod, BullMQ, OpenAPI → `@repo/sdk`.
 
 **Database**
 
@@ -79,9 +61,9 @@ Skeleton complete: workspace topology (`apps/*`, `server/*`, `packages/*`), Turb
 
 ```
 ecommerce-system/
-├── apps/                          User-facing UI surfaces
-│   ├── web/                       Next.js 15 storefront (customer-facing, i18n vi/en, public)
-│   └── admin/                     Vite + React dashboard (platform admin + vendor portal)
+├── apps/                          User-facing UI surfaces (each has its own CLAUDE.md)
+│   ├── client/                    Next.js 15 storefront, package `@apps/web` (customer-facing, i18n vi/en, public)
+│   └── admin/                     Vite + React dashboard, package `@apps/admin` (platform admin + vendor portal)
 ├── server/                        Backend API (NestJS + Fastify), single workspace, package `@server/api`.
 │                                   Versioned /v1, OpenAPI exposed. Code in `server/src/`.
 │                                   Future async workers (outbox dispatcher, payout cron, email sender)
@@ -382,47 +364,7 @@ Never rename or drop in a single migration:
 
 ### Customer journey (features in scope for MVP)
 
-1. **Sign up / Sign in — OAuth only (Google, Facebook).**
-   First-time login auto-creates a `User` with role `CUSTOMER`. If an existing `User` has the same verified email, the new `OAuthIdentity` is linked to it (one `User` ↔ many `OAuthIdentity`). No email/password flow exists.
-
-2. **Browse products.**
-   Paginated list with filters (category, price range, vendor, attributes via JSONB, in-stock only). Sort by relevance / price / newest / best-selling.
-
-3. **Search.**
-   Postgres FTS on `tsvector(title, description, brand)` + `pg_trgm` for typo tolerance. Results include matching products and matching categories.
-
-4. **Product detail.**
-   Title, description, gallery, variants (e.g. color/size → SKU + price + stock), JSONB attributes, vendor card (rating + link to vendor storefront), review summary, related products from same category.
-
-5. **Categories.**
-   Tree with `parent_id`. Localized names live in `category_translations` (vi/en). Products are linked many-to-many. Browsing a category returns its products and optionally those of its descendants.
-
-6. **Cart.**
-   - Guest cart in `localStorage` (lines: `productId`, `variantId`, `qty`).
-   - On sign-in, the guest cart **merges** into the server `Cart` (same user → quantities sum, capped at stock).
-   - Once authenticated, the server `Cart` is the source of truth.
-   - Multi-vendor lines are allowed in a single cart; the UI groups lines by vendor.
-   - Stock is checked at view time and again at checkout; reservation only happens at checkout (Golden Rule #4).
-
-7. **Shipping addresses.**
-   `Address` table per user (label, recipient, phone, line1/line2, ward, district, province, country, postal). One row may be `is_default`. The address book is shown at checkout for selection. Editing an address must not mutate addresses already snapshotted onto past `SubOrder` rows.
-
-8. **Shipping methods.**
-   Each vendor defines a set of `ShippingMethod` (e.g. STANDARD, EXPRESS, FREESHIP_ON_PROMO). A rate calculator in `packages/core/shipping` takes `{ weight, destination_province, subtotal }` and returns a fee. The customer picks **one method per sub-order** at checkout, because different vendors can ship differently.
-
-9. **Coupons / discount codes.**
-   - `Coupon`: `code` (unique), `scope` (`PLATFORM` or `VENDOR_ID`), `type` (`PERCENT` or `FIXED`), `value`, `min_subtotal_amount`, `max_redemptions_total`, `max_redemptions_per_user`, `starts_at`, `ends_at`, `is_active`.
-   - `CouponRedemption` log enforces per-user and total caps **inside the checkout transaction**.
-   - Stacking rule: at most 1 `PLATFORM` + 1 `VENDOR` coupon per sub-order; validated server-side.
-   - Discounts apply **before** commission calc; commission is on the discounted subtotal.
-
-10. **Payment methods.**
-    At checkout the customer picks one provider:
-    - **VNPay** (VND only): redirect flow → webhook confirms.
-    - **Stripe** (USD, international): Payment Intents → 3DS as needed → webhook confirms.
-    - **Wallet** (later): customer-funded wallet; checkout debits it.
-
-    Payment provider applies to the **entire order**; escrow split into sub-order ledger entries happens after capture.
+The 10-step storefront feature spec (OAuth sign-in, browse, search, product detail, categories, cart, addresses, shipping methods, coupons, payment methods) lives in **`apps/client/CLAUDE.md`** — that surface owns it. Server-side rules referenced there are enforced by the Golden Rules and the entity model below.
 
 ### Key entities (high-level — schema details live in `packages/db/prisma/schema.prisma`)
 

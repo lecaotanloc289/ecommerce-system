@@ -1,0 +1,50 @@
+name: Deploy admin → Cloudflare Pages
+
+on:
+  push:
+    branches: [dev, prod]
+    paths:
+      - 'apps/admin/**'
+      - 'packages/ui/**'
+      - 'packages/core/**'
+      - 'packages/i18n/**'
+      - 'packages/sdk/**'
+      - 'pnpm-lock.yaml'
+      - 'turbo.json'
+      - '.github/workflows/deploy-admin.yml'
+
+concurrency:
+  group: deploy-admin-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: build + wrangler pages deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    env:
+      VITE_API_URL: https://elma-api-${{ github.ref_name }}.fly.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (Vite)
+        run: pnpm --filter @apps/admin exec vite build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/admin/dist --project-name=elma-admin --branch=${{ github.ref_name }}

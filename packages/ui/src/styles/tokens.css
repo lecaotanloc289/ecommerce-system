@@ -1,0 +1,861 @@
+/* ============================================================
+ * @repo/ui — tokens.css
+ * Single source of truth for the Elma design system.
+ * Đã đối chiếu & sửa theo dữ liệu extract trực tiếp từ "Elma eCommerce UI Kit.fig"
+ * (DESIGN.md + design-tokens.json) ngày 2026-06-11. Fix: slate-12 #161D25,
+ * font Poppins→Rubik/Roboto, shadows 1–5 theo kit, container 1110,
+ * body line-heights, thêm indigo-deep/navy/slateblue/paragraph tokens.
+ * Consumed by apps/web, apps/admin, and packages/ui itself.
+ *
+ * Import order in each consumer's entry CSS:
+ *   @import "tailwindcss";
+ *   @import "@repo/ui/styles/tokens.css";
+ *
+ * Rules enforced here (see docs/design-spec.md):
+ *  - No raw Tailwind palette colors are emitted (no slate-500, blue-600…)
+ *  - Even white / black flow through tokens (color-base-0, color-base-1000)
+ *  - All values exposed as CSS variables so the same utilities can
+ *    re-theme by re-defining variables (dark mode, vendor white-label).
+ *  - 12-step Radix-inspired scales for neutral + brand + status.
+ *  - Semantic layer wraps the scales so component code reads
+ *    `bg-surface` / `text-muted`, never `bg-slate-2`.
+ * ============================================================ */
+
+/* ------------------------------------------------------------------
+ * Layer 1 — Raw scales (light mode)
+ *
+ * 12-step scales modeled after Radix UI semantics:
+ *   1-2 = page bg / subtle bg
+ *   3-5 = element bg (rest / hover / active)
+ *   6-8 = borders (subtle / regular / strong)
+ *   9   = solid brand (anchor for the palette — e.g. #4F46E5 for indigo)
+ *   10  = solid hover
+ *   11  = low-contrast text
+ *   12  = high-contrast text
+ *
+ * Values use `oklch()` for perceptual uniformity and consistent
+ * darkening across hues. Exact hex anchors are noted in comments.
+ * ------------------------------------------------------------------ */
+
+:root {
+  /* Absolute base — explicit so utilities never reach for `#fff` / `#000` */
+  --color-base-0: oklch(1 0 0); /* #FFFFFF */
+  --color-base-1000: oklch(0 0 0); /* #000000 */
+
+  /* ----- Neutral (Polaris-style dark + white fill scale) -----
+   * Anchors confirmed from Figma "Colors" sheet:
+   *   12 Tittle   #161D25
+   *   11 Ink      #212B36
+   *   10 Light    #454F5B
+   *    9 Lighter  #637381
+   *    8 Lightest #919EAB
+   *    6 Dark L.  #C4CDD5
+   *    4 Sky      #DFE3E8
+   *    2 Enough L #F4F6F8
+   *    1 Lighter  #F9FAFB
+   * Intermediate steps synthesized. */
+  --color-slate-1: #f9fafb; /* page bg */
+  --color-slate-2: #f4f6f8; /* subtle bg */
+  --color-slate-3: #ebeef1; /* element rest */
+  --color-slate-4: #dfe3e8; /* element hover */
+  --color-slate-5: #d2d7dc; /* element active */
+  --color-slate-6: #c4cdd5; /* border subtle */
+  --color-slate-7: #adb5bd; /* border */
+  --color-slate-8: #919eab; /* border strong */
+  --color-slate-9: #637381; /* icon / muted text */
+  --color-slate-10: #454f5b; /* solid hover */
+  --color-slate-11: #212b36; /* text body */
+  --color-slate-12: #161d25; /* text high */
+
+  /* ----- Brand (indigo) — anchor #5C6AC4 at step 9 (Figma) ----- */
+  --color-indigo-1: #fafbfd;
+  --color-indigo-2: #f4f5fa;
+  --color-indigo-3: #eceefb; /* Fill Light Indigo */
+  --color-indigo-4: #d6daf1;
+  --color-indigo-5: #b3bceb;
+  --color-indigo-6: #93a0e1;
+  --color-indigo-7: #7984d6;
+  --color-indigo-8: #6976cc;
+  --color-indigo-9: #5c6ac4; /* BRAND */
+  --color-indigo-10: #4f5bac; /* solid-hover */
+  --color-indigo-11: #3f4a8f; /* text-low */
+  --color-indigo-12: #29325f; /* text-high */
+  --color-indigo-deep: #43467f; /* style Figma "Fill/Action/TIttle" — pressed/deep brand */
+
+  /* ----- Success (green) — anchor #50B83C at step 9 (Figma) ----- */
+  --color-success-1: #fafcf8;
+  --color-success-2: #f2f7eb;
+  --color-success-3: #dfefd3; /* Fill Light Green */
+  --color-success-4: #c5e3ae;
+  --color-success-5: #a2d381;
+  --color-success-6: #80c45c;
+  --color-success-7: #66b048;
+  --color-success-8: #58b53f;
+  --color-success-9: #50b83c; /* solid */
+  --color-success-10: #43a02f; /* solid-hover */
+  --color-success-11: #357825; /* text-low */
+  --color-success-12: #1f4815; /* text-high */
+
+  /* ----- Danger (red) — anchor #DE3618 at step 9 (Figma) ----- */
+  --color-danger-1: #fff8f7;
+  --color-danger-2: #fceeeb;
+  --color-danger-3: #fbe5df; /* Fill Light Red */
+  --color-danger-4: #f7c2b5;
+  --color-danger-5: #f09680;
+  --color-danger-6: #e76a4c;
+  --color-danger-7: #de4729;
+  --color-danger-8: #de3d1f;
+  --color-danger-9: #de3618; /* solid */
+  --color-danger-10: #c42e14; /* solid-hover */
+  --color-danger-11: #962110; /* text-low */
+  --color-danger-12: #5c160b; /* text-high */
+
+  /* ----- Warning (yellow) — anchor #EEC200 at step 9 (Figma) ----- */
+  --color-warning-1: #fffdf4;
+  --color-warning-2: #fcf8e2;
+  --color-warning-3: #fcf1cd; /* Fill Light Yellow */
+  --color-warning-4: #f8e48a;
+  --color-warning-5: #f4d547;
+  --color-warning-6: #efcb20;
+  --color-warning-7: #eec200;
+  --color-warning-8: #eec200;
+  --color-warning-9: #eec200; /* solid */
+  --color-warning-10: #cfaa00; /* solid-hover */
+  --color-warning-11: #9c7f00; /* text-low */
+  --color-warning-12: #594800; /* text-high */
+
+  /* ----- Info (blue) — anchor #006FBB at step 9 (Figma) ----- */
+  --color-info-1: #f4f9fc;
+  --color-info-2: #e4f0f8;
+  --color-info-3: #d6edf7; /* Fill Light Blue */
+  --color-info-4: #abd6ee;
+  --color-info-5: #76b9de;
+  --color-info-6: #3f95cd;
+  --color-info-7: #1b7ec2;
+  --color-info-8: #0173bc;
+  --color-info-9: #006fbb; /* solid */
+  --color-info-10: #005a98; /* solid-hover */
+  --color-info-11: #00446f; /* text-low */
+  --color-info-12: #002847; /* text-high */
+
+  /* ----- Purple — anchor #9C6ADE at step 9 (Figma accent) ----- */
+  --color-purple-1: #fbf7fe;
+  --color-purple-2: #f5edfc;
+  --color-purple-3: #eedffa; /* Fill Light Purple */
+  --color-purple-4: #dab9f5;
+  --color-purple-5: #c194ed;
+  --color-purple-6: #a87ae3;
+  --color-purple-7: #9c6ade;
+  --color-purple-8: #9c6ade;
+  --color-purple-9: #9c6ade; /* solid */
+  --color-purple-10: #8456c2; /* solid-hover */
+  --color-purple-11: #5f3d90; /* text-low */
+  --color-purple-12: #371f58; /* text-high */
+
+  /* ----- Teal — anchor #47C1BF at step 9 (Figma accent) ----- */
+  --color-teal-1: #f4fbfb;
+  --color-teal-2: #e0f4f4;
+  --color-teal-3: #cfe6e6; /* Fill Light Teal */
+  --color-teal-4: #a4d8d7;
+  --color-teal-5: #76c9c8;
+  --color-teal-6: #54c1c0;
+  --color-teal-7: #47c1bf;
+  --color-teal-8: #47c1bf;
+  --color-teal-9: #47c1bf; /* solid */
+  --color-teal-10: #2ba6a4; /* solid-hover */
+  --color-teal-11: #1f7b7a; /* text-low */
+  --color-teal-12: #114545; /* text-high */
+
+  /* ----- Orange — anchor #F49342 at step 9 (Figma accent) ----- */
+  --color-orange-1: #fffaf5;
+  --color-orange-2: #fdeee0;
+  --color-orange-3: #fce5d0; /* Fill Light Orange */
+  --color-orange-4: #f9c9a4;
+  --color-orange-5: #f6ad78;
+  --color-orange-6: #f49e5d;
+  --color-orange-7: #f49342;
+  --color-orange-8: #f49342;
+  --color-orange-9: #f49342; /* solid */
+  --color-orange-10: #d87a2c; /* solid-hover */
+  --color-orange-11: #a95a1f; /* text-low */
+  --color-orange-12: #5c300f; /* text-high */
+
+  /* ----- Category tints (Figma "Fill Light" row) ----- */
+  --color-tint-blue: var(--color-info-3); /* #D6EDF7 */
+  --color-tint-indigo: var(--color-indigo-3); /* #ECEEFB */
+  --color-tint-purple: var(--color-purple-3); /* #EEDFFA */
+  --color-tint-teal: var(--color-teal-3); /* #CFE6E6 */
+  --color-tint-green: var(--color-success-3); /* #DFEFD3 */
+  --color-tint-yellow: var(--color-warning-3); /* #FCF1CD */
+  --color-tint-orange: var(--color-orange-3); /* #FCE5D0 */
+  --color-tint-pink: var(--color-danger-3); /* #FBE5DF — legacy name; same as Fill Light Red */
+  --color-tint-red: var(--color-danger-3); /* #FBE5DF */
+
+  /* Landing text duo — usage thực tế trong kit (navy ×113, slate-blue ×616) */
+  --color-navy: #183b56;
+  --color-slateblue: #5a7184;
+
+  /* ============================================================
+   * Layer 2 — Semantic tokens (light mode)
+   * Component code MUST consume these, never raw scales.
+   * Dark mode redefines this layer only.
+   * ============================================================ */
+
+  /* Backgrounds */
+  --color-bg-page: var(--color-base-0);
+  --color-bg-surface: var(--color-slate-2); /* footer, summary panel */
+  --color-bg-elevated: var(--color-base-0); /* cards on tinted page */
+  --color-bg-muted: var(--color-slate-3);
+  --color-bg-inverse: var(--color-slate-12); /* search submit btn */
+  --color-bg-overlay: oklch(0 0 0 / 0.48);
+
+  /* Text */
+  --color-text-primary: var(--color-slate-12);
+  --color-text-body: var(--color-slate-11);
+  --color-text-muted: var(--color-slate-9);
+  --color-text-placeholder: var(--color-slate-8);
+  --color-text-disabled: var(--color-slate-7);
+  --color-text-on-primary: var(--color-base-0);
+  --color-text-on-inverse: var(--color-base-0);
+  --color-text-link: var(--color-indigo-9);
+  --color-text-link-hover: var(--color-indigo-10);
+  --color-text-price: var(--color-success-10); /* green price label */
+  --color-text-price-sale: var(--color-danger-9); /* red sale price */
+  --color-text-landing-heading: var(--color-navy);
+  --color-text-landing-body: var(--color-slateblue);
+
+  /* Borders */
+  --color-border-subtle: var(--color-slate-5);
+  --color-border-default: var(--color-slate-6);
+  --color-border-strong: var(--color-slate-7);
+  --color-border-focus: var(--color-indigo-9);
+  --color-border-input: var(--color-slate-6);
+
+  /* Icons */
+  --color-icon-default: var(--color-slate-9);
+  --color-icon-muted: var(--color-slate-8);
+  --color-icon-strong: var(--color-slate-12);
+  --color-icon-on-primary: var(--color-base-0);
+  --color-icon-brand: var(--color-indigo-9);
+
+  /* Brand (interactive) */
+  --color-brand-solid: var(--color-indigo-9);
+  --color-brand-solid-hover: var(--color-indigo-10);
+  --color-brand-solid-active: var(--color-indigo-deep); /* #43467F — giá trị thật từ kit */
+  --color-brand-soft: var(--color-indigo-3);
+  --color-brand-soft-hover: var(--color-indigo-4);
+  --color-brand-text: var(--color-indigo-11);
+  --color-brand-disabled: var(--color-indigo-5);
+
+  /* Status backgrounds + foregrounds (paired) */
+  --color-success-bg: var(--color-success-3);
+  --color-success-fg: var(--color-success-11);
+  --color-success-solid: var(--color-success-9);
+  --color-success-border: var(--color-success-6);
+
+  --color-danger-bg: var(--color-danger-3);
+  --color-danger-fg: var(--color-danger-11);
+  --color-danger-solid: var(--color-danger-9);
+  --color-danger-border: var(--color-danger-6);
+
+  --color-warning-bg: var(--color-warning-3);
+  --color-warning-fg: var(--color-warning-11);
+  --color-warning-solid: var(--color-warning-9);
+  --color-warning-border: var(--color-warning-6);
+
+  --color-info-bg: var(--color-info-3);
+  --color-info-fg: var(--color-info-11);
+  --color-info-solid: var(--color-info-9);
+  --color-info-border: var(--color-info-6);
+
+  /* Rating star */
+  --color-rating-star: var(--color-warning-9);
+
+  /* ============================================================
+   * Layer 3 — shadcn/ui compatibility aliases
+   * shadcn components reference these names. Aliases keep the
+   * existing components working while routing them through our
+   * semantic layer (so they re-theme with the rest of the system).
+   * ============================================================ */
+  --background: var(--color-bg-page);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-bg-elevated);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-bg-elevated);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-brand-solid);
+  --primary-foreground: var(--color-text-on-primary);
+  --secondary: var(--color-slate-3);
+  --secondary-foreground: var(--color-text-primary);
+  --muted: var(--color-slate-3);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-indigo-3);
+  --accent-foreground: var(--color-indigo-11);
+  --destructive: var(--color-danger-solid);
+  --border: var(--color-border-default);
+  --input: var(--color-border-input);
+  --ring: var(--color-border-focus);
+
+  /* ============================================================
+   * Typography — Rubik (heading) + Roboto (body), xác nhận từ .fig.
+   * ("Poppins" trước đây là đọc nhầm từ ảnh — không xuất hiện trong file Figma.)
+   * ============================================================ */
+  --font-heading:
+    'Rubik', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-sans:
+    'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Type scale — confirmed from Figma "Heading - Black" sheet (8 Styles + H9).
+   * Format: size / line-height. Three weights per heading (Bold 700 · Medium 500 · Regular 400)
+   * — applied via font-weight utility, not separate tokens.
+   * Each heading also has an "alt" smaller variant. */
+  --text-h1: 3.5rem; /* 56 — H1 Bold/Medium/Regular */
+  --text-h1-alt: 3rem; /* 48 — H1 alt */
+  --text-h2: 2.5rem; /* 40 — H2 */
+  --text-h2-alt: 2.25rem; /* 36 — H2 alt */
+  --text-h3: 2rem; /* 32 — H3 */
+  --text-h3-alt: 1.75rem; /* 28 — H3 alt */
+  --text-h4: 1.5rem; /* 24 — H4 */
+  --text-h4-alt: 1.375rem; /* 22 — H4 alt */
+  --text-h5: 1.25rem; /* 20 — H5 */
+  --text-h6: 1.125rem; /* 18 — H6 */
+  --text-h7: 1rem; /* 16 — H7 / body-l */
+  --text-h8: 0.875rem; /* 14 — H8 / body-m */
+  --text-h9: 0.75rem; /* 12 — H9 / caption */
+
+  /* Legacy aliases (kept so existing components keep compiling).
+   * New code should reach for the H-* tokens above. */
+  --text-display-xl: var(--text-h1);
+  --text-display-l: var(--text-h2);
+  --text-body-l: var(--text-h7);
+  --text-body-m: var(--text-h8);
+  --text-body-s: 0.8125rem; /* 13 — between H8 + H9, used for input/label */
+  --text-caption: var(--text-h9);
+  --text-price-l: var(--text-h4); /* 24 — product detail price */
+
+  /* Long-form (P-scale trong kit — thoáng hơn UI text, dùng cho blog/mô tả sản phẩm) */
+  --text-paragraph: 1rem; /* 16/28 — P3 */
+  --text-paragraph-lg: 1.125rem; /* 18/32 — P2 */
+
+  /* Line-heights — match Figma pairings exactly */
+  --leading-h1: 4.5rem; /* 72 */
+  --leading-h1-alt: 4rem; /* 64 */
+  --leading-h2: 3.5rem; /* 56 */
+  --leading-h2-alt: 3.25rem; /* 52 */
+  --leading-h3: 3rem; /* 48 */
+  --leading-h3-alt: 2.75rem; /* 44 */
+  --leading-h4: 2rem; /* 32 */
+  --leading-h4-alt: 1.875rem; /* 30 */
+  --leading-h5: 1.5rem; /* 24 */
+  --leading-h6: 1.25rem; /* 20 */
+  --leading-h7: 1.25rem; /* 20 */
+  --leading-h8: 1.25rem; /* 20 */
+  --leading-h9: 1rem; /* 16 */
+
+  /* Legacy line-height aliases */
+  --leading-display-xl: var(--leading-h1);
+  --leading-display-l: var(--leading-h2);
+  --leading-body-l: 1.375rem; /* 22 — kit "Regular Text/16px" = 16/22 (trước đây 20 là lh của heading) */
+  --leading-body-m: var(--leading-h8);
+  --leading-body-s: 1.125rem; /* 18 — kit UI 12px = 12/18 */
+  --leading-caption: var(--leading-h9);
+  --leading-paragraph: 1.75rem; /* 28 */
+  --leading-paragraph-lg: 2rem; /* 32 */
+
+  /* Font weights — kit dùng 400/500/700 (Rubik & Roboto); 600 không có trong kit, giữ cho legacy */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Letter spacing */
+  --tracking-tight: -0.005em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.0025em;
+  --tracking-heading: 0.2px; /* kit: heading +0.2px (0.16–0.18px ở size ≤14) */
+
+  /* ============================================================
+   * Radius (Figma cards / buttons / pills)
+   * ============================================================ */
+  --radius-xs: 0.25rem; /* 4  badge, tag */
+  --radius-sm: 0.375rem; /* 6 — KHÔNG có trong kit (input/button kit dùng md=8); giữ cho legacy */
+  --radius-md: 0.5rem; /* 8  primary button, card */
+  --radius-lg: 0.75rem; /* 12 promo card, hero, payment-method card */
+  --radius-xl: 1rem; /* 16 category card, brand tile */
+  --radius-2xl: 1.25rem; /* 20 — không thấy trong kit (max 16); giữ cho legacy */
+  --radius-full: 9999px; /* avatar, language flag, success ring */
+
+  /* ============================================================
+   * Shadow — 5 elevations đúng theo Figma effect styles Shadow/1–5
+   * ============================================================ */
+  --shadow-1: 0 12px 16px rgb(0 0 0 / 0.08); /* card hover, dropdown */
+  --shadow-2: 0 16px 20px rgb(0 0 0 / 0.06); /* card nổi, popover */
+  --shadow-3: 0 20px 24px rgb(0 0 0 / 0.04); /* drawer */
+  --shadow-4: 0 28px 32px rgb(0 0 0 / 0.03); /* modal */
+  --shadow-5: 0 32px 36px rgb(0 0 0 / 0.02); /* hero/marketing block */
+  --shadow-cta: 0 8px 16px color-mix(in srgb, var(--color-indigo-9) 25%, transparent); /* KHÔNG có trong kit — giữ cho CTA hiện hữu */
+  --shadow-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-indigo-9) 35%, transparent);
+
+  /* ============================================================
+   * Layout primitives
+   * ============================================================ */
+  --container-max: 69.375rem; /* 1110 — khớp track từ .fig: 3×350+2×30 = 4×255+3×30 = 2×540+30 = 1110 */
+  --page-gutter-mobile: 1rem; /* 16 */
+  --page-gutter-desktop: 1.5rem; /* 24 */
+  --gap-column: 1.875rem; /* 30 — Figma column-gutter constant */
+  --col-3-track: 21.875rem; /* 350 — Figma 3-col formula */
+  --col-4-track: 15.9375rem; /* 255 — Figma 4-col formula */
+  --col-2-track: 33.75rem; /* 540 — Figma 2-col formula */
+  --header-height: 5rem; /* 80 */
+  --header-stack: 7.5rem; /* 120 = util 40 + main 80 */
+}
+
+/* ------------------------------------------------------------------
+ * Dark mode overrides (only semantic + shadcn-compat layers change;
+ * raw scales stay the same).
+ * Enabled by either:
+ *   <html class="dark"> or
+ *   @media (prefers-color-scheme: dark) at the consumer's discretion.
+ * ------------------------------------------------------------------ */
+.dark {
+  --color-bg-page: var(--color-slate-12);
+  --color-bg-surface: oklch(0.22 0.018 258);
+  --color-bg-elevated: oklch(0.245 0.018 258);
+  --color-bg-muted: oklch(0.27 0.018 258);
+  --color-bg-inverse: var(--color-slate-1);
+
+  --color-text-primary: var(--color-slate-1);
+  --color-text-body: var(--color-slate-3);
+  --color-text-muted: var(--color-slate-6);
+  --color-text-placeholder: var(--color-slate-7);
+  --color-text-disabled: var(--color-slate-9);
+  --color-text-on-primary: var(--color-base-0);
+  --color-text-on-inverse: var(--color-slate-12);
+  --color-text-link: var(--color-indigo-7);
+  --color-text-link-hover: var(--color-indigo-6);
+  --color-text-price: var(--color-success-8);
+  --color-text-price-sale: var(--color-danger-8);
+  --color-text-landing-heading: var(--color-slate-1);
+  --color-text-landing-body: var(--color-slate-6);
+
+  --color-border-subtle: oklch(1 0 0 / 0.08);
+  --color-border-default: oklch(1 0 0 / 0.12);
+  --color-border-strong: oklch(1 0 0 / 0.2);
+  --color-border-focus: var(--color-indigo-7);
+  --color-border-input: oklch(1 0 0 / 0.15);
+
+  --color-icon-default: var(--color-slate-6);
+  --color-icon-muted: var(--color-slate-7);
+  --color-icon-strong: var(--color-slate-1);
+  --color-icon-on-primary: var(--color-base-0);
+  --color-icon-brand: var(--color-indigo-7);
+
+  --color-brand-solid: var(--color-indigo-9);
+  --color-brand-solid-hover: var(--color-indigo-8);
+  --color-brand-solid-active: var(--color-indigo-7);
+  --color-brand-soft: oklch(0.31 0.09 280);
+  --color-brand-soft-hover: oklch(0.37 0.11 280);
+  --color-brand-text: var(--color-indigo-5);
+  --color-brand-disabled: oklch(0.35 0.06 280);
+
+  --color-success-bg: oklch(0.3 0.08 145);
+  --color-success-fg: var(--color-success-5);
+  --color-success-border: oklch(0.38 0.11 145);
+
+  --color-danger-bg: oklch(0.32 0.105 27);
+  --color-danger-fg: var(--color-danger-5);
+  --color-danger-border: oklch(0.41 0.14 27);
+
+  --color-warning-bg: oklch(0.33 0.09 70);
+  --color-warning-fg: var(--color-warning-5);
+  --color-warning-border: oklch(0.42 0.12 70);
+
+  --color-info-bg: oklch(0.3 0.1 260);
+  --color-info-fg: var(--color-info-5);
+  --color-info-border: oklch(0.395 0.14 260);
+
+  --shadow-1: 0 12px 16px rgb(0 0 0 / 0.25);
+  --shadow-2: 0 16px 20px rgb(0 0 0 / 0.22);
+  --shadow-3: 0 20px 24px rgb(0 0 0 / 0.2);
+  --shadow-4: 0 28px 32px rgb(0 0 0 / 0.18);
+  --shadow-5: 0 32px 36px rgb(0 0 0 / 0.16);
+  --shadow-cta: 0 8px 16px color-mix(in srgb, var(--color-indigo-9) 55%, transparent);
+  --shadow-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-indigo-7) 55%, transparent);
+}
+
+/* ============================================================
+ * @theme — register tokens with Tailwind v4 utility generator.
+ *
+ * Using `@theme inline` so Tailwind references each `var(--xxx)`
+ * at runtime instead of inlining the resolved value. This is what
+ * lets dark mode (`.dark { ... }`) actually re-theme utilities like
+ * `bg-bg-page`, `text-text-primary`, etc.
+ *
+ * Naming convention for generated utilities:
+ *   --color-foo  →  bg-foo, text-foo, border-foo, ring-foo, fill-foo, stroke-foo
+ *   --font-sans  →  font-sans
+ *   --text-xxx + --leading-xxx (matching name) → text-xxx (with line-height)
+ *   --radius-xx  →  rounded-xx
+ *   --shadow-xx  →  shadow-xx
+ * ============================================================ */
+@theme inline {
+  /* --- Color: raw scales (escape hatch — prefer semantic below) --- */
+  --color-base-0: var(--color-base-0);
+  --color-base-1000: var(--color-base-1000);
+
+  --color-slate-1: var(--color-slate-1);
+  --color-slate-2: var(--color-slate-2);
+  --color-slate-3: var(--color-slate-3);
+  --color-slate-4: var(--color-slate-4);
+  --color-slate-5: var(--color-slate-5);
+  --color-slate-6: var(--color-slate-6);
+  --color-slate-7: var(--color-slate-7);
+  --color-slate-8: var(--color-slate-8);
+  --color-slate-9: var(--color-slate-9);
+  --color-slate-10: var(--color-slate-10);
+  --color-slate-11: var(--color-slate-11);
+  --color-slate-12: var(--color-slate-12);
+
+  --color-indigo-1: var(--color-indigo-1);
+  --color-indigo-2: var(--color-indigo-2);
+  --color-indigo-3: var(--color-indigo-3);
+  --color-indigo-4: var(--color-indigo-4);
+  --color-indigo-5: var(--color-indigo-5);
+  --color-indigo-6: var(--color-indigo-6);
+  --color-indigo-7: var(--color-indigo-7);
+  --color-indigo-8: var(--color-indigo-8);
+  --color-indigo-9: var(--color-indigo-9);
+  --color-indigo-10: var(--color-indigo-10);
+  --color-indigo-11: var(--color-indigo-11);
+  --color-indigo-12: var(--color-indigo-12);
+  --color-indigo-deep: var(--color-indigo-deep);
+
+  --color-success-1: var(--color-success-1);
+  --color-success-2: var(--color-success-2);
+  --color-success-3: var(--color-success-3);
+  --color-success-4: var(--color-success-4);
+  --color-success-5: var(--color-success-5);
+  --color-success-6: var(--color-success-6);
+  --color-success-7: var(--color-success-7);
+  --color-success-8: var(--color-success-8);
+  --color-success-9: var(--color-success-9);
+  --color-success-10: var(--color-success-10);
+  --color-success-11: var(--color-success-11);
+  --color-success-12: var(--color-success-12);
+
+  --color-danger-1: var(--color-danger-1);
+  --color-danger-2: var(--color-danger-2);
+  --color-danger-3: var(--color-danger-3);
+  --color-danger-4: var(--color-danger-4);
+  --color-danger-5: var(--color-danger-5);
+  --color-danger-6: var(--color-danger-6);
+  --color-danger-7: var(--color-danger-7);
+  --color-danger-8: var(--color-danger-8);
+  --color-danger-9: var(--color-danger-9);
+  --color-danger-10: var(--color-danger-10);
+  --color-danger-11: var(--color-danger-11);
+  --color-danger-12: var(--color-danger-12);
+
+  --color-warning-1: var(--color-warning-1);
+  --color-warning-2: var(--color-warning-2);
+  --color-warning-3: var(--color-warning-3);
+  --color-warning-4: var(--color-warning-4);
+  --color-warning-5: var(--color-warning-5);
+  --color-warning-6: var(--color-warning-6);
+  --color-warning-7: var(--color-warning-7);
+  --color-warning-8: var(--color-warning-8);
+  --color-warning-9: var(--color-warning-9);
+  --color-warning-10: var(--color-warning-10);
+  --color-warning-11: var(--color-warning-11);
+  --color-warning-12: var(--color-warning-12);
+
+  --color-info-1: var(--color-info-1);
+  --color-info-2: var(--color-info-2);
+  --color-info-3: var(--color-info-3);
+  --color-info-4: var(--color-info-4);
+  --color-info-5: var(--color-info-5);
+  --color-info-6: var(--color-info-6);
+  --color-info-7: var(--color-info-7);
+  --color-info-8: var(--color-info-8);
+  --color-info-9: var(--color-info-9);
+  --color-info-10: var(--color-info-10);
+  --color-info-11: var(--color-info-11);
+  --color-info-12: var(--color-info-12);
+
+  --color-tint-blue: var(--color-tint-blue);
+  --color-tint-indigo: var(--color-tint-indigo);
+  --color-tint-green: var(--color-tint-green);
+  --color-tint-orange: var(--color-tint-orange);
+  --color-tint-yellow: var(--color-tint-yellow);
+  --color-tint-pink: var(--color-tint-pink);
+  --color-tint-red: var(--color-tint-red);
+  --color-tint-purple: var(--color-tint-purple);
+  --color-tint-teal: var(--color-tint-teal);
+  --color-navy: var(--color-navy);
+  --color-slateblue: var(--color-slateblue);
+
+  /* Purple / Teal / Orange accent palettes (Figma Fill Action set) */
+  --color-purple-1: var(--color-purple-1);
+  --color-purple-2: var(--color-purple-2);
+  --color-purple-3: var(--color-purple-3);
+  --color-purple-4: var(--color-purple-4);
+  --color-purple-5: var(--color-purple-5);
+  --color-purple-6: var(--color-purple-6);
+  --color-purple-7: var(--color-purple-7);
+  --color-purple-8: var(--color-purple-8);
+  --color-purple-9: var(--color-purple-9);
+  --color-purple-10: var(--color-purple-10);
+  --color-purple-11: var(--color-purple-11);
+  --color-purple-12: var(--color-purple-12);
+
+  --color-teal-1: var(--color-teal-1);
+  --color-teal-2: var(--color-teal-2);
+  --color-teal-3: var(--color-teal-3);
+  --color-teal-4: var(--color-teal-4);
+  --color-teal-5: var(--color-teal-5);
+  --color-teal-6: var(--color-teal-6);
+  --color-teal-7: var(--color-teal-7);
+  --color-teal-8: var(--color-teal-8);
+  --color-teal-9: var(--color-teal-9);
+  --color-teal-10: var(--color-teal-10);
+  --color-teal-11: var(--color-teal-11);
+  --color-teal-12: var(--color-teal-12);
+
+  --color-orange-1: var(--color-orange-1);
+  --color-orange-2: var(--color-orange-2);
+  --color-orange-3: var(--color-orange-3);
+  --color-orange-4: var(--color-orange-4);
+  --color-orange-5: var(--color-orange-5);
+  --color-orange-6: var(--color-orange-6);
+  --color-orange-7: var(--color-orange-7);
+  --color-orange-8: var(--color-orange-8);
+  --color-orange-9: var(--color-orange-9);
+  --color-orange-10: var(--color-orange-10);
+  --color-orange-11: var(--color-orange-11);
+  --color-orange-12: var(--color-orange-12);
+
+  /* --- Color: semantic (preferred consumer entrypoint) --- */
+  --color-bg-page: var(--color-bg-page);
+  --color-bg-surface: var(--color-bg-surface);
+  --color-bg-elevated: var(--color-bg-elevated);
+  --color-bg-muted: var(--color-bg-muted);
+  --color-bg-inverse: var(--color-bg-inverse);
+  --color-bg-overlay: var(--color-bg-overlay);
+
+  --color-text-primary: var(--color-text-primary);
+  --color-text-body: var(--color-text-body);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-placeholder: var(--color-text-placeholder);
+  --color-text-disabled: var(--color-text-disabled);
+  --color-text-on-primary: var(--color-text-on-primary);
+  --color-text-on-inverse: var(--color-text-on-inverse);
+  --color-text-link: var(--color-text-link);
+  --color-text-link-hover: var(--color-text-link-hover);
+  --color-text-price: var(--color-text-price);
+  --color-text-price-sale: var(--color-text-price-sale);
+  --color-text-landing-heading: var(--color-text-landing-heading);
+  --color-text-landing-body: var(--color-text-landing-body);
+
+  --color-border-subtle: var(--color-border-subtle);
+  --color-border-default: var(--color-border-default);
+  --color-border-strong: var(--color-border-strong);
+  --color-border-focus: var(--color-border-focus);
+  --color-border-input: var(--color-border-input);
+
+  --color-icon-default: var(--color-icon-default);
+  --color-icon-muted: var(--color-icon-muted);
+  --color-icon-strong: var(--color-icon-strong);
+  --color-icon-on-primary: var(--color-icon-on-primary);
+  --color-icon-brand: var(--color-icon-brand);
+
+  --color-brand-solid: var(--color-brand-solid);
+  --color-brand-solid-hover: var(--color-brand-solid-hover);
+  --color-brand-solid-active: var(--color-brand-solid-active);
+  --color-brand-soft: var(--color-brand-soft);
+  --color-brand-soft-hover: var(--color-brand-soft-hover);
+  --color-brand-text: var(--color-brand-text);
+  --color-brand-disabled: var(--color-brand-disabled);
+
+  --color-success-bg: var(--color-success-bg);
+  --color-success-fg: var(--color-success-fg);
+  --color-success-solid: var(--color-success-solid);
+  --color-success-border: var(--color-success-border);
+
+  --color-danger-bg: var(--color-danger-bg);
+  --color-danger-fg: var(--color-danger-fg);
+  --color-danger-solid: var(--color-danger-solid);
+  --color-danger-border: var(--color-danger-border);
+
+  --color-warning-bg: var(--color-warning-bg);
+  --color-warning-fg: var(--color-warning-fg);
+  --color-warning-solid: var(--color-warning-solid);
+  --color-warning-border: var(--color-warning-border);
+
+  --color-info-bg: var(--color-info-bg);
+  --color-info-fg: var(--color-info-fg);
+  --color-info-solid: var(--color-info-solid);
+  --color-info-border: var(--color-info-border);
+
+  --color-rating-star: var(--color-rating-star);
+
+  /* --- shadcn aliases (so legacy components keep compiling) --- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* --- Typography --- */
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-mono);
+
+  /* Canonical Figma type scale (paired size + line-height generates
+   * Tailwind utilities `text-h1` … `text-h9` that ship line-height by default). */
+  --text-h1: var(--text-h1);
+  --text-h1--line-height: var(--leading-h1);
+  --text-h1-alt: var(--text-h1-alt);
+  --text-h1-alt--line-height: var(--leading-h1-alt);
+  --text-h2: var(--text-h2);
+  --text-h2--line-height: var(--leading-h2);
+  --text-h2-alt: var(--text-h2-alt);
+  --text-h2-alt--line-height: var(--leading-h2-alt);
+  --text-h3: var(--text-h3);
+  --text-h3--line-height: var(--leading-h3);
+  --text-h3-alt: var(--text-h3-alt);
+  --text-h3-alt--line-height: var(--leading-h3-alt);
+  --text-h4: var(--text-h4);
+  --text-h4--line-height: var(--leading-h4);
+  --text-h4-alt: var(--text-h4-alt);
+  --text-h4-alt--line-height: var(--leading-h4-alt);
+  --text-h5: var(--text-h5);
+  --text-h5--line-height: var(--leading-h5);
+  --text-h6: var(--text-h6);
+  --text-h6--line-height: var(--leading-h6);
+  --text-h7: var(--text-h7);
+  --text-h7--line-height: var(--leading-h7);
+  --text-h8: var(--text-h8);
+  --text-h8--line-height: var(--leading-h8);
+  --text-h9: var(--text-h9);
+  --text-h9--line-height: var(--leading-h9);
+
+  /* Legacy aliases — kept for components that still reference body-l/body-m/caption/display-* */
+  --text-caption: var(--text-caption);
+  --text-caption--line-height: var(--leading-caption);
+  --text-body-s: var(--text-body-s);
+  --text-body-s--line-height: var(--leading-body-s);
+  --text-body-m: var(--text-body-m);
+  --text-body-m--line-height: var(--leading-body-m);
+  --text-body-l: var(--text-body-l);
+  --text-body-l--line-height: var(--leading-body-l);
+  --text-display-l: var(--text-display-l);
+  --text-display-l--line-height: var(--leading-display-l);
+  --text-display-xl: var(--text-display-xl);
+  --text-display-xl--line-height: var(--leading-display-xl);
+  --text-price-l: var(--text-price-l);
+  --text-price-l--line-height: var(--leading-h4);
+  --text-paragraph: var(--text-paragraph);
+  --text-paragraph--line-height: var(--leading-paragraph);
+  --text-paragraph-lg: var(--text-paragraph-lg);
+  --text-paragraph-lg--line-height: var(--leading-paragraph-lg);
+
+  /* Font-weight tokens → `font-bold` / `font-medium` etc. already work natively;
+   * exposing as Tailwind values lets us write `font-elma-bold` if we ever need brand-specific weights. */
+  --font-weight-regular: var(--font-weight-regular);
+  --font-weight-medium: var(--font-weight-medium);
+  --font-weight-semibold: var(--font-weight-semibold);
+  --font-weight-bold: var(--font-weight-bold);
+
+  --tracking-tight: var(--tracking-tight);
+  --tracking-normal: var(--tracking-normal);
+  --tracking-wide: var(--tracking-wide);
+  --tracking-heading: var(--tracking-heading);
+
+  /* --- Radius --- */
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
+
+  /* --- Shadow --- */
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --shadow-4: var(--shadow-4);
+  --shadow-5: var(--shadow-5);
+  --shadow-cta: var(--shadow-cta);
+  --shadow-focus-ring: var(--shadow-focus-ring);
+
+  /* --- Layout --- */
+  --container-max: var(--container-max);
+  --spacing-page-mobile: var(--page-gutter-mobile);
+  --spacing-page-desktop: var(--page-gutter-desktop);
+  --spacing-column-gap: var(--gap-column);
+  --spacing-col-3-track: var(--col-3-track);
+  --spacing-col-4-track: var(--col-4-track);
+  --spacing-col-2-track: var(--col-2-track);
+  --spacing-header: var(--header-height);
+  --spacing-header-stack: var(--header-stack);
+}
+
+/* ------------------------------------------------------------------
+ * Custom variant — enables `dark:` modifier when an ancestor has
+ * the `.dark` class. Mirrors the convention already used by both
+ * apps' existing globals.css files.
+ * ------------------------------------------------------------------ */
+@custom-variant dark (&:is(.dark *));
+
+/* ------------------------------------------------------------------
+ * Base layer — minimal global resets that depend on tokens.
+ * Apps should keep their own page-level rules; this just ensures
+ * tokens take effect immediately on import.
+ * ------------------------------------------------------------------ */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-page);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    letter-spacing: var(--tracking-heading);
+  }
+
+  ::selection {
+    background-color: var(--color-indigo-4);
+    color: var(--color-indigo-12);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+}

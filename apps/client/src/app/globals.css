@@ -3,8 +3,8 @@
 
 /* Tailwind v4 scans this file's tree by default.
  * Add @repo/ui source so utility classes used in shared components
- * still get generated when @apps/admin is built. */
-@source '../../../packages/ui/src';
+ * still get generated when @apps/web is built. */
+@source '../../../../packages/ui/src';
 
 @layer base {
   * {
