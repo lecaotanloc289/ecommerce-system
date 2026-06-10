@@ -88,7 +88,7 @@ importers:
         specifier: ^4.93.1
         version: 4.93.1
 
-  apps/web:
+  apps/client:
     dependencies:
       '@repo/ui':
         specifier: workspace:*
