@@ -29,6 +29,9 @@ importers:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
+      wrangler:
+        specifier: ^4.93.1
+        version: 4.93.1
 
   apps/admin:
     dependencies:
