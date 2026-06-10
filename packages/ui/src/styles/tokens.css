@@ -1,6 +1,10 @@
 /* ============================================================
  * @repo/ui — tokens.css
  * Single source of truth for the Elma design system.
+ * Đã đối chiếu & sửa theo dữ liệu extract trực tiếp từ "Elma eCommerce UI Kit.fig"
+ * (DESIGN.md + design-tokens.json) ngày 2026-06-11. Fix: slate-12 #161D25,
+ * font Poppins→Rubik/Roboto, shadows 1–5 theo kit, container 1110,
+ * body line-heights, thêm indigo-deep/navy/slateblue/paragraph tokens.
  * Consumed by apps/web, apps/admin, and packages/ui itself.
  *
  * Import order in each consumer's entry CSS:
@@ -40,7 +44,7 @@
 
   /* ----- Neutral (Polaris-style dark + white fill scale) -----
    * Anchors confirmed from Figma "Colors" sheet:
-   *   12 Tittle   #161B25
+   *   12 Tittle   #161D25
    *   11 Ink      #212B36
    *   10 Light    #454F5B
    *    9 Lighter  #637381
@@ -61,7 +65,7 @@
   --color-slate-9: #637381; /* icon / muted text */
   --color-slate-10: #454f5b; /* solid hover */
   --color-slate-11: #212b36; /* text body */
-  --color-slate-12: #161b25; /* text high */
+  --color-slate-12: #161d25; /* text high */
 
   /* ----- Brand (indigo) — anchor #5C6AC4 at step 9 (Figma) ----- */
   --color-indigo-1: #fafbfd;
@@ -76,6 +80,7 @@
   --color-indigo-10: #4f5bac; /* solid-hover */
   --color-indigo-11: #3f4a8f; /* text-low */
   --color-indigo-12: #29325f; /* text-high */
+  --color-indigo-deep: #43467f; /* style Figma "Fill/Action/TIttle" — pressed/deep brand */
 
   /* ----- Success (green) — anchor #50B83C at step 9 (Figma) ----- */
   --color-success-1: #fafcf8;
@@ -186,6 +191,10 @@
   --color-tint-pink: var(--color-danger-3); /* #FBE5DF — legacy name; same as Fill Light Red */
   --color-tint-red: var(--color-danger-3); /* #FBE5DF */
 
+  /* Landing text duo — usage thực tế trong kit (navy ×113, slate-blue ×616) */
+  --color-navy: #183b56;
+  --color-slateblue: #5a7184;
+
   /* ============================================================
    * Layer 2 — Semantic tokens (light mode)
    * Component code MUST consume these, never raw scales.
@@ -212,6 +221,8 @@
   --color-text-link-hover: var(--color-indigo-10);
   --color-text-price: var(--color-success-10); /* green price label */
   --color-text-price-sale: var(--color-danger-9); /* red sale price */
+  --color-text-landing-heading: var(--color-navy);
+  --color-text-landing-body: var(--color-slateblue);
 
   /* Borders */
   --color-border-subtle: var(--color-slate-5);
@@ -230,7 +241,7 @@
   /* Brand (interactive) */
   --color-brand-solid: var(--color-indigo-9);
   --color-brand-solid-hover: var(--color-indigo-10);
-  --color-brand-solid-active: var(--color-indigo-11);
+  --color-brand-solid-active: var(--color-indigo-deep); /* #43467F — giá trị thật từ kit */
   --color-brand-soft: var(--color-indigo-3);
   --color-brand-soft-hover: var(--color-indigo-4);
   --color-brand-text: var(--color-indigo-11);
@@ -286,10 +297,14 @@
   --ring: var(--color-border-focus);
 
   /* ============================================================
-   * Typography (Poppins; falls back to system stack)
+   * Typography — Rubik (heading) + Roboto (body), xác nhận từ .fig.
+   * ("Poppins" trước đây là đọc nhầm từ ảnh — không xuất hiện trong file Figma.)
    * ============================================================ */
+  --font-heading:
+    'Rubik', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial,
+    sans-serif;
   --font-sans:
-    'Poppins', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Roboto', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial,
     sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
@@ -322,6 +337,10 @@
   --text-caption: var(--text-h9);
   --text-price-l: var(--text-h4); /* 24 — product detail price */
 
+  /* Long-form (P-scale trong kit — thoáng hơn UI text, dùng cho blog/mô tả sản phẩm) */
+  --text-paragraph: 1rem; /* 16/28 — P3 */
+  --text-paragraph-lg: 1.125rem; /* 18/32 — P2 */
+
   /* Line-heights — match Figma pairings exactly */
   --leading-h1: 4.5rem; /* 72 */
   --leading-h1-alt: 4rem; /* 64 */
@@ -340,12 +359,14 @@
   /* Legacy line-height aliases */
   --leading-display-xl: var(--leading-h1);
   --leading-display-l: var(--leading-h2);
-  --leading-body-l: var(--leading-h7);
+  --leading-body-l: 1.375rem; /* 22 — kit "Regular Text/16px" = 16/22 (trước đây 20 là lh của heading) */
   --leading-body-m: var(--leading-h8);
-  --leading-body-s: 1.25rem;
+  --leading-body-s: 1.125rem; /* 18 — kit UI 12px = 12/18 */
   --leading-caption: var(--leading-h9);
+  --leading-paragraph: 1.75rem; /* 28 */
+  --leading-paragraph-lg: 2rem; /* 32 */
 
-  /* Font weights (Poppins available: 300, 400, 500, 600, 700) */
+  /* Font weights — kit dùng 400/500/700 (Rubik & Roboto); 600 không có trong kit, giữ cho legacy */
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
@@ -355,32 +376,34 @@
   --tracking-tight: -0.005em;
   --tracking-normal: 0;
   --tracking-wide: 0.0025em;
+  --tracking-heading: 0.2px; /* kit: heading +0.2px (0.16–0.18px ở size ≤14) */
 
   /* ============================================================
    * Radius (Figma cards / buttons / pills)
    * ============================================================ */
   --radius-xs: 0.25rem; /* 4  badge, tag */
-  --radius-sm: 0.375rem; /* 6  input, small button */
+  --radius-sm: 0.375rem; /* 6 — KHÔNG có trong kit (input/button kit dùng md=8); giữ cho legacy */
   --radius-md: 0.5rem; /* 8  primary button, card */
   --radius-lg: 0.75rem; /* 12 promo card, hero, payment-method card */
   --radius-xl: 1rem; /* 16 category card, brand tile */
-  --radius-2xl: 1.25rem; /* 20 modal */
+  --radius-2xl: 1.25rem; /* 20 — không thấy trong kit (max 16); giữ cho legacy */
   --radius-full: 9999px; /* avatar, language flag, success ring */
 
   /* ============================================================
-   * Shadow (4 elevations + CTA glow)
+   * Shadow — 5 elevations đúng theo Figma effect styles Shadow/1–5
    * ============================================================ */
-  --shadow-1: 0 1px 2px oklch(0.2 0.02 258 / 0.05);
-  --shadow-2: 0 4px 12px oklch(0.2 0.02 258 / 0.06);
-  --shadow-3: 0 12px 24px oklch(0.2 0.02 258 / 0.08);
-  --shadow-4: 0 24px 48px oklch(0.2 0.02 258 / 0.1);
-  --shadow-cta: 0 8px 16px oklch(0.555 0.215 280 / 0.25);
-  --shadow-focus-ring: 0 0 0 3px oklch(0.555 0.215 280 / 0.35);
+  --shadow-1: 0 12px 16px rgb(0 0 0 / 0.08); /* card hover, dropdown */
+  --shadow-2: 0 16px 20px rgb(0 0 0 / 0.06); /* card nổi, popover */
+  --shadow-3: 0 20px 24px rgb(0 0 0 / 0.04); /* drawer */
+  --shadow-4: 0 28px 32px rgb(0 0 0 / 0.03); /* modal */
+  --shadow-5: 0 32px 36px rgb(0 0 0 / 0.02); /* hero/marketing block */
+  --shadow-cta: 0 8px 16px color-mix(in srgb, var(--color-indigo-9) 25%, transparent); /* KHÔNG có trong kit — giữ cho CTA hiện hữu */
+  --shadow-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-indigo-9) 35%, transparent);
 
   /* ============================================================
    * Layout primitives
    * ============================================================ */
-  --container-max: 68.75rem; /* 1100 (Figma "Collumn" sheet: width-size 1100 px) */
+  --container-max: 69.375rem; /* 1110 — khớp track từ .fig: 3×350+2×30 = 4×255+3×30 = 2×540+30 = 1110 */
   --page-gutter-mobile: 1rem; /* 16 */
   --page-gutter-desktop: 1.5rem; /* 24 */
   --gap-column: 1.875rem; /* 30 — Figma column-gutter constant */
@@ -416,6 +439,8 @@
   --color-text-link-hover: var(--color-indigo-6);
   --color-text-price: var(--color-success-8);
   --color-text-price-sale: var(--color-danger-8);
+  --color-text-landing-heading: var(--color-slate-1);
+  --color-text-landing-body: var(--color-slate-6);
 
   --color-border-subtle: oklch(1 0 0 / 0.08);
   --color-border-default: oklch(1 0 0 / 0.12);
@@ -453,12 +478,13 @@
   --color-info-fg: var(--color-info-5);
   --color-info-border: oklch(0.395 0.14 260);
 
-  --shadow-1: 0 1px 2px oklch(0 0 0 / 0.4);
-  --shadow-2: 0 4px 12px oklch(0 0 0 / 0.45);
-  --shadow-3: 0 12px 24px oklch(0 0 0 / 0.55);
-  --shadow-4: 0 24px 48px oklch(0 0 0 / 0.6);
-  --shadow-cta: 0 8px 16px oklch(0.555 0.215 280 / 0.55);
-  --shadow-focus-ring: 0 0 0 3px oklch(0.555 0.215 280 / 0.55);
+  --shadow-1: 0 12px 16px rgb(0 0 0 / 0.25);
+  --shadow-2: 0 16px 20px rgb(0 0 0 / 0.22);
+  --shadow-3: 0 20px 24px rgb(0 0 0 / 0.2);
+  --shadow-4: 0 28px 32px rgb(0 0 0 / 0.18);
+  --shadow-5: 0 32px 36px rgb(0 0 0 / 0.16);
+  --shadow-cta: 0 8px 16px color-mix(in srgb, var(--color-indigo-9) 55%, transparent);
+  --shadow-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-indigo-7) 55%, transparent);
 }
 
 /* ============================================================
@@ -506,6 +532,7 @@
   --color-indigo-10: var(--color-indigo-10);
   --color-indigo-11: var(--color-indigo-11);
   --color-indigo-12: var(--color-indigo-12);
+  --color-indigo-deep: var(--color-indigo-deep);
 
   --color-success-1: var(--color-success-1);
   --color-success-2: var(--color-success-2);
@@ -568,6 +595,8 @@
   --color-tint-red: var(--color-tint-red);
   --color-tint-purple: var(--color-tint-purple);
   --color-tint-teal: var(--color-tint-teal);
+  --color-navy: var(--color-navy);
+  --color-slateblue: var(--color-slateblue);
 
   /* Purple / Teal / Orange accent palettes (Figma Fill Action set) */
   --color-purple-1: var(--color-purple-1);
@@ -628,6 +657,8 @@
   --color-text-link-hover: var(--color-text-link-hover);
   --color-text-price: var(--color-text-price);
   --color-text-price-sale: var(--color-text-price-sale);
+  --color-text-landing-heading: var(--color-text-landing-heading);
+  --color-text-landing-body: var(--color-text-landing-body);
 
   --color-border-subtle: var(--color-border-subtle);
   --color-border-default: var(--color-border-default);
@@ -693,6 +724,7 @@
 
   /* --- Typography --- */
   --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
   --font-mono: var(--font-mono);
 
   /* Canonical Figma type scale (paired size + line-height generates
@@ -739,6 +771,10 @@
   --text-display-xl--line-height: var(--leading-display-xl);
   --text-price-l: var(--text-price-l);
   --text-price-l--line-height: var(--leading-h4);
+  --text-paragraph: var(--text-paragraph);
+  --text-paragraph--line-height: var(--leading-paragraph);
+  --text-paragraph-lg: var(--text-paragraph-lg);
+  --text-paragraph-lg--line-height: var(--leading-paragraph-lg);
 
   /* Font-weight tokens → `font-bold` / `font-medium` etc. already work natively;
    * exposing as Tailwind values lets us write `font-elma-bold` if we ever need brand-specific weights. */
@@ -750,6 +786,7 @@
   --tracking-tight: var(--tracking-tight);
   --tracking-normal: var(--tracking-normal);
   --tracking-wide: var(--tracking-wide);
+  --tracking-heading: var(--tracking-heading);
 
   /* --- Radius --- */
   --radius-xs: var(--radius-xs);
@@ -765,6 +802,7 @@
   --shadow-2: var(--shadow-2);
   --shadow-3: var(--shadow-3);
   --shadow-4: var(--shadow-4);
+  --shadow-5: var(--shadow-5);
   --shadow-cta: var(--shadow-cta);
   --shadow-focus-ring: var(--shadow-focus-ring);
 
@@ -799,6 +837,16 @@
     background-color: var(--color-bg-page);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    letter-spacing: var(--tracking-heading);
   }
 
   ::selection {

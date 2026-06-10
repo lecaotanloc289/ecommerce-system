@@ -145,7 +145,7 @@ export default function DesignSystemPage() {
         {/* TYPOGRAPHY */}
         <Section
           title="Typography"
-          description="Poppins. 8 heading styles + body + caption. Each heading ships Bold / Medium / Regular weights and a smaller alt size (where defined in Figma)."
+          description="Rubik (heading) + Roboto (body). 8 heading styles + body + caption. Each heading ships Bold / Medium / Regular weights and a smaller alt size (where defined in Figma)."
         >
           {[
             { level: 'H1', size: 56, leading: 72, hasAlt: true, altSize: 48, altLeading: 64 },

@@ -43,5 +43,9 @@ test-results/
 *.pem
 *.key
 
+# claude code — local-only overrides (team config IS committed)
+.claude/settings.local.json
+CLAUDE.local.md
+
 # prisma local
 packages/db/prisma/dev.db*
