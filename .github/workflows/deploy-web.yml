@@ -4,7 +4,7 @@ on:
   push:
     branches: [dev, prod]
     paths:
-      - 'apps/web/**'
+      - 'apps/client/**'
       - 'packages/ui/**'
       - 'packages/core/**'
       - 'packages/i18n/**'
@@ -39,7 +39,7 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build (Next.js static export → apps/web/out)
+      - name: Build (Next.js static export → apps/client/out)
         run: pnpm --filter @apps/web build
 
       - name: Deploy to Cloudflare Pages
@@ -47,4 +47,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/web/out --project-name=elma-web --branch=${{ github.ref_name }}
+          command: pages deploy apps/client/out --project-name=elma-web --branch=${{ github.ref_name }}
