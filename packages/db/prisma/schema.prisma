@@ -304,14 +304,15 @@ model Product {
 }
 
 model ProductTranslation {
-  id          String   @id
-  productId   String   @map("product_id")
-  locale      Locale
-  name        String
-  slug        String
-  description String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String                   @id
+  productId    String                   @map("product_id")
+  locale       Locale
+  name         String
+  slug         String
+  description  String?
+  searchVector Unsupported("tsvector")? @map("search_vector")
+  createdAt    DateTime                 @default(now()) @map("created_at")
+  updatedAt    DateTime                 @updatedAt @map("updated_at")
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 

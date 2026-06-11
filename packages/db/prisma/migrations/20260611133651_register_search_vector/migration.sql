@@ -1,0 +1,8 @@
+-- search_vector column and GIN/trigram indexes already created in add_search_indexes migration.
+-- This is a no-op marker so Prisma tracks this step in _prisma_migrations.
+--
+-- KNOWN LIMITATION: Prisma's schema DSL cannot declare GIN indexes or GENERATED ALWAYS
+-- tsvector columns. Running `prisma migrate dev --create-only` will show apparent drift
+-- (wanting to DROP these indexes). This is expected and safe to ignore — `migrate deploy`
+-- (the production path) skips shadow-DB comparison entirely and will never auto-drop them.
+-- Never confirm a generated migration that drops search_vector or GIN indexes.
