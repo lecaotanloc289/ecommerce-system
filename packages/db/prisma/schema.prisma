@@ -393,3 +393,97 @@ model CartItem {
   @@index([variantId])
   @@map("cart_items")
 }
+
+model Order {
+  id                  String      @id
+  customerId          String      @map("customer_id")
+  status              OrderStatus @default(AWAITING_PAYMENT)
+  currency            Currency
+  itemsTotalAmount    Int         @map("items_total_amount")
+  shippingTotalAmount Int         @map("shipping_total_amount")
+  discountTotalAmount Int         @default(0) @map("discount_total_amount")
+  grandTotalAmount    Int         @map("grand_total_amount")
+  idempotencyKey      String      @unique @map("idempotency_key")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  customer          User               @relation(fields: [customerId], references: [id])
+  subOrders         SubOrder[]
+  payments          Payment[]
+  ledgerEntries     LedgerEntry[]
+  couponRedemptions CouponRedemption[]
+
+  @@index([customerId])
+  @@index([status])
+  @@map("orders")
+}
+
+model SubOrder {
+  id               String         @id
+  orderId          String         @map("order_id")
+  vendorId         String         @map("vendor_id")
+  status           SubOrderStatus @default(AWAITING_PAYMENT)
+  subtotalAmount   Int            @map("subtotal_amount")
+  shippingAmount   Int            @map("shipping_amount")
+  discountAmount   Int            @default(0) @map("discount_amount")
+  commissionAmount Int            @default(0) @map("commission_amount")
+  currency         Currency
+  shippingMethodId String?        @map("shipping_method_id")
+  shippingAddress  Json           @map("shipping_address")
+  completedAt      DateTime?      @map("completed_at")
+  payoutReleasedAt DateTime?      @map("payout_released_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  order             Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendor            Vendor             @relation(fields: [vendorId], references: [id])
+  shippingMethod    ShippingMethod?    @relation(fields: [shippingMethodId], references: [id])
+  items             OrderItem[]
+  ledgerEntries     LedgerEntry[]
+  couponRedemptions CouponRedemption[]
+  reviews           Review[]
+
+  @@index([orderId])
+  @@index([vendorId])
+  @@index([status])
+  @@map("sub_orders")
+}
+
+model OrderItem {
+  id                        String   @id
+  subOrderId                String   @map("sub_order_id")
+  variantId                 String   @map("variant_id")
+  productTitleSnapshot      String   @map("product_title_snapshot")
+  variantAttributesSnapshot Json     @map("variant_attributes_snapshot")
+  unitPriceAmount           Int      @map("unit_price_amount")
+  quantity                  Int
+  lineTotalAmount           Int      @map("line_total_amount")
+  currency                  Currency
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  subOrder SubOrder       @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  variant  ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@index([subOrderId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
+model ShippingMethod {
+  id            String   @id
+  vendorId      String   @map("vendor_id")
+  name          String
+  priceAmount   Int      @map("price_amount")
+  priceCurrency Currency @default(VND) @map("price_currency")
+  estDays       Int      @map("est_days")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  vendor    Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  subOrders SubOrder[]
+
+  @@index([vendorId])
+  @@map("shipping_methods")
+}
