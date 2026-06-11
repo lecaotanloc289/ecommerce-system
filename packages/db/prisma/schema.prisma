@@ -487,3 +487,46 @@ model ShippingMethod {
   @@index([vendorId])
   @@map("shipping_methods")
 }
+
+model Payment {
+  id            String          @id
+  orderId       String          @map("order_id")
+  provider      PaymentProvider
+  status        PaymentStatus   @default(PENDING)
+  amount        Int
+  currency      Currency
+  providerTxnId String?         @map("provider_txn_id")
+  rawPayload    Json?           @map("raw_payload")
+  attemptNo     Int             @default(1) @map("attempt_no")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, attemptNo])
+  @@index([orderId])
+  @@index([status])
+  @@map("payments")
+}
+
+model LedgerEntry {
+  id         String          @id
+  txnGroupId String          @map("txn_group_id")
+  account    LedgerAccount
+  entryType  LedgerEntryType @map("entry_type")
+  amount     Int
+  currency   Currency
+  orderId    String?         @map("order_id")
+  subOrderId String?         @map("sub_order_id")
+  vendorId   String?         @map("vendor_id")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  order    Order?    @relation(fields: [orderId], references: [id])
+  subOrder SubOrder? @relation(fields: [subOrderId], references: [id])
+  vendor   Vendor?   @relation(fields: [vendorId], references: [id])
+
+  @@index([txnGroupId])
+  @@index([account, vendorId])
+  @@index([orderId])
+  @@map("ledger_entries")
+}
