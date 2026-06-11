@@ -3,9 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000",
+    "dev": "NEXT_DIST_DIR=.next-dev next dev --port 3000",
     "build": "next build",
     "start": "next start --port 3000",
+    "clean": "rm -rf .next .next-dev out",
     "lint": "echo 'TODO: eslint'",
     "typecheck": "tsc --noEmit",
     "test": "echo 'TODO: vitest / playwright'"
