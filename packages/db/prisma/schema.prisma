@@ -220,7 +220,7 @@ model VendorApplication {
   bankAccountNumber  String            @map("bank_account_number")
   accountHolder      String            @map("account_holder")
   bankVerified       Boolean           @default(false) @map("bank_verified")
-  reviewedById       String?           @map("reviewed_by")
+  reviewedById       String?           @map("reviewed_by_id")
   reviewedAt         DateTime?         @map("reviewed_at")
   rejectReason       String?           @map("reject_reason")
   createdAt          DateTime          @default(now()) @map("created_at")
@@ -231,6 +231,7 @@ model VendorApplication {
 
   @@index([applicantId])
   @@index([status])
+  @@index([reviewedById])
   @@map("vendor_applications")
 }
 
@@ -407,7 +408,7 @@ model Order {
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
 
-  customer          User               @relation(fields: [customerId], references: [id])
+  customer          User               @relation(fields: [customerId], references: [id], onDelete: Restrict)
   subOrders         SubOrder[]
   payments          Payment[]
   ledgerEntries     LedgerEntry[]
@@ -446,6 +447,7 @@ model SubOrder {
   @@index([orderId])
   @@index([vendorId])
   @@index([status])
+  @@index([shippingMethodId])
   @@map("sub_orders")
 }
 
@@ -463,7 +465,7 @@ model OrderItem {
   updatedAt                 DateTime @updatedAt @map("updated_at")
 
   subOrder SubOrder       @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
-  variant  ProductVariant @relation(fields: [variantId], references: [id])
+  variant  ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
 
   @@index([subOrderId])
   @@index([variantId])
@@ -521,13 +523,15 @@ model LedgerEntry {
   vendorId   String?         @map("vendor_id")
   createdAt  DateTime        @default(now()) @map("created_at")
 
-  order    Order?    @relation(fields: [orderId], references: [id])
-  subOrder SubOrder? @relation(fields: [subOrderId], references: [id])
-  vendor   Vendor?   @relation(fields: [vendorId], references: [id])
+  order    Order?    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  subOrder SubOrder? @relation(fields: [subOrderId], references: [id], onDelete: Restrict)
+  vendor   Vendor?   @relation(fields: [vendorId], references: [id], onDelete: Restrict)
 
   @@index([txnGroupId])
   @@index([account, vendorId])
   @@index([orderId])
+  @@index([subOrderId])
+  @@index([vendorId])
   @@map("ledger_entries")
 }
 
@@ -566,13 +570,15 @@ model CouponRedemption {
   currency       Currency
   redeemedAt     DateTime @default(now()) @map("redeemed_at")
 
-  coupon   Coupon    @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  coupon   Coupon    @relation(fields: [couponId], references: [id], onDelete: Restrict)
   user     User      @relation(fields: [userId], references: [id])
   order    Order?    @relation(fields: [orderId], references: [id])
   subOrder SubOrder? @relation(fields: [subOrderId], references: [id])
 
   @@index([couponId])
   @@index([userId])
+  @@index([orderId])
+  @@index([subOrderId])
   @@map("coupon_redemptions")
 }
 
@@ -586,9 +592,9 @@ model Review {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  author   User     @relation(fields: [authorId], references: [id])
-  subOrder SubOrder @relation(fields: [subOrderId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  subOrder SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Restrict)
 
   @@unique([authorId, subOrderId, productId])
   @@index([productId])
@@ -614,7 +620,7 @@ model OutboxEvent {
   aggregateId   String    @map("aggregate_id")
   aggregateType String    @map("aggregate_type")
   eventType     String    @map("event_type")
-  payload       Json
+  payload       Json      @default("{}")
   attempts      Int       @default(0)
   lastError     String?   @map("last_error")
   createdAt     DateTime  @default(now()) @map("created_at")
