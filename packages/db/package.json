@@ -9,18 +9,28 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "generate": "echo 'TODO: prisma generate'",
-    "migrate": "echo 'TODO: prisma migrate dev'",
-    "migrate:deploy": "echo 'TODO: prisma migrate deploy'",
-    "reset": "echo 'TODO: prisma migrate reset'",
-    "seed": "echo 'TODO: tsx src/seed.ts'",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "reset": "prisma migrate reset",
+    "seed": "tsx src/seed.ts",
     "lint": "echo 'TODO: eslint'",
     "typecheck": "tsc --noEmit",
-    "test": "echo 'TODO: vitest'"
+    "test": "vitest run"
+  },
+  "prisma": {
+    "seed": "tsx src/seed.ts"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
-    "@types/node": "^22.10.0",
-    "typescript": "^5.7.0"
+    "@types/node": "^22.19.19",
+    "tsx": "^4.22.4",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "@prisma/client": "^6",
+    "prisma": "^6",
+    "ulid": "^3.0.2"
   }
 }
