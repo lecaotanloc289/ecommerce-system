@@ -281,14 +281,14 @@ model CategoryTranslation {
 }
 
 model Product {
-  id               String        @id
-  vendorId         String        @map("vendor_id")
-  status           ProductStatus @default(DRAFT)
-  basePriceAmount  Int           @map("base_price_amount")
-  basePriceCurrency Currency     @default(VND) @map("base_price_currency")
-  primaryImageUrl  String?       @map("primary_image_url")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
+  id                String        @id
+  vendorId          String        @map("vendor_id")
+  status            ProductStatus @default(DRAFT)
+  basePriceAmount   Int           @map("base_price_amount")
+  basePriceCurrency Currency      @default(VND) @map("base_price_currency")
+  primaryImageUrl   String?       @map("primary_image_url")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
 
   vendor       Vendor               @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   translations ProductTranslation[]
@@ -593,4 +593,33 @@ model Review {
   @@unique([authorId, subOrderId, productId])
   @@index([productId])
   @@map("reviews")
+}
+
+model PlatformSettings {
+  id                  String     @id
+  commissionBps       Int        @default(1000) @map("commission_bps")
+  holdPeriodDays      Int        @default(7) @map("hold_period_days")
+  refundWindowDays    Int        @default(7) @map("refund_window_days")
+  maxCouponStack      Int        @default(1) @map("max_coupon_stack")
+  supportedCurrencies Currency[] @map("supported_currencies")
+  defaultCurrency     Currency   @default(VND) @map("default_currency")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
+
+model OutboxEvent {
+  id            String    @id
+  aggregateId   String    @map("aggregate_id")
+  aggregateType String    @map("aggregate_type")
+  eventType     String    @map("event_type")
+  payload       Json
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  processedAt   DateTime? @map("processed_at")
+
+  @@index([processedAt])
+  @@map("outbox_events")
 }
