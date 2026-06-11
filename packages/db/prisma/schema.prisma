@@ -530,3 +530,48 @@ model LedgerEntry {
   @@index([orderId])
   @@map("ledger_entries")
 }
+
+model Coupon {
+  id             String       @id
+  scope          CouponScope
+  vendorId       String?      @map("vendor_id")
+  code           String
+  discountType   DiscountType @map("discount_type")
+  discountValue  Int          @map("discount_value")
+  minSpendAmount Int?         @map("min_spend_amount")
+  currency       Currency?
+  maxRedemptions Int?         @map("max_redemptions")
+  perUserLimit   Int?         @map("per_user_limit")
+  startsAt       DateTime     @map("starts_at")
+  endsAt         DateTime     @map("ends_at")
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  vendor      Vendor?            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  redemptions CouponRedemption[]
+
+  @@unique([vendorId, code])
+  @@index([scope])
+  @@map("coupons")
+}
+
+model CouponRedemption {
+  id             String   @id
+  couponId       String   @map("coupon_id")
+  userId         String   @map("user_id")
+  orderId        String?  @map("order_id")
+  subOrderId     String?  @map("sub_order_id")
+  discountAmount Int      @map("discount_amount")
+  currency       Currency
+  redeemedAt     DateTime @default(now()) @map("redeemed_at")
+
+  coupon   Coupon    @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id])
+  order    Order?    @relation(fields: [orderId], references: [id])
+  subOrder SubOrder? @relation(fields: [subOrderId], references: [id])
+
+  @@index([couponId])
+  @@index([userId])
+  @@map("coupon_redemptions")
+}
