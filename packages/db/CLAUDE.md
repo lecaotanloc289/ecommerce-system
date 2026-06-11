@@ -5,7 +5,7 @@ Prisma schema (DB source of truth), client singleton, ledger helpers, seed.
 ## State
 
 - Schema: 27 models, 15 enums (identity, vendor/KYC, catalog+i18n, cart, orders, payment+ledger, coupons, reviews, settings, outbox).
-- Migrations: `init`, `add_search_indexes` (pg_trgm + tsvector, hand-written SQL), `register_search_vector` (registers the generated `search_vector` column via `Unsupported("tsvector")`).
+- Migrations: `init`, `add_search_indexes` (pg_trgm + tsvector, hand-written SQL), `register_search_vector` (registers the generated `search_vector` column via `Unsupported("tsvector")`), `add_platform_coupon_code_unique` (partial unique index so platform coupons — `vendor_id IS NULL` — have globally-unique codes; Prisma's `@@unique` can't express a `WHERE` clause).
 - Client: singleton in `src/client.ts`, exported as `prisma` from `src/index.ts`. NEVER export the `PrismaClient` constructor outside this package.
 - IDs: ULID supplied at create-time (no DB default). Use `ulid()` from the `ulid` package.
 - Money: paired `*_amount Int` + `*_currency Currency`. Never float.
@@ -18,8 +18,10 @@ The full-text/trigram indexes (`product_translations_search_vector_idx`,
 migration. Prisma's `@@index` cannot express `USING GIN`, so `prisma migrate dev` /
 `--create-only` will DETECT DRIFT and try to generate a migration that DROPS these indexes.
 **Never apply/confirm a generated migration that drops `search_vector` or the GIN indexes.**
-Add new search SQL as a new hand-written migration instead. `prisma migrate deploy` (prod path,
-no shadow diff) is unaffected.
+The same applies to the partial unique index `coupons_platform_code_key` (it has a `WHERE`
+clause Prisma can't model) — `migrate dev` will also try to drop it; never confirm that.
+Add new search/partial-index SQL as a new hand-written migration instead. `prisma migrate deploy`
+(prod path, no shadow diff) is unaffected.
 
 ## Commands
 
