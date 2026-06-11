@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from './health/health.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -14,6 +15,7 @@ const isDev = process.env.NODE_ENV !== 'production';
         }),
       },
     }),
+    PrismaModule,
     HealthModule,
   ],
 })
