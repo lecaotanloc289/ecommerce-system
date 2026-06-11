@@ -182,3 +182,67 @@ model Address {
   @@index([userId])
   @@map("addresses")
 }
+
+model Vendor {
+  id                    String       @id
+  ownerId               String       @map("owner_id")
+  slug                  String       @unique
+  displayName           String       @map("display_name")
+  status                VendorStatus @default(PENDING)
+  logoUrl               String?      @map("logo_url")
+  description           String?
+  commissionBpsOverride Int?         @map("commission_bps_override")
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+
+  owner           User             @relation("VendorOwner", fields: [ownerId], references: [id])
+  staffRoles      UserRole[]
+  wallet          Wallet?
+  products        Product[]
+  shippingMethods ShippingMethod[]
+  subOrders       SubOrder[]
+  coupons         Coupon[]
+  ledgerEntries   LedgerEntry[]
+
+  @@index([ownerId])
+  @@map("vendors")
+}
+
+model VendorApplication {
+  id                 String            @id
+  applicantId        String            @map("applicant_id")
+  status             ApplicationStatus @default(PENDING)
+  businessLicenseUrl String            @map("business_license_url")
+  taxId              String            @map("tax_id")
+  nationalIdNumber   String            @map("national_id_number")
+  nationalIdUrl      String            @map("national_id_url")
+  bankName           String            @map("bank_name")
+  bankAccountNumber  String            @map("bank_account_number")
+  accountHolder      String            @map("account_holder")
+  bankVerified       Boolean           @default(false) @map("bank_verified")
+  reviewedById       String?           @map("reviewed_by")
+  reviewedAt         DateTime?         @map("reviewed_at")
+  rejectReason       String?           @map("reject_reason")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  applicant  User  @relation("Applicant", fields: [applicantId], references: [id])
+  reviewedBy User? @relation("Reviewer", fields: [reviewedById], references: [id])
+
+  @@index([applicantId])
+  @@index([status])
+  @@map("vendor_applications")
+}
+
+model Wallet {
+  id              String   @id
+  vendorId        String   @unique @map("vendor_id")
+  balanceAmount   Int      @default(0) @map("balance_amount")
+  balanceCurrency Currency @default(VND) @map("balance_currency")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
