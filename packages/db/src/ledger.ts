@@ -7,6 +7,9 @@ import type { LedgerEntry } from '@prisma/client';
 export function assertZeroSum(entries: Pick<LedgerEntry, 'txnGroupId' | 'amount'>[]): void {
   const sums = new Map<string, number>();
   for (const e of entries) {
+    if (!Number.isInteger(e.amount)) {
+      throw new Error(`Ledger amount must be an integer (smallest currency unit), got ${e.amount}`);
+    }
     sums.set(e.txnGroupId, (sums.get(e.txnGroupId) ?? 0) + e.amount);
   }
   for (const [group, total] of sums) {
