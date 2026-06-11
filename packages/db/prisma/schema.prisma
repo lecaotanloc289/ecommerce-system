@@ -7,3 +7,178 @@ datasource db {
   url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
+
+enum Role {
+  GUEST
+  CUSTOMER
+  VENDOR_OWNER
+  VENDOR_STAFF
+  PLATFORM_STAFF
+  PLATFORM_ADMIN
+}
+
+enum OAuthProvider {
+  GOOGLE
+  FACEBOOK
+}
+
+enum Locale {
+  VI
+  EN
+}
+
+enum Currency {
+  VND
+  USD
+}
+
+enum VendorStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum OrderStatus {
+  AWAITING_PAYMENT
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  CANCELLED
+  COMPLETED
+}
+
+enum SubOrderStatus {
+  AWAITING_PAYMENT
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentProvider {
+  VNPAY
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  REFUNDED
+}
+
+enum LedgerAccount {
+  CUSTOMER
+  PLATFORM_ESCROW
+  VENDOR_WALLET
+  PLATFORM_REVENUE
+}
+
+enum LedgerEntryType {
+  ESCROW_IN
+  PAYOUT_OUT
+  COMMISSION
+  REFUND
+  ADJUSTMENT
+}
+
+enum CouponScope {
+  PLATFORM
+  VENDOR
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model User {
+  id            String   @id
+  email         String?  @unique
+  name          String
+  avatarUrl     String?  @map("avatar_url")
+  primaryLocale Locale   @default(VI) @map("primary_locale")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  oauthIdentities    OAuthIdentity[]
+  roles              UserRole[]
+  addresses          Address[]
+  cart               Cart?
+  orders             Order[]
+  ownedVendors       Vendor[]            @relation("VendorOwner")
+  vendorApplications VendorApplication[] @relation("Applicant")
+  reviewedApps       VendorApplication[] @relation("Reviewer")
+  reviews            Review[]
+  couponRedemptions  CouponRedemption[]
+
+  @@map("users")
+}
+
+model OAuthIdentity {
+  id             String        @id
+  userId         String        @map("user_id")
+  provider       OAuthProvider
+  providerUserId String        @map("provider_user_id")
+  emailVerified  Boolean       @default(false) @map("email_verified")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("oauth_identities")
+}
+
+model UserRole {
+  id        String   @id
+  userId    String   @map("user_id")
+  role      Role
+  vendorId  String?  @map("vendor_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor Vendor? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role, vendorId])
+  @@index([vendorId])
+  @@map("user_roles")
+}
+
+model Address {
+  id            String   @id
+  userId        String   @map("user_id")
+  recipientName String   @map("recipient_name")
+  phone         String
+  line1         String
+  line2         String?
+  ward          String
+  district      String
+  city          String
+  country       String   @default("VN")
+  isDefault     Boolean  @default(false) @map("is_default")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("addresses")
+}
