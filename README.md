@@ -50,7 +50,7 @@ Full spec: [`docs/design-spec.md`](./docs/design-spec.md).
 
 ```bash
 # 1. Tooling
-node --version        # 20.x (see .nvmrc)
+node --version        # 24.x (see .nvmrc)
 corepack enable       # provides pnpm
 
 # 2. Install

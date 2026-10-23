@@ -50,7 +50,7 @@ Steps:
 
 | Path                                  | Purpose                                                                                     |
 | ------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `server/Dockerfile`                   | Multi-stage Node 20 build → small runtime image                                             |
+| `server/Dockerfile`                   | Multi-stage Node 24 build → small runtime image                                             |
 | `server/.dockerignore`                | Exclude `node_modules`, `.next`, `dist`, tests, env files                                   |
 | `server/fly.toml`                     | Fly app config (region `sin`, internal port `3001`, health check `/v1/health`)              |
 | `apps/web/wrangler.toml` _(optional)_ | If using `@cloudflare/next-on-pages` CLI; alternative is configuring via CF Pages dashboard |
@@ -130,7 +130,7 @@ primary_region = "sin"
 `server/Dockerfile` outline:
 
 ```dockerfile
-FROM node:20-slim AS base
+FROM node:24.22.1-slim AS base
 RUN corepack enable
 WORKDIR /app
 
