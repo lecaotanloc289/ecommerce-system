@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ---------- base ----------
-FROM node:20-slim AS base
+FROM node:24.22.1-slim AS base
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 WORKDIR /repo
 
@@ -22,7 +22,7 @@ COPY server server
 RUN pnpm --filter @server/api build
 
 # ---------- runtime ----------
-FROM node:20-slim AS runtime
+FROM node:24.22.1-slim AS runtime
 ENV NODE_ENV=production
 ENV PORT=3001
 WORKDIR /app
