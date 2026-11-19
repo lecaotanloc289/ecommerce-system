@@ -20,7 +20,8 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 - `apps/client` — storefront UI for all `SCREENS.md` screens, on mock data (see `apps/client/CLAUDE.md`).
 - `server` — NestJS bootstrap + `PrismaService` + DB readiness probe; no domain modules yet.
 - `apps/admin` — scaffold only.
-- `packages/{core,i18n,sdk,payments}` — placeholders (empty `src/index.ts`, scripts print `echo 'TODO: ...'`).
+- `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
+- `packages/{i18n,sdk,payments}` — placeholders (empty `src/index.ts`, scripts print `echo 'TODO: ...'`).
 
 Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
 

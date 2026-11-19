@@ -12,18 +12,45 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./schemas/*": "./src/schemas/*.ts",
-    "./money": "./src/money/index.ts",
-    "./errors": "./src/errors/index.ts"
+    "./schemas/*": {
+      "types": "./dist/schemas/*.d.ts",
+      "import": "./dist/schemas/*.js",
+      "require": "./dist/schemas/*.cjs"
+    },
+    "./money": {
+      "types": "./dist/money/index.d.ts",
+      "import": "./dist/money/index.js",
+      "require": "./dist/money/index.cjs"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "import": "./dist/errors/index.js",
+      "require": "./dist/errors/index.cjs"
+    },
+    "./enums": {
+      "types": "./dist/enums/index.d.ts",
+      "import": "./dist/enums/index.js",
+      "require": "./dist/enums/index.cjs"
+    },
+    "./ids": {
+      "types": "./dist/ids/index.d.ts",
+      "import": "./dist/ids/index.js",
+      "require": "./dist/ids/index.cjs"
+    }
   },
   "scripts": {
     "build": "tsup",
     "lint": "echo 'TODO: eslint'",
-    "typecheck": "tsc --noEmit",
-    "test": "echo 'TODO: vitest'"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
-    "typescript": "^5.7.0"
+    "@types/node": "^22.19.19",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "zod": "^4.1.0"
   }
 }
