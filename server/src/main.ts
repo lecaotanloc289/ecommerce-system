@@ -6,6 +6,8 @@ import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import { AppModule } from './app.module';
+import { ENV } from './config/config.module';
+import type { Env } from './config/env';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -16,19 +18,16 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix('v1');
+  const env = app.get<Env>(ENV);
 
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cookie);
   await app.register(cors, {
-    origin: [
-      process.env.WEB_ORIGIN ?? 'http://localhost:3000',
-      process.env.ADMIN_ORIGIN ?? 'http://localhost:5173',
-    ],
+    origin: [env.WEB_ORIGIN, env.ADMIN_ORIGIN],
     credentials: true,
   });
 
-  const port = Number(process.env.PORT ?? 3001);
-  await app.listen({ port, host: '0.0.0.0' });
+  await app.listen({ port: env.PORT, host: '0.0.0.0' });
 }
 
 void bootstrap();

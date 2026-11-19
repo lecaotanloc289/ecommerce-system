@@ -3,6 +3,7 @@ node_modules/
 
 # build output
 .next/
+.next-dev/
 .turbo/
 .vite/
 dist/
@@ -43,5 +44,24 @@ test-results/
 *.pem
 *.key
 
+# claude code — local-only overrides (team config IS committed)
+.claude/settings.local.json
+.claude/worktrees/
+CLAUDE.local.md
+
 # prisma local
 packages/db/prisma/dev.db*
+
+# ad-hoc next build dirs (dev uses .next-dev, export uses .next → out/)
+.next-*/
+
+# design source exports — local reference only (22MB PNGs + raw extract);
+# SCREENS.md / DESIGN.md / COMPONENTS.md are the committed specs
+React UI Design - Figma/
+screens.json
+
+# other AI agent tooling — local-only; .claude/ is the team config
+.agents/
+.codex/
+AGENTS.md
+skills-lock.json

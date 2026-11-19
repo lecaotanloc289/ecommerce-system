@@ -2,7 +2,8 @@
   "extends": "@repo/config/tsconfig/node.json",
   "compilerOptions": {
     "composite": true,
-    "noEmit": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./.tsc-node-out",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "allowSyntheticDefaultImports": true

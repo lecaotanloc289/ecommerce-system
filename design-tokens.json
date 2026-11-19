@@ -1,0 +1,948 @@
+{
+  "fills": [
+    {
+      "name": "White Fill/Lighter",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#F9FAFB",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Dark Fill/Ink",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#212B36",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill/White/White",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#FFFFFF",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Empty and Notif/Empty",
+      "paints": []
+    },
+    {
+      "name": "Fill/Action/TIttle",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#43467F",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "White Fill/Enough Light",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#F4F6F8",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Outline/Action/Indigo",
+      "paints": []
+    },
+    {
+      "name": "Fill/Action/Indigo",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#5C6AC4",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Shadow/2",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#000000",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Dark Fill/Lightest",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#919EAB",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill/Action/Green",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#50B83C",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill/Empty",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#FFFFFF",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill/Action/Yellow",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#EEC200",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Dark Fill/Light",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#454F5B",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Shadow/5",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#000000",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Outline White Fill/Enough Light",
+      "paints": []
+    },
+    {
+      "name": "Shadow/4",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#000000",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill Light/Action/Red",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#DE3618",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill/Action/Red",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#DE3618",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Outline/Action/Red",
+      "paints": []
+    },
+    {
+      "name": "Dark Fill/Lighter",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#637381",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill/Action/Orange",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#F49342",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Outline Dark Fill/Lightest",
+      "paints": []
+    },
+    {
+      "name": "Dark Fill/Tittle",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#161D25",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill Light/White/White",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#FFFFFF",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill/Action/Teal",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#47C1BF",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill Light/Action/Orange",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#F49342",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Outline White Fill/Dark Light",
+      "paints": []
+    },
+    {
+      "name": "Fill Light/Action/Teal",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#47C1BF",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Outline/Action/Green",
+      "paints": []
+    },
+    {
+      "name": "Fill Light/Action/Yellow",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#EEC200",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Outline/Action/Orange",
+      "paints": []
+    },
+    {
+      "name": "Shadow/3",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#000000",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill Light/Action/Green",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#50B83C",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill/Action/Blue",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#006FBB",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "White Fill/Dark Light",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#C4CDD5",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill Light/Action/Blue",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#006FBB",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Fill Light/Action/Indigo",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#5C6AC4",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Dark Fill Light/Tittle",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#161D25",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Outline White Fill/Lighter",
+      "paints": []
+    },
+    {
+      "name": "Outline/White/White",
+      "paints": []
+    },
+    {
+      "name": "Fill/Action/Purple",
+      "paints": [
+        {
+          "t": "solid",
+          "hex": "#9C6ADE",
+          "a": 1
+        }
+      ]
+    },
+    {
+      "name": "Outline/Black/White/White",
+      "paints": []
+    },
+    {
+      "name": "Outline/Action/Blue",
+      "paints": []
+    }
+  ],
+  "texts": [
+    {
+      "name": "H1/56px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 56,
+      "lh": "72 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H1/56px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 56,
+      "lh": "72 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H1/56px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 56,
+      "lh": "72 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H1/48px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 48,
+      "lh": "64 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H1/48px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 48,
+      "lh": "64 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H1/48px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 48,
+      "lh": "64 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H2/40px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 40,
+      "lh": "56 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H2/40px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 40,
+      "lh": "56 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H2/40px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 40,
+      "lh": "56 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H2/36px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 36,
+      "lh": "52 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H2/36px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 36,
+      "lh": "52 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H2/36px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 36,
+      "lh": "52 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H3/32px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 32,
+      "lh": "48 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H3/32px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 32,
+      "lh": "48 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H3/32px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 32,
+      "lh": "48 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H3/28px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 28,
+      "lh": "44 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H3/28px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 28,
+      "lh": "44 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H3/28px/Regular",
+      "family": "Inter",
+      "style": "Medium",
+      "size": 28,
+      "lh": "44 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H4/24px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 24,
+      "lh": "32 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H4/24px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 24,
+      "lh": "32 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H4/24px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 24,
+      "lh": "32 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H4/22px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 22,
+      "lh": "30 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H4/22px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 22,
+      "lh": "30 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H4/22px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 22,
+      "lh": "30 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H5/20px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 20,
+      "lh": "24 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H5/20px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 20,
+      "lh": "24 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H5/20px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 20,
+      "lh": "24 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H6/18px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 18,
+      "lh": "20 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H6/18px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 18,
+      "lh": "20 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H6/18px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 18,
+      "lh": "20 PIXELS",
+      "ls": "0.2 PIXELS"
+    },
+    {
+      "name": "H7/16px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 16,
+      "lh": "20 PIXELS",
+      "ls": "0.18 PIXELS"
+    },
+    {
+      "name": "H7/16px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 16,
+      "lh": "20 PIXELS",
+      "ls": "0.18 PIXELS"
+    },
+    {
+      "name": "H7/16px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 16,
+      "lh": "20 PIXELS",
+      "ls": "0.18 PIXELS"
+    },
+    {
+      "name": "H8/14px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 14,
+      "lh": "20 PIXELS",
+      "ls": "0.16 PIXELS"
+    },
+    {
+      "name": "H8/14px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 14,
+      "lh": "20 PIXELS",
+      "ls": "0.16 PIXELS"
+    },
+    {
+      "name": "H8/14px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 14,
+      "lh": "20 PIXELS",
+      "ls": "0.16 PIXELS"
+    },
+    {
+      "name": "H9/12px/Bold",
+      "family": "Rubik",
+      "style": "Bold",
+      "size": 12,
+      "lh": "16 PIXELS",
+      "ls": "0.16 PIXELS"
+    },
+    {
+      "name": "H9/12px/Medium",
+      "family": "Rubik",
+      "style": "Medium",
+      "size": 12,
+      "lh": "16 PIXELS",
+      "ls": "0.16 PIXELS"
+    },
+    {
+      "name": "H9/12px/Regular",
+      "family": "Rubik",
+      "style": "Regular",
+      "size": 12,
+      "lh": "16 PIXELS",
+      "ls": "0.16 PIXELS"
+    },
+    {
+      "name": "P1/20px/Regular",
+      "family": "Roboto",
+      "style": "Regular",
+      "size": 20,
+      "lh": "36 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "P2/18px/Regular",
+      "family": "Roboto",
+      "style": "Regular",
+      "size": 18,
+      "lh": "32 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "P3/16px/Regular",
+      "family": "Roboto",
+      "style": "Regular",
+      "size": 16,
+      "lh": "28 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "P4/14px/Regular",
+      "family": "Roboto",
+      "style": "Regular",
+      "size": 14,
+      "lh": "24 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "P5/12px/Regular",
+      "family": "Roboto",
+      "style": "Regular",
+      "size": 12,
+      "lh": "20 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/20px/Regular",
+      "family": "Roboto",
+      "style": "Regular",
+      "size": 20,
+      "lh": "28 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/18px/Regular",
+      "family": "Roboto",
+      "style": "Regular",
+      "size": 18,
+      "lh": "24 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/16px/Regular",
+      "family": "Roboto",
+      "style": "Regular",
+      "size": 16,
+      "lh": "22 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/14px/Regular",
+      "family": "Roboto",
+      "style": "Regular",
+      "size": 14,
+      "lh": "20 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/12px/Regular",
+      "family": "Roboto",
+      "style": "Regular",
+      "size": 12,
+      "lh": "18 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/20px/Medium",
+      "family": "Roboto",
+      "style": "Medium",
+      "size": 20,
+      "lh": "28 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/20px/Bold",
+      "family": "Roboto",
+      "style": "Bold",
+      "size": 20,
+      "lh": "28 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/18px/Medium",
+      "family": "Roboto",
+      "style": "Medium",
+      "size": 18,
+      "lh": "24 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/16px/Medium",
+      "family": "Roboto",
+      "style": "Medium",
+      "size": 16,
+      "lh": "22 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/14px/Medium",
+      "family": "Roboto",
+      "style": "Medium",
+      "size": 14,
+      "lh": "20 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/12px/Medium",
+      "family": "Roboto",
+      "style": "Medium",
+      "size": 12,
+      "lh": "18 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/18px/Bold",
+      "family": "Roboto",
+      "style": "Bold",
+      "size": 18,
+      "lh": "24 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/16px/Bold",
+      "family": "Roboto",
+      "style": "Bold",
+      "size": 16,
+      "lh": "22 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/14px/Bold",
+      "family": "Roboto",
+      "style": "Bold",
+      "size": 14,
+      "lh": "20 PIXELS",
+      "ls": "0 PIXELS"
+    },
+    {
+      "name": "Regular Text/12px/Bold",
+      "family": "Roboto",
+      "style": "Bold",
+      "size": 12,
+      "lh": "18 PIXELS",
+      "ls": "0 PIXELS"
+    }
+  ],
+  "effects": [
+    {
+      "name": "Shadow/1",
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "color": "#000000",
+          "a": 0.08,
+          "x": 0,
+          "y": 12,
+          "blur": 16,
+          "spread": 0
+        }
+      ]
+    },
+    {
+      "name": "Shadow/2",
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "color": "#000000",
+          "a": 0.06,
+          "x": 0,
+          "y": 16,
+          "blur": 20,
+          "spread": 0
+        }
+      ]
+    },
+    {
+      "name": "Shadow/3",
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "color": "#000000",
+          "a": 0.04,
+          "x": 0,
+          "y": 20,
+          "blur": 24,
+          "spread": 0
+        }
+      ]
+    },
+    {
+      "name": "Shadow/4",
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "color": "#000000",
+          "a": 0.03,
+          "x": 0,
+          "y": 28,
+          "blur": 32,
+          "spread": 0
+        }
+      ]
+    },
+    {
+      "name": "Shadow/5",
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "color": "#000000",
+          "a": 0.02,
+          "x": 0,
+          "y": 32,
+          "blur": 36,
+          "spread": 0
+        }
+      ]
+    }
+  ],
+  "radiusTop": [
+    ["8", 159],
+    ["1", 57],
+    ["2000", 24],
+    ["12", 13],
+    ["16", 12],
+    ["2", 8],
+    ["4", 6],
+    ["2.799999952316284", 2],
+    ["1.399999976158142", 2],
+    ["0.6666666865348816", 2],
+    ["1.2599999904632568", 1],
+    ["1.1552734375", 1]
+  ],
+  "spacingTop": [
+    ["6", 8],
+    ["5", 4]
+  ],
+  "fontsTop": [
+    ["Roboto / Regular", 832],
+    ["Roboto / Medium", 810],
+    ["Rubik / Medium", 670],
+    ["Roboto / Bold", 196],
+    ["Rubik / Regular", 121],
+    ["Rubik / Bold", 104],
+    ["Inter / Bold", 46],
+    ["Open Sans / SemiBold", 20],
+    ["Inter / Medium", 6],
+    ["HK Grotesk / Bold", 5]
+  ]
+}
