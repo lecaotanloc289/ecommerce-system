@@ -542,6 +542,8 @@ model Coupon {
   vendorId       String?      @map("vendor_id")
   code           String
   discountType   DiscountType @map("discount_type")
+  /// FIXED → amount in minor units of `currency`. PERCENT → basis points (1000 = 10%, max 10000),
+  /// same unit as `commission_bps`; apply with `@repo/core` `applyBps`.
   discountValue  BigInt       @map("discount_value")
   minSpendAmount BigInt?      @map("min_spend_amount")
   currency       Currency?

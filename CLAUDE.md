@@ -208,26 +208,26 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
 
 ## 7. Naming conventions
 
-| Scope               | Convention                                                      | Example                                                 |
-| ------------------- | --------------------------------------------------------------- | ------------------------------------------------------- |
-| File                | kebab-case                                                      | `product-card.tsx`, `vendor-payout.service.ts`          |
-| React component     | PascalCase export                                               | `export function ProductCard()`                         |
-| React hook          | `useXxx`                                                        | `useCartQuery`, `useCurrentVendor`                      |
-| Zod schema          | `XxxSchema`                                                     | `CheckoutSchema`, `VendorApplicationSchema`             |
-| Type from schema    | `Xxx = z.infer<typeof XxxSchema>`                               | `type Checkout = z.infer<typeof CheckoutSchema>`        |
-| NestJS class        | `XxxController` / `XxxService` / `XxxModule` / `XxxRepository`  | `OrdersService`                                         |
-| Prisma model        | PascalCase, **singular**                                        | `Product`, `Order`, `OrderItem`, `SubOrder`             |
-| DB table (physical) | snake_case, **plural** via `@@map`                              | `@@map("order_items")`                                  |
-| Enum (Prisma + TS)  | SCREAMING_SNAKE_CASE values                                     | `OrderStatus.AWAITING_PAYMENT`                          |
-| API route           | kebab-case, plural noun, versioned                              | `POST /v1/vendor-applications`                          |
-| Env var             | SCREAMING_SNAKE_CASE                                            | `DATABASE_URL`, `GOOGLE_OAUTH_CLIENT_ID`                |
-| i18n key            | dot.namespaced kebab                                            | `checkout.error.out-of-stock`                           |
-| Branch              | `feat/`, `fix/`, `chore/`, `refactor/`                          | `feat/vendor-payout-cron`                               |
-| Commit              | Conventional Commits                                            | `feat(orders): split multi-vendor cart into sub-orders` |
-| Workspace package   | `@apps/<n>` (UI), `@server/<n>` (backend), `@repo/<n>` (shared) | `@apps/web`, `@server/api`, `@repo/core`                |
-| ID                  | ULID (text), brand type per entity                              | `type OrderId = Brand<string, 'OrderId'>`               |
-| Boolean             | `is/has/can/should` prefix                                      | `isActive`, `hasShipped`, `canRefund`                   |
-| Money field         | suffix `_amount` + `_currency`                                  | `subtotal_amount`, `subtotal_currency`                  |
+| Scope               | Convention                                                             | Example                                                 |
+| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
+| File                | kebab-case                                                             | `product-card.tsx`, `vendor-payout.service.ts`          |
+| React component     | PascalCase export                                                      | `export function ProductCard()`                         |
+| React hook          | `useXxx`                                                               | `useCartQuery`, `useCurrentVendor`                      |
+| Zod schema          | `XxxSchema`                                                            | `CheckoutSchema`, `VendorApplicationSchema`             |
+| Type from schema    | `Xxx = z.infer<typeof XxxSchema>`                                      | `type Checkout = z.infer<typeof CheckoutSchema>`        |
+| NestJS class        | `XxxController` / `XxxService` / `XxxModule` / `XxxRepository`         | `OrdersService`                                         |
+| Prisma model        | PascalCase, **singular**                                               | `Product`, `Order`, `OrderItem`, `SubOrder`             |
+| DB table (physical) | snake_case, **plural** via `@@map`                                     | `@@map("order_items")`                                  |
+| Enum (Prisma + TS)  | SCREAMING_SNAKE_CASE values                                            | `OrderStatus.AWAITING_PAYMENT`                          |
+| API route           | kebab-case, plural noun, versioned                                     | `POST /v1/vendor-applications`                          |
+| Env var             | SCREAMING_SNAKE_CASE                                                   | `DATABASE_URL`, `GOOGLE_OAUTH_CLIENT_ID`                |
+| i18n key            | dot-namespaced; namespaces + error codes kebab, UI leaf keys camelCase | `checkout.error.out-of-stock`, `common.addToCart`       |
+| Branch              | `feat/`, `fix/`, `chore/`, `refactor/`                                 | `feat/vendor-payout-cron`                               |
+| Commit              | Conventional Commits                                                   | `feat(orders): split multi-vendor cart into sub-orders` |
+| Workspace package   | `@apps/<n>` (UI), `@server/<n>` (backend), `@repo/<n>` (shared)        | `@apps/web`, `@server/api`, `@repo/core`                |
+| ID                  | ULID (text), brand type per entity                                     | `type OrderId = Brand<string, 'OrderId'>`               |
+| Boolean             | `is/has/can/should` prefix                                             | `isActive`, `hasShipped`, `canRefund`                   |
+| Money field         | suffix `_amount` + `_currency`                                         | `subtotal_amount`, `subtotal_currency`                  |
 
 ---
 
