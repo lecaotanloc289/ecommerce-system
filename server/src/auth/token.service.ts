@@ -144,7 +144,15 @@ export class TokenService {
       this.env.JWT_REFRESH_TTL,
     );
     if (result === 'rotated') return { refreshToken: next, access };
-    if (result === 'grace') return { refreshToken: null, access };
+    if (result === 'grace') {
+      // Normally a benign concurrent refresh; logged so a replay of a stolen just-rotated token
+      // inside the window (which does not revoke the family) still leaves a trace.
+      this.logger.log(
+        { userId: claims.sub, familyId: claims.fid },
+        'refresh token grace-window retry',
+      );
+      return { refreshToken: null, access };
+    }
     if (result === 'reused') {
       this.logger.warn(
         { userId: claims.sub, familyId: claims.fid },

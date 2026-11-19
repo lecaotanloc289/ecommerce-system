@@ -16,19 +16,26 @@ export const REFRESH_REUSE_GRACE_MS = 10_000;
  *   2 → presented == prev, rotated ≤ grace ago: benign concurrent retry — nothing changes
  *  -1 → anything else in a live family (replay of an old token): delete the family (reuse detection)
  *   0 → family unknown (expired, logged out, or already revoked)
- * ARGV: presented, next, ttlSeconds, nowMs, graceMs
+ * ARGV: presented, next, ttlSeconds, nowMs ('' → Redis server clock), graceMs
+ * Time comes from Redis `TIME` so API instances with skewed clocks agree on the window;
+ * `nowMs` exists only as a test seam.
  */
 const ROTATE_LUA = `
+local now = tonumber(ARGV[4])
+if not now then
+  local t = redis.call('TIME')
+  now = tonumber(t[1]) * 1000 + math.floor(tonumber(t[2]) / 1000)
+end
 local current = redis.call('HGET', KEYS[1], 'current')
 if not current then return 0 end
 if current == ARGV[1] then
-  redis.call('HSET', KEYS[1], 'current', ARGV[2], 'prev', ARGV[1], 'rotatedAt', ARGV[4])
+  redis.call('HSET', KEYS[1], 'current', ARGV[2], 'prev', ARGV[1], 'rotatedAt', now)
   redis.call('EXPIRE', KEYS[1], ARGV[3])
   return 1
 end
 local prev = redis.call('HGET', KEYS[1], 'prev')
 local rotatedAt = tonumber(redis.call('HGET', KEYS[1], 'rotatedAt'))
-if prev == ARGV[1] and rotatedAt and (tonumber(ARGV[4]) - rotatedAt) <= tonumber(ARGV[5]) then
+if prev == ARGV[1] and rotatedAt and (now - rotatedAt) <= tonumber(ARGV[5]) then
   return 2
 end
 redis.call('DEL', KEYS[1])
@@ -63,7 +70,8 @@ export class RefreshTokenStore {
     presentedHash: string,
     nextHash: string,
     ttlSeconds: number,
-    nowMs: number = Date.now(),
+    /** Test seam only — production uses the Redis server clock. */
+    nowMs?: number,
   ): Promise<RotateResult> {
     const result = await this.redis.eval(
       ROTATE_LUA,
@@ -72,7 +80,7 @@ export class RefreshTokenStore {
       presentedHash,
       nextHash,
       String(ttlSeconds),
-      String(nowMs),
+      nowMs === undefined ? '' : String(nowMs),
       String(REFRESH_REUSE_GRACE_MS),
     );
     if (result === 1) return 'rotated';
