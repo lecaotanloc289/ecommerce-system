@@ -1,15 +1,13 @@
+import type { Money, PaymentProvider, SubOrderStatus } from '@repo/core';
+
 /**
- * Interim storefront types. Local until `@repo/core` Zod schemas land — at which
- * point these are replaced by `z.infer` exports (root CLAUDE.md Golden Rule #1).
+ * Storefront types. Shapes that @repo/core defines are re-exported or derived from it
+ * (Golden Rule #1); the rest are interim mock/display shapes that differ from core's API
+ * read shapes (e.g. Product here has title/rating/badge, core's has name/basePrice/sku
+ * variants) and are replaced when the storefront switches to @repo/sdk responses.
  * Money is integer minor units + ISO currency (Golden Rule #2): VND = đồng, USD = cent.
  */
-
-export type Currency = 'VND' | 'USD';
-
-export interface Money {
-  amount: number; // integer, minor unit
-  currency: Currency;
-}
+export type { Currency, Money } from '@repo/core';
 
 export interface Brand {
   id: string;
@@ -142,15 +140,14 @@ export interface Voucher {
   minSubtotal: Money;
 }
 
-export type PaymentProviderId = 'vnpay' | 'stripe' | 'wallet';
+/** Payment picker options: core providers (lowercased) plus the UI-only `wallet` option. */
+export type PaymentProviderId = Lowercase<PaymentProvider> | 'wallet';
 
-export type OrderStatus =
-  | 'AWAITING_PAYMENT'
-  | 'PAID'
-  | 'PROCESSING'
-  | 'SHIPPED'
-  | 'DELIVERED'
-  | 'COMPLETED';
+/** Tracking timeline statuses — the forward path of core's SubOrderStatus (no refund/cancel). */
+export type OrderStatus = Extract<
+  SubOrderStatus,
+  'AWAITING_PAYMENT' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'COMPLETED'
+>;
 
 export interface TrackingStep {
   status: OrderStatus;

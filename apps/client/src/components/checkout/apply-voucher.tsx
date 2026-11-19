@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { Button, Card, Input } from '@repo/ui';
 import { useLocale } from '../../i18n/locale-provider';
 import { formatMoney } from '@repo/i18n';
+import { meetsMinSpend } from '../../lib/cart';
 import { cn } from '../../lib/utils';
 import { findVoucher } from '../../mocks/cart';
 import { useCheckout, useOrderTotals } from '../../store/checkout-store';
@@ -36,7 +37,7 @@ export function ApplyVoucher({ className }: { className?: string }) {
       setError({ kind: 'invalid' });
       return;
     }
-    if (totals.subtotal.amount < match.minSubtotal.amount) {
+    if (!meetsMinSpend(match, totals.subtotal)) {
       setError({ kind: 'minSpend', voucher: match });
       return;
     }
@@ -45,7 +46,7 @@ export function ApplyVoucher({ className }: { className?: string }) {
     setVoucherCode(match.code);
   };
 
-  const belowMinimum = voucher ? totals.subtotal.amount < voucher.minSubtotal.amount : false;
+  const belowMinimum = voucher ? !meetsMinSpend(voucher, totals.subtotal) : false;
   const errorText = error
     ? error.kind === 'invalid'
       ? t('cart.voucherInvalid')
