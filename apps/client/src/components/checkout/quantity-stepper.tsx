@@ -2,22 +2,30 @@
 
 import * as React from 'react';
 import { Minus, Plus } from 'lucide-react';
+import { useT } from '../../i18n/locale-provider';
+import { MAX_LINE_QTY } from '../../lib/cart';
 import { cn } from '../../lib/utils';
 
-/** −/value/+ quantity control. Controlled or uncontrolled. */
+/** −/value/+ quantity control. Controlled or uncontrolled. `labelledBy` ties it to a visible caption. */
 export function QuantityStepper({
   value,
   onChange,
   min = 1,
-  max = 99,
+  max = MAX_LINE_QTY,
+  labelledBy,
+  label,
   className,
 }: {
   value?: number;
   onChange?: (next: number) => void;
   min?: number;
   max?: number;
+  labelledBy?: string;
+  /** Accessible name when there is no visible caption to point `labelledBy` at. */
+  label?: string;
   className?: string;
 }) {
+  const t = useT();
   const [internal, setInternal] = React.useState(value ?? min);
   const current = value ?? internal;
 
@@ -32,6 +40,9 @@ export function QuantityStepper({
 
   return (
     <div
+      role="group"
+      aria-labelledby={labelledBy}
+      aria-label={label}
       className={cn(
         'inline-flex items-center rounded-md border border-border-default bg-bg-elevated',
         className,
@@ -39,7 +50,7 @@ export function QuantityStepper({
     >
       <button
         type="button"
-        aria-label="Decrease quantity"
+        aria-label={t('common.decreaseQty')}
         className={btn}
         onClick={() => set(current - 1)}
         disabled={current <= min}
@@ -54,7 +65,7 @@ export function QuantityStepper({
       </span>
       <button
         type="button"
-        aria-label="Increase quantity"
+        aria-label={t('common.increaseQty')}
         className={btn}
         onClick={() => set(current + 1)}
         disabled={current >= max}

@@ -13,12 +13,14 @@ import { QuantityStepper } from '../../components/checkout/quantity-stepper';
 import { ProductCard } from '../../components/product/product-card';
 import { useLocale } from '../../i18n/locale-provider';
 import { formatMoney } from '../../lib/format';
-import { cartGroups } from '../../mocks/cart';
 import { products } from '../../mocks/products';
+import { useCart } from '../../store/cart-store';
+import { useOrderTotals } from '../../store/checkout-store';
 
 export default function CartPage() {
   const { locale, t } = useLocale();
-  const lines = cartGroups.flatMap((g) => g.lines);
+  const { setQty, remove } = useCart();
+  const { hydrated, lines, totals } = useOrderTotals();
   const suggestions = products.slice(6, 12);
 
   return (
@@ -30,7 +32,7 @@ export default function CartPage() {
             {t('cart.title')}
           </h1>
           <p className="mt-1 text-body-m text-text-muted">
-            {lines.length} {t('summary.items')}
+            {totals.itemCount} {t('summary.items')}
           </p>
         </div>
         <ButtonLink href="/search" variant="outline" size="md">
@@ -44,12 +46,17 @@ export default function CartPage() {
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_350px]">
         {/* Left: flat line items */}
         <Card className="divide-y divide-border-faint p-0">
+          {hydrated && lines.length === 0 ? (
+            <p className="p-8 text-center text-body-m text-text-muted">{t('cart.empty')}</p>
+          ) : null}
           {lines.map((line) => (
-            <div key={`${line.product.id}-${line.variantLabel ?? ''}`} className="flex gap-4 p-4">
+            <div key={line.key} className="flex gap-4 p-4">
               <Link href={`/product/${line.product.slug}`} className="shrink-0">
                 <img
                   src={line.product.image}
                   alt={line.product.title}
+                  width={80}
+                  height={80}
                   className="size-20 rounded-md object-cover"
                   loading="lazy"
                 />
@@ -60,16 +67,25 @@ export default function CartPage() {
                     {line.product.title}
                   </h3>
                 </Link>
-                <span className="text-body-s text-text-muted">{line.product.vendorName}</span>
+                <span className="text-body-s text-text-muted">
+                  {line.variantLabel ? `${line.variantLabel} · ` : ''}
+                  {line.product.vendorName}
+                </span>
                 <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-2">
                   <span className="text-body-l font-bold text-text-price">
-                    {formatMoney(line.product.price, locale)}
+                    {formatMoney(line.unitPrice, locale)}
                   </span>
                   <div className="flex items-center gap-3">
-                    <QuantityStepper value={line.qty} />
+                    <QuantityStepper
+                      value={line.qty}
+                      max={line.maxQty}
+                      label={t('cart.qtyFor', { title: line.product.title })}
+                      onChange={(qty) => setQty(line.key, qty)}
+                    />
                     <button
                       type="button"
-                      aria-label={t('cart.remove')}
+                      onClick={() => remove(line.key)}
+                      aria-label={t('cart.removeItem', { title: line.product.title })}
                       className="inline-flex size-9 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-danger-bg hover:text-danger-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                     >
                       <Trash2 className="size-4" />
@@ -85,13 +101,14 @@ export default function CartPage() {
         <div className="flex flex-col gap-5 lg:sticky lg:top-24 lg:self-start">
           <ApplyVoucher />
           <OrderSummary
-            groups={cartGroups}
-            shipping={{ amount: 60_000, currency: 'VND' }}
-            discount={{ amount: 150_000, currency: 'VND' }}
+            lines={lines}
+            totals={totals}
             footer={
-              <ButtonLink href="/checkout/info" size="lg" fullWidth>
-                {t('cart.checkout')}
-              </ButtonLink>
+              lines.length > 0 ? (
+                <ButtonLink href="/checkout/info" size="lg" fullWidth>
+                  {t('cart.checkout')}
+                </ButtonLink>
+              ) : null
             }
           />
         </div>

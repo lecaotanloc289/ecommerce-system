@@ -20,7 +20,11 @@ export const products: Product[] = [
     soldCount: 340,
     inStock: true,
     categorySlug: 'cameras',
-    colors: ['#161d25', '#637381', '#c4cdd5'],
+    colors: [
+      { name: 'black', hex: '#161d25' },
+      { name: 'gray', hex: '#637381' },
+      { name: 'silver', hex: '#c4cdd5' },
+    ],
     variants: [
       {
         id: 'p1-body',
@@ -36,6 +40,24 @@ export const products: Product[] = [
       },
     ],
     badge: 'bestseller',
+    description:
+      'A full-frame mirrorless camera system that expands upon the latest imaging technologies.',
+    specs: [
+      { label: 'Brand', value: 'Sony A7 Mark II' },
+      { label: 'Resolution', value: '42MP Full-frame R-CMOS Sensor' },
+      { label: 'Video', value: 'UHD 4K30p Video with HLG & S-Log2 Gamma' },
+      { label: 'Screen', value: '3.0in 144 Tru-Finder OLED EVF' },
+    ],
+    boxItems: [
+      'Body (Body Only)',
+      'BC-QZ1 Battery Charger',
+      'Lithium-Ion Battery',
+      'Cable (Protector)',
+      'Shoulder Strap',
+      'Accessory Shoe Cap',
+      'Eyepiece Cup',
+      'USB Type-C Cable',
+    ],
   },
   {
     id: 'p2',
@@ -52,7 +74,11 @@ export const products: Product[] = [
     soldCount: 1200,
     inStock: true,
     categorySlug: 'wearables',
-    colors: ['#161d25', '#de3618', '#5c6ac4'],
+    colors: [
+      { name: 'black', hex: '#161d25' },
+      { name: 'red', hex: '#de3618' },
+      { name: 'indigo', hex: '#5c6ac4' },
+    ],
     badge: 'bestseller',
   },
   {
@@ -71,7 +97,10 @@ export const products: Product[] = [
     soldCount: 430,
     inStock: true,
     categorySlug: 'audio',
-    colors: ['#161d25', '#f49342'],
+    colors: [
+      { name: 'black', hex: '#161d25' },
+      { name: 'orange', hex: '#f49342' },
+    ],
     badge: 'sale',
   },
   {
@@ -139,7 +168,11 @@ export const products: Product[] = [
     soldCount: 320,
     inStock: true,
     categorySlug: 'fashion',
-    colors: ['#eec200', '#de3618', '#161d25'],
+    colors: [
+      { name: 'yellow', hex: '#eec200' },
+      { name: 'red', hex: '#de3618' },
+      { name: 'black', hex: '#161d25' },
+    ],
     badge: 'sale',
   },
   {
@@ -237,6 +270,8 @@ export const reviews: Review[] = [
     date: '2026-05-02',
     title: 'Excellent build quality',
     body: 'Image quality is stunning and the autofocus is lightning fast. Worth every đồng.',
+    helpfulCount: 1200,
+    notHelpfulCount: 84,
   },
   {
     id: 'r2',
@@ -245,6 +280,8 @@ export const reviews: Review[] = [
     date: '2026-04-21',
     title: 'Great but heavy',
     body: 'Love the low-light performance. A touch heavy for travel but the results justify it.',
+    helpfulCount: 342,
+    notHelpfulCount: 12,
   },
   {
     id: 'r3',
@@ -253,5 +290,7 @@ export const reviews: Review[] = [
     date: '2026-04-10',
     title: 'Best purchase this year',
     body: 'Fast shipping from the vendor and the product matched the description perfectly.',
+    helpfulCount: 97,
+    notHelpfulCount: 3,
   },
 ];

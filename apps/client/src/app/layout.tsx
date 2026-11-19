@@ -1,12 +1,16 @@
 import type { ReactNode } from 'react';
 import './globals.css';
 import { LocaleProvider } from '../i18n/locale-provider';
+import { en } from '../i18n/messages/en';
+import { CartProvider } from '../store/cart-store';
+import { CheckoutProvider } from '../store/checkout-store';
 import { Navbar } from '../components/layout/navbar';
 import { Footer } from '../components/layout/footer';
 
+// Static export can't vary <head> per runtime locale, so metadata uses the en catalogue.
 export const metadata = {
-  title: 'Elma — Multi-vendor marketplace',
-  description: 'Premium gadgets and lifestyle products, delivered worldwide.',
+  title: en.meta.title,
+  description: en.meta.description,
 };
 
 /** Set theme + lang before first paint to avoid a flash (DESIGN.md §2). */
@@ -29,9 +33,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className="flex min-h-screen flex-col bg-bg-page text-text-body antialiased">
         <LocaleProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <CartProvider>
+            <CheckoutProvider>
+              <Navbar />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </CheckoutProvider>
+          </CartProvider>
         </LocaleProvider>
       </body>
     </html>

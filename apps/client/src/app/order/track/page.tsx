@@ -1,24 +1,52 @@
 'use client';
 
-import Link from 'next/link';
 import { Check, CreditCard, Package, PackageCheck, Phone, Star, Truck } from 'lucide-react';
 import { Button, Card } from '@repo/ui';
 import { Container } from '../../../components/layout/container';
 import { ButtonLink } from '../../../components/common/button-link';
 import { OrderSummary } from '../../../components/checkout/order-summary';
-import { useLocale } from '../../../i18n/locale-provider';
+import { useLocale, type MessageKey } from '../../../i18n/locale-provider';
+import { computeTotals } from '../../../lib/cart';
 import { formatDate } from '../../../lib/format';
-import { trackingSteps, cartGroups } from '../../../mocks/cart';
+import {
+  findShippingMethod,
+  findVoucher,
+  placedOrder,
+  resolveCartLine,
+  trackingSteps,
+} from '../../../mocks/cart';
+import { platformSettings } from '../../../mocks/platform-settings';
 import { cn } from '../../../lib/utils';
+import type { OrderStatus } from '../../../types';
 
-const stages = [
-  { icon: CreditCard, label: 'Order paid' },
-  { icon: Package, label: 'Packed' },
-  { icon: Truck, label: 'On shipping' },
-  { icon: PackageCheck, label: 'Delivered' },
-  { icon: Star, label: 'Completed' },
+const stages: { icon: typeof Truck; label: MessageKey }[] = [
+  { icon: CreditCard, label: 'track.stage.paid' },
+  { icon: Package, label: 'track.stage.packed' },
+  { icon: Truck, label: 'track.stage.shipping' },
+  { icon: PackageCheck, label: 'track.stage.delivered' },
+  { icon: Star, label: 'track.stage.completed' },
 ];
-const currentStage = 2; // On shipping
+
+const EVENT_LABEL: Record<OrderStatus, MessageKey> = {
+  AWAITING_PAYMENT: 'track.event.awaitingPayment',
+  PAID: 'track.event.paid',
+  PROCESSING: 'track.event.processing',
+  SHIPPED: 'track.event.shipped',
+  DELIVERED: 'track.event.delivered',
+  COMPLETED: 'track.event.completed',
+};
+
+// The active stage is the latest completed tracking event.
+const currentStage = trackingSteps.filter((s) => s.done).length - 1;
+
+// A placed order is a snapshot — totals come from the order, not the live cart.
+const orderLines = placedOrder.lines.map(resolveCartLine);
+const orderTotals = computeTotals(
+  orderLines,
+  findShippingMethod(placedOrder.shippingMethodId),
+  findVoucher(placedOrder.voucherCode),
+  platformSettings.defaultCurrency,
+);
 
 export default function TrackOrderPage() {
   const { locale, t } = useLocale();
@@ -44,7 +72,7 @@ export default function TrackOrderPage() {
                   {t('track.yourPackage')}
                 </p>
                 <p className="text-body-s text-text-muted">
-                  {t('track.trackingNumber')}: FDX-991-2261-VN
+                  {t('track.trackingNumber')}: {placedOrder.trackingNumber}
                 </p>
               </div>
             </div>
@@ -56,6 +84,7 @@ export default function TrackOrderPage() {
                 return (
                   <li
                     key={stage.label}
+                    aria-current={active ? 'step' : undefined}
                     className="flex flex-1 flex-col items-center last:flex-none"
                   >
                     <div className="flex w-full items-center">
@@ -84,7 +113,7 @@ export default function TrackOrderPage() {
                         active ? 'font-medium text-text-primary' : 'text-text-muted',
                       )}
                     >
-                      {stage.label}
+                      {t(stage.label)}
                     </span>
                   </li>
                 );
@@ -94,7 +123,9 @@ export default function TrackOrderPage() {
 
           {/* Track details */}
           <Card className="flex flex-col gap-4 p-5 lg:p-6">
-            <h2 className="font-heading text-h6 font-semibold text-text-primary">Track details</h2>
+            <h2 className="font-heading text-h6 font-semibold text-text-primary">
+              {t('track.details')}
+            </h2>
             <ul className="flex flex-col divide-y divide-border-faint">
               {trackingSteps.map((step) => (
                 <li key={step.status} className="flex items-center justify-between gap-3 py-3">
@@ -102,7 +133,7 @@ export default function TrackOrderPage() {
                     <Check
                       className={cn('size-4', step.done ? 'text-success-fg' : 'text-text-disabled')}
                     />
-                    {step.label}
+                    {t(EVENT_LABEL[step.status])}
                   </span>
                   <span className="shrink-0 text-body-s text-text-muted">
                     {formatDate(step.at, locale)}
@@ -114,29 +145,16 @@ export default function TrackOrderPage() {
 
           {/* Help */}
           <Card className="flex flex-wrap items-center justify-between gap-3 bg-bg-muted/40 p-5">
-            <p className="text-body-m text-text-body">Have trouble with your package?</p>
+            <p className="text-body-m text-text-body">{t('track.help')}</p>
             <Button variant="dark" iconLeft={<Phone className="size-4" />}>
-              Call Us
+              {t('track.callUs')}
             </Button>
           </Card>
         </div>
 
         {/* Inside package + summary */}
         <div className="flex flex-col gap-5 lg:sticky lg:top-24 lg:self-start">
-          <OrderSummary
-            groups={cartGroups}
-            showItems
-            shipping={{ amount: 60_000, currency: 'VND' }}
-            discount={{ amount: 150_000, currency: 'VND' }}
-            footer={
-              <Link
-                href="/"
-                className="text-center text-body-s font-medium text-brand-text hover:underline"
-              >
-                {t('common.viewAll')}
-              </Link>
-            }
-          />
+          <OrderSummary lines={orderLines} totals={orderTotals} showItems />
         </div>
       </div>
     </Container>

@@ -7,6 +7,7 @@ import { StarRating } from './star-rating';
 import { useLocale } from '../../i18n/locale-provider';
 import { formatMoney } from '../../lib/format';
 import { cn } from '../../lib/utils';
+import { useCart } from '../../store/cart-store';
 import type { Product } from '../../types';
 
 type Variant = 'grid' | 'list' | 'compact';
@@ -27,6 +28,7 @@ export function ProductCard({
   className?: string;
 }) {
   const { locale, t } = useLocale();
+  const { add } = useCart();
   const href = `/product/${product.slug}`;
 
   if (variant === 'list') {
@@ -79,13 +81,13 @@ export function ProductCard({
           />
         </Link>
         {product.badge ? (
-          <Badge variant={badgeTone[product.badge]} className="absolute left-3 top-3 capitalize">
-            {product.badge}
+          <Badge variant={badgeTone[product.badge]} className="absolute left-3 top-3">
+            {t(`product.badge.${product.badge}`)}
           </Badge>
         ) : null}
         <button
           type="button"
-          aria-label="Add to wishlist"
+          aria-label={t('product.wishlist')}
           className="absolute right-3 top-3 inline-flex size-8 items-center justify-center rounded-full bg-bg-elevated/90 text-text-muted shadow-1 transition-colors hover:text-danger-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
         >
           <Heart className="size-4" />
@@ -112,6 +114,7 @@ export function ProductCard({
             fullWidth
             iconLeft={<ShoppingCart className="size-4" />}
             disabled={!product.inStock}
+            onClick={() => add(product.id, product.variants?.[0]?.id, 1)}
             className="mt-1"
           >
             {product.inStock ? t('common.addToCart') : t('product.outOfStock')}

@@ -1,4 +1,7 @@
+'use client';
+
 import { Star } from 'lucide-react';
+import { useT } from '../../i18n/locale-provider';
 import { cn } from '../../lib/utils';
 
 /** Read-only star rating. Half-stars approximated by rounding to nearest 0.5. */
@@ -13,12 +16,17 @@ export function StarRating({
   size?: 'sm' | 'md';
   className?: string;
 }) {
+  const t = useT();
   const px = size === 'sm' ? 'size-3.5' : 'size-5';
   const rounded = Math.round(value * 2) / 2;
 
   return (
     <div className={cn('flex items-center gap-1', className)}>
-      <div className="flex items-center" role="img" aria-label={`${value} out of 5 stars`}>
+      <div
+        className="flex items-center"
+        role="img"
+        aria-label={t('product.ratingLabel', { value })}
+      >
         {Array.from({ length: 5 }).map((_, i) => {
           const filled = i + 1 <= rounded;
           const half = !filled && i + 0.5 === rounded;

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Facebook,
   Heart,
@@ -17,21 +18,41 @@ import { Container } from './container';
 import { LocaleToggle } from './locale-toggle';
 import { ThemeToggle } from './theme-toggle';
 import { useT, type MessageKey } from '../../i18n/locale-provider';
-import { cartGroups } from '../../mocks/cart';
 import { categories } from '../../mocks/categories';
+import { useCart } from '../../store/cart-store';
 import { cn } from '../../lib/utils';
 
-const menuLinks: { key: MessageKey; href: string }[] = [
+/** Items without `href` have no page yet — rendered as disabled text, not dead links. */
+const menuLinks: { key: MessageKey; href?: string }[] = [
   { key: 'nav.home', href: '/' },
   { key: 'nav.categories', href: '/categories' },
   { key: 'nav.shop', href: '/search' },
-  { key: 'nav.blog', href: '/' },
-  { key: 'nav.pages', href: '/' },
+  { key: 'nav.blog' },
+  { key: 'nav.pages' },
+];
+
+const socials: { icon: typeof Facebook; label: MessageKey }[] = [
+  { icon: Facebook, label: 'social.facebook' },
+  { icon: Twitter, label: 'social.twitter' },
+  { icon: Instagram, label: 'social.instagram' },
 ];
 
 export function Navbar() {
   const t = useT();
-  const cartCount = cartGroups.reduce((n, g) => n + g.lines.reduce((m, l) => m + l.qty, 0), 0);
+  const router = useRouter();
+  const { itemCount: cartCount } = useCart();
+
+  const onSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const q = form.get('q');
+    const category = form.get('category');
+    const params = new URLSearchParams();
+    if (typeof q === 'string' && q.trim()) params.set('q', q.trim());
+    if (typeof category === 'string' && category) params.set('category', category);
+    const qs = params.toString();
+    router.push(qs ? `/search?${qs}` : '/search');
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-bg-page">
@@ -39,19 +60,18 @@ export function Navbar() {
       <div className="hidden border-b border-border-faint bg-bg-muted/40 md:block">
         <Container className="flex h-9 items-center justify-between text-body-s text-text-muted">
           <div className="flex items-center gap-3">
-            {[Facebook, Twitter, Instagram].map((Icon, i) => (
-              <a key={i} href="#" aria-label="social" className="hover:text-brand-text">
-                <Icon className="size-3.5" />
-              </a>
+            {/* No profile URLs yet — icons only, not links. */}
+            {socials.map(({ icon: Icon, label }) => (
+              <span key={label} role="img" aria-label={t(label)}>
+                <Icon className="size-3.5" aria-hidden />
+              </span>
             ))}
           </div>
           <div className="flex items-center gap-4">
             <Link href="/order/track" className="hover:text-brand-text">
               {t('track.title')}
             </Link>
-            <Link href="/" className="hover:text-brand-text">
-              {t('footer.faq')}
-            </Link>
+            <span>{t('footer.faq')}</span>
             <span className="h-3.5 w-px bg-border-default" />
             <LocaleToggle />
             <ThemeToggle className="size-7" />
@@ -65,7 +85,7 @@ export function Navbar() {
           {/* Hamburger menu (all sizes — kit hides nav behind it) */}
           <Drawer>
             <DrawerTrigger
-              aria-label="Open menu"
+              aria-label={t('nav.openMenu')}
               className="inline-flex size-9 items-center justify-center rounded-md text-text-body hover:bg-bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
             >
               <Menu className="size-5" />
@@ -75,15 +95,24 @@ export function Navbar() {
                 <DrawerTitle className="font-heading text-h5">{t('common.brand')}</DrawerTitle>
               </DrawerHeader>
               <nav className="flex flex-col gap-1">
-                {menuLinks.map((item) => (
-                  <Link
-                    key={item.key}
-                    href={item.href}
-                    className="rounded-md px-3 py-2.5 text-body-m font-medium text-text-body hover:bg-bg-muted"
-                  >
-                    {t(item.key)}
-                  </Link>
-                ))}
+                {menuLinks.map((item) =>
+                  item.href ? (
+                    <Link
+                      key={item.key}
+                      href={item.href}
+                      className="rounded-md px-3 py-2.5 text-body-m font-medium text-text-body hover:bg-bg-muted"
+                    >
+                      {t(item.key)}
+                    </Link>
+                  ) : (
+                    <span
+                      key={item.key}
+                      className="px-3 py-2.5 text-body-m font-medium text-text-disabled"
+                    >
+                      {t(item.key)}
+                    </span>
+                  ),
+                )}
               </nav>
               <div className="mt-4 border-t border-border-faint pt-4">
                 <p className="mb-2 px-3 text-body-s font-semibold text-text-muted">
@@ -113,22 +142,28 @@ export function Navbar() {
 
           {/* Search with category dropdown */}
           <form
-            onSubmit={(e) => e.preventDefault()}
+            role="search"
+            onSubmit={onSearch}
             className="hidden h-11 flex-1 items-center overflow-hidden rounded-md border border-border-default bg-bg-elevated focus-within:border-brand-solid md:flex"
           >
             <input
               type="search"
+              name="q"
               aria-label={t('common.search')}
               placeholder={t('nav.search')}
               className="h-full min-w-0 flex-1 bg-transparent px-4 text-body-m text-text-body outline-none placeholder:text-text-placeholder"
             />
             <select
+              name="category"
               aria-label={t('nav.categories')}
+              defaultValue=""
               className="hidden h-full min-w-40 border-l border-border-subtle bg-transparent px-4 text-body-s text-text-muted outline-none lg:block"
             >
-              <option>{t('common.viewAll')}</option>
+              <option value="">{t('common.viewAll')}</option>
               {categories.map((c) => (
-                <option key={c.id}>{c.name}</option>
+                <option key={c.id} value={c.slug}>
+                  {c.name}
+                </option>
               ))}
             </select>
             <button
@@ -155,9 +190,15 @@ export function Navbar() {
                 ) : null}
               </span>
             </IconLink>
-            <IconLink href="/" label="Wishlist" className="hidden sm:inline-flex">
+            {/* Wishlist page doesn't exist yet — disabled instead of a dead link. */}
+            <button
+              type="button"
+              disabled
+              aria-label={t('nav.wishlist')}
+              className="hidden size-9 items-center justify-center rounded-md text-text-disabled sm:inline-flex"
+            >
               <Heart className="size-5" />
-            </IconLink>
+            </button>
             <Link
               href="/sign-in"
               className="ml-1 flex items-center gap-2 rounded-md px-2 py-1.5 text-text-body transition-colors hover:bg-bg-muted"

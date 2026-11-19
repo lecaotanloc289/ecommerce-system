@@ -23,7 +23,9 @@ Interim deviations from the stack above (to be replaced, not copied):
 - **i18n:** static export (`output: 'export'`) rules out next-intl route prefixes/middleware, so locale lives in a client `LocaleProvider` (`src/i18n/locale-provider.tsx`, typed `t()` over `src/i18n/messages/{vi,en}.ts`, choice persisted in `localStorage`). Moves to `@repo/i18n` once that package has content.
 - **Types:** `src/types.ts` holds local shapes until `@repo/core` Zod schemas land (then `z.infer` exports replace them).
 - **Auth pages** render only the Google + Facebook OAuth buttons (Golden Rule #5); handlers are no-ops.
-- Shipping fee / discount on cart + checkout pages are mock literals, not derived from the chosen method or voucher yet.
+- **Guest cart:** `CartProvider` (`src/store/cart-store.tsx`) keeps lines `{ productId, variantId, qty }` in `localStorage` (`guest-cart`), seeded from `src/mocks/cart.ts` on first visit and resolved against the mock catalogue (unit price = variant price when a variant is chosen). Stored data is sanitized (unknown ids dropped, duplicates merged, qty clamped to stock) and synced across tabs via the `storage` event. State is empty until hydrated (`hydrated` flag) so the prerendered HTML never shows stale lines. Qty change / remove / add-to-cart work client-side; "Place order" clears the cart and checkout choices. Merge into the server `Cart` comes with the API.
+- **Checkout store:** `CheckoutProvider` (`src/store/checkout-store.tsx`) holds `{ shippingMethodId, voucherCode }` in `sessionStorage` (`checkout`). `useOrderTotals()` feeds every summary through `computeTotals()` (`src/lib/cart.ts`): shipping fee from the selected mock `ShippingMethod`, discount from the mock voucher table (`vouchers` in `src/mocks/cart.ts`, FIXED only). Both providers are mounted in the root layout so the cart page and all checkout steps share them.
+- **Platform tunables** (free-shipping threshold, default currency) come from `src/mocks/platform-settings.ts` until `PlatformSettings` is served by the API.
 
 ## Run
 

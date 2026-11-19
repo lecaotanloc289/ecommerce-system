@@ -5,10 +5,11 @@ import { CheckCircle2, ChevronLeft, Truck } from 'lucide-react';
 import { Container } from '../../../components/layout/container';
 import { ButtonLink } from '../../../components/common/button-link';
 import { useT } from '../../../i18n/locale-provider';
+import { placedOrder } from '../../../mocks/cart';
 
 export default function OrderSuccessPage() {
   const t = useT();
-  const orderNumber = 'ELM-2026-08431';
+  const orderNumber = placedOrder.number;
 
   return (
     <Container as="section" className="flex flex-col items-center py-16 text-center lg:py-24">

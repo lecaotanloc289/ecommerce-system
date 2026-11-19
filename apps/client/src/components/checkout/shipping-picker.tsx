@@ -5,14 +5,18 @@ import { RadioGroup, RadioGroupItem } from '@repo/ui';
 import { useLocale } from '../../i18n/locale-provider';
 import { formatMoney } from '../../lib/format';
 import { shippingMethods } from '../../mocks/cart';
+import { useCheckout } from '../../store/checkout-store';
 import { cn } from '../../lib/utils';
 
-/** Choose-shipping list (Parts/Checkout/730px/Choose shipping). */
+/** Choose-shipping list (Parts/Checkout/730px/Choose shipping). Selection lives in the checkout store. */
 export function ShippingPicker({ className }: { className?: string }) {
   const { locale, t } = useLocale();
+  const { shippingMethodId, setShippingMethodId } = useCheckout();
   return (
     <RadioGroup
-      defaultValue={shippingMethods[0]?.id ?? 's-fedex'}
+      value={shippingMethodId}
+      onValueChange={setShippingMethodId}
+      aria-label={t('checkout.chooseShipping')}
       className={cn('flex flex-col gap-3', className)}
     >
       {shippingMethods.map((m) => (
@@ -27,7 +31,9 @@ export function ShippingPicker({ className }: { className?: string }) {
           </span>
           <div className="flex-1">
             <p className="text-body-m font-medium text-text-primary">{m.name}</p>
-            <p className="text-body-s text-text-muted">{m.etaDays}</p>
+            <p className="text-body-s text-text-muted">
+              {t('checkout.eta', { min: m.eta.minDays, max: m.eta.maxDays })}
+            </p>
           </div>
           {m.fee.amount > 0 ? (
             <span className="text-body-m font-semibold text-text-price">

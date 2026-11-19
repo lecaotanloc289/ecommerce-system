@@ -8,10 +8,11 @@ import { StepTabs } from '../../../components/checkout/step-tabs';
 import { AddressForm } from '../../../components/checkout/address-form';
 import { OrderSummary } from '../../../components/checkout/order-summary';
 import { useT } from '../../../i18n/locale-provider';
-import { cartGroups } from '../../../mocks/cart';
+import { useOrderTotals } from '../../../store/checkout-store';
 
 export default function CheckoutInfoPage() {
   const t = useT();
+  const { lines, totals } = useOrderTotals();
   return (
     <Container as="section" className="py-8 lg:py-12">
       <h1 className="font-heading text-h4 font-bold tracking-tight text-text-primary lg:text-h3">
@@ -33,23 +34,26 @@ export default function CheckoutInfoPage() {
               <ArrowLeft className="size-4" />
               {t('common.back')}
             </ButtonLink>
-            <ButtonLink href="/checkout/shipping" size="lg">
-              {t('common.continue')}
-              <ArrowRight className="size-4" />
-            </ButtonLink>
+            {lines.length > 0 ? (
+              <ButtonLink href="/checkout/shipping" size="lg">
+                {t('common.continue')}
+                <ArrowRight className="size-4" />
+              </ButtonLink>
+            ) : null}
           </div>
         </div>
 
         <div className="lg:sticky lg:top-24 lg:self-start">
           <OrderSummary
-            groups={cartGroups}
+            lines={lines}
+            totals={totals}
             showItems
-            shipping={{ amount: 60_000, currency: 'VND' }}
-            discount={{ amount: 150_000, currency: 'VND' }}
             footer={
-              <ButtonLink href="/checkout/shipping" size="lg" fullWidth>
-                {t('common.continue')}
-              </ButtonLink>
+              lines.length > 0 ? (
+                <ButtonLink href="/checkout/shipping" size="lg" fullWidth>
+                  {t('common.continue')}
+                </ButtonLink>
+              ) : null
             }
           />
         </div>

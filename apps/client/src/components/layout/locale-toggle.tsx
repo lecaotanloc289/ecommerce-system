@@ -11,7 +11,7 @@ const options: { value: Locale; flag: string; label: string }[] = [
 
 /** Country-flag language select — flips the in-memory locale (persisted to localStorage). */
 export function LocaleToggle({ className }: { className?: string }) {
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, t } = useLocale();
 
   return (
     <select
@@ -20,7 +20,7 @@ export function LocaleToggle({ className }: { className?: string }) {
         const v = e.target.value;
         if (v === 'vi' || v === 'en') setLocale(v);
       }}
-      aria-label="Select language"
+      aria-label={t('common.selectLanguage')}
       className={cn(
         'h-9 cursor-pointer rounded-md bg-transparent px-2 text-body-s font-medium text-text-body',
         'transition-colors hover:bg-bg-muted',

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { Container } from '../layout/container';
 import { ButtonLink } from '../common/button-link';
 import { useT, type MessageKey } from '../../i18n/locale-provider';
@@ -37,20 +37,41 @@ const SLIDES: Slide[] = [
 
 const INTERVAL_MS = 5000;
 
-/** Auto-advancing hero carousel (Elements/Header/001). Pauses on hover/focus. */
+/** True while the OS asks for reduced motion; tracks changes live. */
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduced(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return reduced;
+}
+
+/**
+ * Auto-advancing hero carousel (Elements/Header/001). Pauses on hover/focus and via
+ * the pause button; never auto-advances when the user prefers reduced motion.
+ */
 export function HeroCarousel() {
   const t = useT();
   const count = SLIDES.length;
   const [index, setIndex] = React.useState(0);
-  const [paused, setPaused] = React.useState(false);
+  const [hovered, setHovered] = React.useState(false);
+  const [focusWithin, setFocusWithin] = React.useState(false);
+  const [userPaused, setUserPaused] = React.useState(false);
+  const reducedMotion = usePrefersReducedMotion();
+  const playing = !userPaused && !reducedMotion;
+  const autoAdvance = playing && !hovered && !focusWithin;
 
   const go = React.useCallback((next: number) => setIndex((next + count) % count), [count]);
 
   React.useEffect(() => {
-    if (paused) return;
+    if (!autoAdvance) return;
     const id = window.setInterval(() => setIndex((i) => (i + 1) % count), INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [paused, count]);
+  }, [autoAdvance, count]);
 
   const slide = SLIDES[index];
   if (!slide) return null;
@@ -60,16 +81,21 @@ export function HeroCarousel() {
       className="relative overflow-hidden bg-bg-muted/40"
       aria-roledescription="carousel"
       aria-label={t('home.heroEyebrow')}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocusCapture={() => setPaused(true)}
-      onBlurCapture={() => setPaused(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setFocusWithin(true)}
+      onBlurCapture={(e) => {
+        // Only resume once focus has actually left the carousel.
+        const next = e.relatedTarget;
+        if (!(next instanceof Node) || !e.currentTarget.contains(next)) setFocusWithin(false);
+      }}
     >
       <Container className="relative grid items-center gap-8 py-12 lg:grid-cols-2 lg:py-16">
         {/* key={index} remounts → replays the fade on each slide change */}
         <div
           key={`text-${index}`}
-          className="flex animate-[elmaFade_500ms_ease-out] flex-col gap-6"
+          aria-live={autoAdvance ? 'off' : 'polite'}
+          className="flex animate-[elmaFade_500ms_ease-out] flex-col gap-6 motion-reduce:animate-none"
         >
           <h1 className="font-heading text-h2-alt font-bold tracking-tight text-text-primary sm:text-h2 lg:text-h1">
             {t(slide.titleKey)}
@@ -89,7 +115,7 @@ export function HeroCarousel() {
             key={`img-${index}`}
             src={slide.image}
             alt=""
-            className="aspect-[4/3] w-full animate-[elmaFade_500ms_ease-out] rounded-xl object-cover"
+            className="aspect-[4/3] w-full animate-[elmaFade_500ms_ease-out] rounded-xl object-cover motion-reduce:animate-none"
           />
         </div>
 
@@ -98,7 +124,7 @@ export function HeroCarousel() {
           <button
             type="button"
             onClick={() => go(index - 1)}
-            aria-label="Previous slide"
+            aria-label={t('home.prevSlide')}
             className="flex size-9 items-center justify-center rounded-full border border-border-default bg-bg-elevated text-text-muted transition-colors hover:text-brand-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
           >
             <ChevronLeft className="size-4" />
@@ -106,24 +132,38 @@ export function HeroCarousel() {
           <button
             type="button"
             onClick={() => go(index + 1)}
-            aria-label="Next slide"
+            aria-label={t('home.nextSlide')}
             className="flex size-9 items-center justify-center rounded-full border border-border-default bg-bg-elevated text-text-muted transition-colors hover:text-brand-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
           >
             <ChevronRight className="size-4" />
           </button>
         </div>
 
-        {/* Dots */}
-        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 lg:left-[var(--container-px,2rem)] lg:translate-x-0">
+        {/* Pause / play + dots */}
+        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 lg:left-[var(--container-px,2rem)] lg:translate-x-0">
+          {reducedMotion ? null : (
+            <button
+              type="button"
+              onClick={() => setUserPaused((p) => !p)}
+              aria-label={playing ? t('home.pauseSlides') : t('home.playSlides')}
+              className="flex size-6 items-center justify-center rounded-full text-text-muted transition-colors hover:text-brand-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+            >
+              {playing ? (
+                <Pause className="size-3.5" aria-hidden />
+              ) : (
+                <Play className="size-3.5" aria-hidden />
+              )}
+            </button>
+          )}
           {SLIDES.map((s, i) => (
             <button
               key={s.titleKey}
               type="button"
               onClick={() => go(i)}
-              aria-label={`Go to slide ${i + 1}`}
+              aria-label={t('home.goToSlide', { n: i + 1 })}
               aria-current={i === index}
               className={cn(
-                'h-2 rounded-full transition-all',
+                'h-2 rounded-full transition-all motion-reduce:transition-none',
                 i === index ? 'w-6 bg-brand-solid' : 'w-2 bg-border-strong hover:bg-text-muted',
               )}
             />

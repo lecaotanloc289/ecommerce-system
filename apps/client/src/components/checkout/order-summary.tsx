@@ -3,71 +3,48 @@
 import type { ReactNode } from 'react';
 import { Card } from '@repo/ui';
 import { useLocale } from '../../i18n/locale-provider';
-import { formatMoney, sumMoney } from '../../lib/format';
+import type { OrderTotals } from '../../lib/cart';
+import { lineTotal } from '../../lib/cart';
+import { formatMoney } from '../../lib/format';
 import { cn } from '../../lib/utils';
-import type { CartVendorGroup, Money } from '../../types';
-
-/** Subtotal in the cart's currency; `sumMoney` throws if lines mix currencies. */
-function subtotalOf(groups: CartVendorGroup[]): Money {
-  const lines = groups.flatMap((g) => g.lines);
-  const currency = lines[0]?.product.price.currency ?? 'VND';
-  return sumMoney(
-    lines.map((l) => ({
-      amount: l.product.price.amount * l.qty,
-      currency: l.product.price.currency,
-    })),
-    currency,
-  );
-}
+import type { CartLine } from '../../types';
 
 /**
- * Order Summary card (Parts/Additional/Order Summary/001–004). Computes subtotal
- * from cart groups; shipping/discount are optional. `footer`/`children` slot in a
- * CTA or thumbnail list per screen.
+ * Order Summary card (Parts/Additional/Order Summary/001–004). Pure display of
+ * `computeTotals` output — callers pass lines + totals (usually from
+ * `useOrderTotals()`). `footer`/`children` slot in a CTA or extra content per screen.
  */
 export function OrderSummary({
-  groups,
-  shipping,
-  discount,
+  lines,
+  totals,
   footer,
   children,
   showItems = false,
   className,
 }: {
-  groups: CartVendorGroup[];
-  shipping?: Money;
-  discount?: Money;
+  lines: CartLine[];
+  totals: OrderTotals;
   footer?: ReactNode;
   children?: ReactNode;
   showItems?: boolean;
   className?: string;
 }) {
   const { locale, t } = useLocale();
-  const subtotal = subtotalOf(groups);
-  const lines = groups.flatMap((g) => g.lines);
-  const itemCount = lines.reduce((m, l) => m + l.qty, 0);
-  const gross = sumMoney([subtotal, ...(shipping ? [shipping] : [])], subtotal.currency);
-  const off = sumMoney(discount ? [discount] : [], subtotal.currency);
-  // A discount can never push the total below zero.
-  const total: Money = {
-    amount: Math.max(0, gross.amount - off.amount),
-    currency: subtotal.currency,
-  };
+  const { itemCount, subtotal, shipping, discount, total } = totals;
 
   return (
     <Card className={cn('flex flex-col gap-4 p-5', className)}>
       <h2 className="font-heading text-h5 font-semibold text-text-primary">{t('summary.title')}</h2>
 
-      {showItems ? (
+      {showItems && lines.length > 0 ? (
         <ul className="flex flex-col gap-3 border-b border-border-subtle pb-4">
           {lines.map((line) => (
-            <li
-              key={`${line.product.id}-${line.variantLabel ?? ''}`}
-              className="flex items-center gap-3"
-            >
+            <li key={line.key} className="flex items-center gap-3">
               <img
                 src={line.product.image}
                 alt={line.product.title}
+                width={48}
+                height={48}
                 className="size-12 shrink-0 rounded-md object-cover"
                 loading="lazy"
               />
@@ -75,10 +52,12 @@ export function OrderSummary({
                 <p className="line-clamp-1 text-body-s font-medium text-text-primary">
                   {line.product.title}
                 </p>
-                <p className="text-body-s text-text-muted">×{line.qty}</p>
+                <p className="text-body-s text-text-muted">
+                  {line.variantLabel ? `${line.variantLabel} · ` : ''}×{line.qty}
+                </p>
               </div>
               <span className="text-body-s font-semibold text-text-price">
-                {formatMoney(line.product.price, locale)}
+                {formatMoney(lineTotal(line), locale)}
               </span>
             </li>
           ))}
@@ -94,12 +73,10 @@ export function OrderSummary({
         />
         <Row
           label={t('summary.shipping')}
-          value={
-            shipping && shipping.amount > 0 ? formatMoney(shipping, locale) : t('summary.free')
-          }
-          muted={!shipping || shipping.amount === 0}
+          value={shipping.amount > 0 ? formatMoney(shipping, locale) : t('summary.free')}
+          muted={shipping.amount === 0}
         />
-        {discount && discount.amount > 0 ? (
+        {discount.amount > 0 ? (
           <Row
             label={t('summary.discount')}
             value={`− ${formatMoney(discount, locale)}`}

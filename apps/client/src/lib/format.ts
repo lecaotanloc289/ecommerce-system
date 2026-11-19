@@ -5,6 +5,9 @@ import type { Locale, Money } from '../types';
  * VND has 0 fraction digits; USD divides cents by 100 only at the Intl boundary.
  */
 export function formatMoney(money: Money, locale: Locale): string {
+  if (!Number.isInteger(money.amount)) {
+    throw new Error(`Money amount must be an integer minor unit, got ${money.amount}`);
+  }
   const intlLocale = locale === 'vi' ? 'vi-VN' : 'en-US';
   if (money.currency === 'VND') {
     return new Intl.NumberFormat(intlLocale, {
@@ -28,6 +31,14 @@ export function formatDate(iso: string, locale: Locale): string {
     // the user TZ — a floating zone causes hydration mismatches and day shifts.
     timeZone: 'Asia/Ho_Chi_Minh',
   }).format(new Date(iso));
+}
+
+/** Compact count for UI badges, e.g. 1200 → "1.2K" (en) / "1,2 N" (vi). */
+export function formatCompact(n: number, locale: Locale): string {
+  return new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(n);
 }
 
 /** Sum money lines of the same currency. Throws on currency mismatch. */

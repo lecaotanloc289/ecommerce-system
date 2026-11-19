@@ -8,8 +8,6 @@ import { BrandLogoRow } from '../../components/product/brand-logo-row';
 import { useT } from '../../i18n/locale-provider';
 import { categories } from '../../mocks/categories';
 
-const subNames = ['Smartphones', 'Laptops', 'Headphones', 'Cameras', 'Wearables', 'Accessories'];
-
 export default function CategoriesPage() {
   const t = useT();
 
@@ -66,17 +64,14 @@ export default function CategoriesPage() {
                   </span>
                 </div>
                 <ul className="flex flex-col">
-                  {subNames.map((name) => (
-                    <li key={name}>
+                  {category.subcategories.map((sub) => (
+                    <li key={sub}>
                       <Link
                         href={`/search?category=${category.slug}`}
-                        className="flex items-center justify-between gap-2 border-t border-border-subtle py-2.5 text-body-m text-text-body transition-colors hover:text-brand-text"
+                        className="flex items-center gap-2 border-t border-border-subtle py-2.5 text-body-m text-text-body transition-colors hover:text-brand-text"
                       >
-                        <span className="flex items-center gap-2">
-                          <ChevronRight className="size-4 text-text-muted" />
-                          {name}
-                        </span>
-                        <span className="text-body-s text-text-muted">7.5k</span>
+                        <ChevronRight className="size-4 text-text-muted" />
+                        {t(`subcategories.${sub}`)}
                       </Link>
                     </li>
                   ))}

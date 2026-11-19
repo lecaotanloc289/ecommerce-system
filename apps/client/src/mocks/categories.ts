@@ -3,7 +3,15 @@ import type { Brand, Category } from '../types';
 const img = (seed: string) => `https://picsum.photos/seed/${seed}/480/360`;
 
 export const categories: Category[] = [
-  { id: 'c1', slug: 'audio', name: 'Audio', icon: '🎧', productCount: 42, image: img('cat-audio') },
+  {
+    id: 'c1',
+    slug: 'audio',
+    name: 'Audio',
+    icon: '🎧',
+    productCount: 42,
+    image: img('cat-audio'),
+    subcategories: ['headphones', 'earbuds', 'speakers'],
+  },
   {
     id: 'c2',
     slug: 'cameras',
@@ -11,6 +19,7 @@ export const categories: Category[] = [
     icon: '📷',
     productCount: 28,
     image: img('cat-cameras'),
+    subcategories: ['mirrorless', 'dslr', 'lenses'],
   },
   {
     id: 'c3',
@@ -19,6 +28,7 @@ export const categories: Category[] = [
     icon: '💻',
     productCount: 65,
     image: img('cat-computers'),
+    subcategories: ['laptops', 'tablets', 'desktops'],
   },
   {
     id: 'c4',
@@ -27,6 +37,7 @@ export const categories: Category[] = [
     icon: '⌚',
     productCount: 31,
     image: img('cat-wearables'),
+    subcategories: ['smartwatches', 'fitnessTrackers'],
   },
   {
     id: 'c5',
@@ -35,6 +46,7 @@ export const categories: Category[] = [
     icon: '🖱️',
     productCount: 88,
     image: img('cat-accessories'),
+    subcategories: ['mice', 'drawingTablets', 'chargers'],
   },
   {
     id: 'c6',
@@ -43,6 +55,7 @@ export const categories: Category[] = [
     icon: '👕',
     productCount: 120,
     image: img('cat-fashion'),
+    subcategories: ['tops', 'outerwear', 'shoes'],
   },
 ];
 

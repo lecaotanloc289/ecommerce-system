@@ -58,7 +58,9 @@ export function PaymentForm({ className }: { className?: string }) {
         })}
       </RadioGroup>
 
-      {/* Card details — only for the Stripe card flow */}
+      {/* Card details — only for the Stripe card flow.
+          Visual placeholder only: the real Stripe flow mounts Stripe Elements (hosted
+          iframes), so raw card data never touches app code, state, or our servers. */}
       {selected === 'stripe' ? (
         <form
           className="grid gap-4 rounded-lg border border-border-subtle bg-bg-muted/30 p-4 sm:grid-cols-2"
@@ -66,19 +68,33 @@ export function PaymentForm({ className }: { className?: string }) {
         >
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="cardNumber">{t('checkout.cardNumber')}</Label>
-            <Input id="cardNumber" inputMode="numeric" placeholder="1234 5678 9012 3456" />
+            <Input
+              id="cardNumber"
+              inputMode="numeric"
+              autoComplete="cc-number"
+              placeholder={t('checkout.cardNumberPlaceholder')}
+            />
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="cardName">{t('checkout.cardName')}</Label>
-            <Input id="cardName" />
+            <Input id="cardName" autoComplete="cc-name" />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="expiry">{t('checkout.expiry')}</Label>
-            <Input id="expiry" placeholder="MM/YY" />
+            <Input
+              id="expiry"
+              autoComplete="cc-exp"
+              placeholder={t('checkout.expiryPlaceholder')}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="cvc">{t('checkout.cvc')}</Label>
-            <Input id="cvc" inputMode="numeric" placeholder="123" />
+            <Input
+              id="cvc"
+              inputMode="numeric"
+              autoComplete="cc-csc"
+              placeholder={t('checkout.cvcPlaceholder')}
+            />
           </div>
         </form>
       ) : null}
