@@ -11,18 +11,20 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./messages/vi.json": "./messages/vi.json",
-    "./messages/en.json": "./messages/en.json"
+    }
   },
   "scripts": {
     "build": "tsup",
     "lint": "echo 'TODO: eslint'",
     "typecheck": "tsc --noEmit",
-    "test": "echo 'TODO: vitest'"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "@repo/core": "workspace:*"
   }
 }
