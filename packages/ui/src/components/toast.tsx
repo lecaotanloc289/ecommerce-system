@@ -11,12 +11,12 @@ const Toaster = (props: ToasterProps) => (
     toastOptions={{
       classNames: {
         toast:
-          'group toast group-[.toaster]:bg-[var(--color-bg-elevated)] group-[.toaster]:text-[var(--color-text-primary)] group-[.toaster]:border-[var(--color-border-subtle)] group-[.toaster]:shadow-[var(--shadow-3)] group-[.toaster]:rounded-[var(--radius-md)]',
-        description: 'group-[.toast]:text-[var(--color-text-muted)]',
+          'group toast group-[.toaster]:bg-[var(--color-bg-elevated)] group-[.toaster]:text-[color:var(--color-text-primary)] group-[.toaster]:border-[var(--color-border-subtle)] group-[.toaster]:shadow-[var(--shadow-3)] group-[.toaster]:rounded-[var(--radius-md)]',
+        description: 'group-[.toast]:text-[color:var(--color-text-muted)]',
         actionButton:
-          'group-[.toast]:bg-[var(--color-brand-solid)] group-[.toast]:text-[var(--color-text-on-primary)]',
+          'group-[.toast]:bg-[var(--color-brand-solid)] group-[.toast]:text-[color:var(--color-text-on-primary)]',
         cancelButton:
-          'group-[.toast]:bg-[var(--color-bg-muted)] group-[.toast]:text-[var(--color-text-primary)]',
+          'group-[.toast]:bg-[var(--color-bg-muted)] group-[.toast]:text-[color:var(--color-text-primary)]',
         success: 'group-[.toaster]:border-[var(--color-success-border)]',
         error: 'group-[.toaster]:border-[var(--color-danger-border)]',
         warning: 'group-[.toaster]:border-[var(--color-warning-border)]',

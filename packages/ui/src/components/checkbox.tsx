@@ -17,8 +17,8 @@ const Checkbox = React.forwardRef<
       'bg-[var(--color-bg-elevated)] transition-colors',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] focus-visible:ring-offset-2',
       'disabled:cursor-not-allowed disabled:opacity-50',
-      'data-[state=checked]:bg-[var(--color-brand-solid)] data-[state=checked]:border-[var(--color-brand-solid)] data-[state=checked]:text-[var(--color-text-on-primary)]',
-      'data-[state=indeterminate]:bg-[var(--color-brand-solid)] data-[state=indeterminate]:border-[var(--color-brand-solid)] data-[state=indeterminate]:text-[var(--color-text-on-primary)]',
+      'data-[state=checked]:bg-[var(--color-brand-solid)] data-[state=checked]:border-[var(--color-brand-solid)] data-[state=checked]:text-[color:var(--color-text-on-primary)]',
+      'data-[state=indeterminate]:bg-[var(--color-brand-solid)] data-[state=indeterminate]:border-[var(--color-brand-solid)] data-[state=indeterminate]:text-[color:var(--color-text-on-primary)]',
       className,
     )}
     {...props}

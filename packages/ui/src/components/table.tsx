@@ -7,7 +7,7 @@ const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableE
       <table
         ref={ref}
         className={cn(
-          'w-full caption-bottom text-[var(--text-body-m)] text-[var(--color-text-primary)] border-collapse',
+          'w-full caption-bottom text-[length:var(--text-body-m)] text-[color:var(--color-text-primary)] border-collapse',
           className,
         )}
         {...props}
@@ -77,7 +77,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      'h-11 px-3 text-left align-middle font-semibold text-[var(--color-text-muted)] text-[var(--text-body-s)]',
+      'h-11 px-3 text-left align-middle font-semibold text-[color:var(--color-text-muted)] text-[length:var(--text-body-s)]',
       className,
     )}
     {...props}
@@ -99,7 +99,10 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn('mt-4 text-[var(--text-body-s)] text-[var(--color-text-muted)]', className)}
+    className={cn(
+      'mt-4 text-[length:var(--text-body-s)] text-[color:var(--color-text-muted)]',
+      className,
+    )}
     {...props}
   />
 ));

@@ -7,20 +7,20 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        neutral: 'bg-[var(--color-slate-3)] text-[var(--color-text-body)]',
-        brand: 'bg-[var(--color-brand-soft)] text-[var(--color-brand-text)]',
-        success: 'bg-[var(--color-success-bg)] text-[var(--color-success-fg)]',
-        danger: 'bg-[var(--color-danger-bg)] text-[var(--color-danger-fg)]',
-        warning: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-fg)]',
-        info: 'bg-[var(--color-info-bg)] text-[var(--color-info-fg)]',
-        solid: 'bg-[var(--color-danger-solid)] text-[var(--color-text-on-primary)]',
+        neutral: 'bg-[var(--color-slate-3)] text-[color:var(--color-text-body)]',
+        brand: 'bg-[var(--color-brand-soft)] text-[color:var(--color-brand-text)]',
+        success: 'bg-[var(--color-success-bg)] text-[color:var(--color-success-fg)]',
+        danger: 'bg-[var(--color-danger-bg)] text-[color:var(--color-danger-fg)]',
+        warning: 'bg-[var(--color-warning-bg)] text-[color:var(--color-warning-fg)]',
+        info: 'bg-[var(--color-info-bg)] text-[color:var(--color-info-fg)]',
+        solid: 'bg-[var(--color-danger-solid)] text-[color:var(--color-text-on-primary)]',
         count:
-          'bg-[var(--color-danger-solid)] text-[var(--color-text-on-primary)] min-w-5 justify-center',
+          'bg-[var(--color-danger-solid)] text-[color:var(--color-text-on-primary)] min-w-5 justify-center',
       },
       size: {
         sm: 'h-5 px-1.5 text-[10px] rounded-[var(--radius-xs)]',
-        md: 'h-6 px-2 text-[var(--text-caption)] rounded-[var(--radius-sm)]',
-        lg: 'h-7 px-2.5 text-[var(--text-body-s)] rounded-[var(--radius-sm)]',
+        md: 'h-6 px-2 text-[length:var(--text-caption)] rounded-[var(--radius-sm)]',
+        lg: 'h-7 px-2.5 text-[length:var(--text-body-s)] rounded-[var(--radius-sm)]',
       },
     },
     defaultVariants: { variant: 'neutral', size: 'md' },

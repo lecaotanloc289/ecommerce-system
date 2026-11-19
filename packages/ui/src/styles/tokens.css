@@ -225,6 +225,7 @@
   --color-text-landing-body: var(--color-slateblue);
 
   /* Borders */
+  --color-border-faint: var(--color-slate-3); /* hairline dividers — fainter than subtle */
   --color-border-subtle: var(--color-slate-5);
   --color-border-default: var(--color-slate-6);
   --color-border-strong: var(--color-slate-7);
@@ -442,6 +443,7 @@
   --color-text-landing-heading: var(--color-slate-1);
   --color-text-landing-body: var(--color-slate-6);
 
+  --color-border-faint: oklch(1 0 0 / 0.05);
   --color-border-subtle: oklch(1 0 0 / 0.08);
   --color-border-default: oklch(1 0 0 / 0.12);
   --color-border-strong: oklch(1 0 0 / 0.2);
@@ -660,6 +662,7 @@
   --color-text-landing-heading: var(--color-text-landing-heading);
   --color-text-landing-body: var(--color-text-landing-body);
 
+  --color-border-faint: var(--color-border-faint);
   --color-border-subtle: var(--color-border-subtle);
   --color-border-default: var(--color-border-default);
   --color-border-strong: var(--color-border-strong);

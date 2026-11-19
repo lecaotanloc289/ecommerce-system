@@ -11,15 +11,15 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        info: 'bg-[var(--color-info-bg)] text-[var(--color-info-fg)] border-[var(--color-info-border)] [&>svg]:text-[var(--color-info-solid)]',
+        info: 'bg-[var(--color-info-bg)] text-[color:var(--color-info-fg)] border-[var(--color-info-border)] [&>svg]:text-[color:var(--color-info-solid)]',
         success:
-          'bg-[var(--color-success-bg)] text-[var(--color-success-fg)] border-[var(--color-success-border)] [&>svg]:text-[var(--color-success-solid)]',
+          'bg-[var(--color-success-bg)] text-[color:var(--color-success-fg)] border-[var(--color-success-border)] [&>svg]:text-[color:var(--color-success-solid)]',
         warning:
-          'bg-[var(--color-warning-bg)] text-[var(--color-warning-fg)] border-[var(--color-warning-border)] [&>svg]:text-[var(--color-warning-solid)]',
+          'bg-[var(--color-warning-bg)] text-[color:var(--color-warning-fg)] border-[var(--color-warning-border)] [&>svg]:text-[color:var(--color-warning-solid)]',
         danger:
-          'bg-[var(--color-danger-bg)] text-[var(--color-danger-fg)] border-[var(--color-danger-border)] [&>svg]:text-[var(--color-danger-solid)]',
+          'bg-[var(--color-danger-bg)] text-[color:var(--color-danger-fg)] border-[var(--color-danger-border)] [&>svg]:text-[color:var(--color-danger-solid)]',
         neutral:
-          'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] border-[var(--color-border-default)] [&>svg]:text-[var(--color-text-muted)]',
+          'bg-[var(--color-bg-surface)] text-[color:var(--color-text-primary)] border-[var(--color-border-default)] [&>svg]:text-[color:var(--color-text-muted)]',
       },
     },
     defaultVariants: { variant: 'info' },
@@ -41,7 +41,7 @@ const AlertTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTM
     <h5
       ref={ref}
       className={cn(
-        'col-start-2 font-semibold text-[var(--text-body-m)] leading-none tracking-tight',
+        'col-start-2 font-semibold text-[length:var(--text-body-m)] leading-none tracking-tight',
         className,
       )}
       {...props}
@@ -57,7 +57,7 @@ const AlertDescription = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'col-start-2 text-[var(--text-body-s)] leading-[var(--leading-body-s)]',
+      'col-start-2 text-[length:var(--text-body-s)] leading-[var(--leading-body-s)]',
       className,
     )}
     {...props}

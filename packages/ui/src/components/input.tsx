@@ -6,20 +6,20 @@ import { cn } from '../lib/cn';
 
 const inputVariants = cva(
   [
-    'flex w-full bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]',
-    'placeholder:text-[var(--color-text-placeholder)]',
+    'flex w-full bg-[var(--color-bg-elevated)] text-[color:var(--color-text-primary)]',
+    'placeholder:text-[color:var(--color-text-placeholder)]',
     'border border-[var(--color-border-input)]',
     'transition-colors duration-150',
     'focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-indigo-3)] focus:ring-offset-0',
-    'disabled:cursor-not-allowed disabled:bg-[var(--color-bg-muted)] disabled:text-[var(--color-text-disabled)]',
+    'disabled:cursor-not-allowed disabled:bg-[var(--color-bg-muted)] disabled:text-[color:var(--color-text-disabled)]',
     'file:border-0 file:bg-transparent file:text-sm file:font-medium',
   ].join(' '),
   {
     variants: {
       size: {
-        sm: 'h-8 px-3 text-[var(--text-body-s)] rounded-[var(--radius-sm)]',
-        md: 'h-10 px-3 text-[var(--text-body-m)] rounded-[var(--radius-md)]',
-        lg: 'h-12 px-4 text-[var(--text-body-l)] rounded-[var(--radius-md)]',
+        sm: 'h-8 px-3 text-[length:var(--text-body-s)] rounded-[var(--radius-sm)]',
+        md: 'h-10 px-3 text-[length:var(--text-body-m)] rounded-[var(--radius-md)]',
+        lg: 'h-12 px-4 text-[length:var(--text-body-l)] rounded-[var(--radius-md)]',
       },
       invalid: {
         true: 'border-[var(--color-danger-solid)] focus:border-[var(--color-danger-solid)] focus:ring-[var(--color-danger-3)]',

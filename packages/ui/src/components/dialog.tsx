@@ -37,7 +37,7 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         'fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 p-6',
-        'bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]',
+        'bg-[var(--color-bg-elevated)] text-[color:var(--color-text-primary)]',
         'border border-[var(--color-border-subtle)] rounded-[var(--radius-lg)] shadow-[var(--shadow-4)]',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
@@ -50,7 +50,7 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Close
         className={cn(
           'absolute right-4 top-4 inline-flex size-8 items-center justify-center rounded-[var(--radius-sm)]',
-          'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-text-primary)]',
+          'text-[color:var(--color-text-muted)] hover:bg-[var(--color-bg-muted)] hover:text-[color:var(--color-text-primary)]',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]',
         )}
       >
@@ -82,7 +82,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'text-[var(--text-h3)] leading-[var(--leading-h3)] font-semibold tracking-tight',
+      'text-[length:var(--text-h3)] leading-[var(--leading-h3)] font-semibold tracking-tight',
       className,
     )}
     {...props}
@@ -96,7 +96,10 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn('text-[var(--text-body-s)] text-[var(--color-text-muted)]', className)}
+    className={cn(
+      'text-[length:var(--text-body-s)] text-[color:var(--color-text-muted)]',
+      className,
+    )}
     {...props}
   />
 ));

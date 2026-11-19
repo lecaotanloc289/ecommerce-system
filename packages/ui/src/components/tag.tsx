@@ -11,22 +11,22 @@ const tagVariants = cva(
     variants: {
       variant: {
         neutral:
-          'bg-[var(--color-slate-2)] text-[var(--color-text-body)] border border-[var(--color-border-default)]',
-        plain: 'bg-[var(--color-slate-2)] text-[var(--color-text-body)]',
+          'bg-[var(--color-slate-2)] text-[color:var(--color-text-body)] border border-[var(--color-border-default)]',
+        plain: 'bg-[var(--color-slate-2)] text-[color:var(--color-text-body)]',
         brand:
-          'bg-[var(--color-brand-soft)] text-[var(--color-brand-text)] border border-[var(--color-indigo-5)]',
+          'bg-[var(--color-brand-soft)] text-[color:var(--color-brand-text)] border border-[var(--color-indigo-5)]',
         success:
-          'bg-[var(--color-success-bg)] text-[var(--color-success-fg)] border border-[var(--color-success-border)]',
+          'bg-[var(--color-success-bg)] text-[color:var(--color-success-fg)] border border-[var(--color-success-border)]',
         danger:
-          'bg-[var(--color-danger-bg)] text-[var(--color-danger-fg)] border border-[var(--color-danger-border)]',
+          'bg-[var(--color-danger-bg)] text-[color:var(--color-danger-fg)] border border-[var(--color-danger-border)]',
         warning:
-          'bg-[var(--color-warning-bg)] text-[var(--color-warning-fg)] border border-[var(--color-warning-border)]',
-        info: 'bg-[var(--color-info-bg)] text-[var(--color-info-fg)] border border-[var(--color-info-border)]',
+          'bg-[var(--color-warning-bg)] text-[color:var(--color-warning-fg)] border border-[var(--color-warning-border)]',
+        info: 'bg-[var(--color-info-bg)] text-[color:var(--color-info-fg)] border border-[var(--color-info-border)]',
       },
       size: {
-        xs: 'h-5 px-1.5 text-[var(--text-h9)] rounded-[var(--radius-xs)]',
-        sm: 'h-6 px-2 text-[var(--text-caption)] rounded-[var(--radius-sm)]',
-        md: 'h-7 px-2.5 text-[var(--text-body-s)] rounded-[var(--radius-sm)]',
+        xs: 'h-5 px-1.5 text-[length:var(--text-h9)] rounded-[var(--radius-xs)]',
+        sm: 'h-6 px-2 text-[length:var(--text-caption)] rounded-[var(--radius-sm)]',
+        md: 'h-7 px-2.5 text-[length:var(--text-body-s)] rounded-[var(--radius-sm)]',
       },
     },
     defaultVariants: { variant: 'neutral', size: 'md' },

@@ -40,7 +40,7 @@ const PaginationLink = ({ className, isActive, size = 'icon', ...props }: Pagina
     className={cn(
       buttonVariants({ variant: isActive ? 'primary' : 'ghost', size }),
       'min-w-9 px-3',
-      !isActive && 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]',
+      !isActive && 'text-[color:var(--color-text-primary)] hover:bg-[var(--color-bg-muted)]',
       className,
     )}
     {...props}
@@ -78,7 +78,7 @@ const PaginationEllipsis = ({ className, ...props }: React.ComponentProps<'span'
   <span
     aria-hidden
     className={cn(
-      'inline-flex size-9 items-center justify-center text-[var(--color-text-muted)]',
+      'inline-flex size-9 items-center justify-center text-[color:var(--color-text-muted)]',
       className,
     )}
     {...props}
