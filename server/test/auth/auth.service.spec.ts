@@ -6,6 +6,7 @@ import { TokenService } from '../../src/auth/token.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
 
 const EXISTING_USER = '01J9ZQ4V6N5X8Y7W3T2R1P0M9K';
+const VENDOR_ID = '01J9ZQ4V6N5X8Y7W3T2R1P0VND';
 
 function profile(overrides: Partial<OAuthProfile> = {}): OAuthProfile {
   return {
@@ -164,7 +165,7 @@ describe('AuthService', () => {
         primaryLocale: 'VI',
         roles: [
           { role: 'CUSTOMER', vendorId: null, vendor: null },
-          { role: 'VENDOR_OWNER', vendorId: 'v1', vendor: { status: 'ACTIVE' } },
+          { role: 'VENDOR_OWNER', vendorId: VENDOR_ID, vendor: { status: 'ACTIVE' } },
         ],
       });
       await expect(service.getMe(EXISTING_USER)).resolves.toEqual({
@@ -174,7 +175,7 @@ describe('AuthService', () => {
         avatarUrl: null,
         primaryLocale: 'VI',
         roles: ['CUSTOMER', 'VENDOR_OWNER'],
-        vendorId: 'v1',
+        vendorId: VENDOR_ID,
       });
     });
 

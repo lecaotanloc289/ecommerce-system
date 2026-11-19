@@ -2,33 +2,39 @@
 // @repo/core/schemas/auth so @repo/sdk, apps/web and apps/admin can parse them. Token-claim and
 // OAuth-profile schemas are server-internal and stay here.
 import { z } from 'zod';
-import { LocaleSchema, OAuthProviderSchema, RoleSchema } from '@repo/core';
-
-// Seeded/demo users have non-ULID ids (e.g. `user_demo_customer`), so ids are validated as
-// non-empty strings rather than @repo/core/ids brands.
-const IdSchema = z.string().min(1);
+import {
+  LocaleSchema,
+  OAuthProviderSchema,
+  RoleSchema,
+  UlidSchema,
+  UserIdSchema,
+  VendorIdSchema,
+} from '@repo/core';
 
 /** Access JWT payload (Golden Rule #5). `vendorId` only for users with an ACTIVE vendor role. */
 export const AccessTokenClaimsSchema = z.object({
-  sub: IdSchema,
+  sub: UserIdSchema,
   roles: z.array(RoleSchema),
-  vendorId: IdSchema.optional(),
+  vendorId: VendorIdSchema.optional(),
 });
 export type AccessTokenClaims = z.infer<typeof AccessTokenClaimsSchema>;
+/** Unbranded shape (plain-string ids) — what is built from DB rows before parsing. */
+export type AccessTokenClaimsInput = z.input<typeof AccessTokenClaimsSchema>;
 
 /** Refresh JWT payload: `fid` = token family (one per login session), `jti` = this token. */
 export const RefreshTokenClaimsSchema = z.object({
-  sub: IdSchema,
-  fid: IdSchema,
-  jti: IdSchema,
+  sub: UserIdSchema,
+  fid: UlidSchema,
+  jti: UlidSchema,
 });
 export type RefreshTokenClaims = z.infer<typeof RefreshTokenClaimsSchema>;
+export type RefreshTokenClaimsInput = z.input<typeof RefreshTokenClaimsSchema>;
 
 /** What guards attach to `request.user` and `@CurrentUser()` returns. */
 export const AuthUserSchema = z.object({
-  id: IdSchema,
+  id: UserIdSchema,
   roles: z.array(RoleSchema),
-  vendorId: IdSchema.optional(),
+  vendorId: VendorIdSchema.optional(),
 });
 export type AuthUser = z.infer<typeof AuthUserSchema>;
 
@@ -57,12 +63,12 @@ export const TokenResponseSchema = z.object({
 export type TokenResponse = z.infer<typeof TokenResponseSchema>;
 
 export const MeResponseSchema = z.object({
-  id: IdSchema,
+  id: UserIdSchema,
   email: z.string().nullable(),
   name: z.string(),
   avatarUrl: z.string().nullable(),
   primaryLocale: LocaleSchema,
   roles: z.array(RoleSchema),
-  vendorId: IdSchema.nullable(),
+  vendorId: VendorIdSchema.nullable(),
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;

@@ -11,15 +11,19 @@ import {
   oauthProfileFactory,
 } from '../../src/auth/decorators/current-user.decorator';
 import { OAUTH_STATE_COOKIE } from '../../src/auth/auth.http';
+import { AccessTokenClaimsSchema, type AccessTokenClaimsInput } from '../../src/auth/auth.schemas';
 import { fakeReply, fakeRequest, httpContext } from '../helpers';
 
+const USER_ID = '01J9ZQ4V6N5X8Y7W3T2R1P0M9K';
+const VENDOR_ID = '01J9ZQ4V6N5X8Y7W3T2R1P0VND';
+
 function verifierReturning(
-  result: Awaited<ReturnType<TokenService['verifyAccessToken']>> | Error,
+  result: AccessTokenClaimsInput | Error,
 ): Pick<TokenService, 'verifyAccessToken'> {
   return {
     verifyAccessToken: jest.fn(async () => {
       if (result instanceof Error) throw result;
-      return result;
+      return AccessTokenClaimsSchema.parse(result);
     }),
   };
 }
@@ -33,7 +37,7 @@ describe('JwtAuthGuard', () => {
   };
 
   it('rejects a request without a Bearer token', async () => {
-    const guard = await makeGuard(verifierReturning({ sub: 'u', roles: [] }));
+    const guard = await makeGuard(verifierReturning({ sub: USER_ID, roles: [] }));
     await expect(guard.canActivate(httpContext(fakeRequest()))).rejects.toMatchObject({
       code: 'common.error.unauthorized',
     });
@@ -52,13 +56,17 @@ describe('JwtAuthGuard', () => {
   });
 
   it('sets request.user from verified claims', async () => {
-    const verifier = verifierReturning({ sub: 'u1', roles: ['VENDOR_OWNER'], vendorId: 'v1' });
+    const verifier = verifierReturning({
+      sub: USER_ID,
+      roles: ['VENDOR_OWNER'],
+      vendorId: VENDOR_ID,
+    });
     const request = fakeRequest({ headers: { authorization: 'Bearer good.token' } });
 
     const guard = await makeGuard(verifier);
     await expect(guard.canActivate(httpContext(request))).resolves.toBe(true);
     expect(verifier.verifyAccessToken).toHaveBeenCalledWith('good.token');
-    expect(request.user).toEqual({ id: 'u1', roles: ['VENDOR_OWNER'], vendorId: 'v1' });
+    expect(request.user).toEqual({ id: USER_ID, roles: ['VENDOR_OWNER'], vendorId: VENDOR_ID });
   });
 });
 

@@ -9,8 +9,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   AccessTokenClaimsSchema,
   type AccessTokenClaims,
+  type AccessTokenClaimsInput,
   RefreshTokenClaimsSchema,
   type RefreshTokenClaims,
+  type RefreshTokenClaimsInput,
   type TokenResponse,
   TokenResponseSchema,
 } from './auth.schemas';
@@ -31,7 +33,7 @@ const VENDOR_ROLES: ReadonlySet<Role> = new Set([Role.VENDOR_OWNER, Role.VENDOR_
  * ACTIVE (a PENDING/SUSPENDED vendor grants nothing); `vendorId` is the oldest such role's
  * vendor (rows must be ordered by createdAt asc).
  */
-export function buildClaims(userId: string, rows: readonly RoleRow[]): AccessTokenClaims {
+export function buildClaims(userId: string, rows: readonly RoleRow[]): AccessTokenClaimsInput {
   const roles = new Set<Role>();
   let vendorId: string | undefined;
   for (const row of rows) {
@@ -170,8 +172,8 @@ export class TokenService {
     return claims.data;
   }
 
-  private signRefreshToken(claims: RefreshTokenClaims): Promise<string> {
-    return this.jwt.signAsync(claims, {
+  private signRefreshToken(claims: RefreshTokenClaimsInput): Promise<string> {
+    return this.jwt.signAsync(RefreshTokenClaimsSchema.parse(claims), {
       secret: this.env.JWT_REFRESH_SECRET,
       expiresIn: this.env.JWT_REFRESH_TTL,
       algorithm: ALGORITHM,
