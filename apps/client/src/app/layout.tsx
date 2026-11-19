@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import './globals.css';
 import { LocaleProvider } from '../i18n/locale-provider';
-import { en } from '../i18n/messages/en';
+import { en } from '@repo/i18n';
 import { CartProvider } from '../store/cart-store';
 import { CheckoutProvider } from '../store/checkout-store';
 import { Navbar } from '../components/layout/navbar';

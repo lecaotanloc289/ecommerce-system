@@ -5,7 +5,7 @@ import { Heart, ShoppingCart } from 'lucide-react';
 import { Badge, Button } from '@repo/ui';
 import { StarRating } from './star-rating';
 import { useLocale } from '../../i18n/locale-provider';
-import { formatMoney } from '../../lib/format';
+import { formatMoney } from '@repo/i18n';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../store/cart-store';
 import type { Product } from '../../types';

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { X } from 'lucide-react';
 import { Button, Card, Input } from '@repo/ui';
 import { useLocale } from '../../i18n/locale-provider';
-import { formatMoney } from '../../lib/format';
+import { formatMoney } from '@repo/i18n';
 import { cn } from '../../lib/utils';
 import { findVoucher } from '../../mocks/cart';
 import { useCheckout, useOrderTotals } from '../../store/checkout-store';

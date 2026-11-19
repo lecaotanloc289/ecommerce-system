@@ -2,9 +2,9 @@
 
 import { useLocale } from '../../i18n/locale-provider';
 import { cn } from '../../lib/utils';
-import type { Locale } from '../../types';
+import { isAppLocale, type AppLocale } from '@repo/i18n';
 
-const options: { value: Locale; flag: string; label: string }[] = [
+const options: { value: AppLocale; flag: string; label: string }[] = [
   { value: 'vi', flag: '🇻🇳', label: 'VI' },
   { value: 'en', flag: '🇺🇸', label: 'EN' },
 ];
@@ -18,7 +18,7 @@ export function LocaleToggle({ className }: { className?: string }) {
       value={locale}
       onChange={(e) => {
         const v = e.target.value;
-        if (v === 'vi' || v === 'en') setLocale(v);
+        if (isAppLocale(v)) setLocale(v);
       }}
       aria-label={t('common.selectLanguage')}
       className={cn(

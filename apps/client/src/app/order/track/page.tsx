@@ -7,7 +7,7 @@ import { ButtonLink } from '../../../components/common/button-link';
 import { OrderSummary } from '../../../components/checkout/order-summary';
 import { useLocale, type MessageKey } from '../../../i18n/locale-provider';
 import { computeTotals } from '../../../lib/cart';
-import { formatDate } from '../../../lib/format';
+import { formatDate } from '@repo/i18n';
 import {
   findShippingMethod,
   findVoucher,

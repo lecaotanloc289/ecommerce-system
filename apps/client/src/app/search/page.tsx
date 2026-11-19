@@ -23,7 +23,7 @@ import {
 import { Container } from '../../components/layout/container';
 import { ProductCard } from '../../components/product/product-card';
 import { useLocale } from '../../i18n/locale-provider';
-import { formatMoney } from '../../lib/format';
+import { formatMoney } from '@repo/i18n';
 import { products } from '../../mocks/products';
 import { categories, brands } from '../../mocks/categories';
 import { platformSettings } from '../../mocks/platform-settings';

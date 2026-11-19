@@ -20,7 +20,7 @@ UI for the 12 storefront screens in `SCREENS.md` (home, categories, search, prod
 
 Interim deviations from the stack above (to be replaced, not copied):
 
-- **i18n:** static export (`output: 'export'`) rules out next-intl route prefixes/middleware, so locale lives in a client `LocaleProvider` (`src/i18n/locale-provider.tsx`, typed `t()` over `src/i18n/messages/{vi,en}.ts`, choice persisted in `localStorage`). Moves to `@repo/i18n` once that package has content.
+- **i18n:** static export (`output: 'export'`) rules out next-intl route prefixes/middleware, so locale lives in a client `LocaleProvider` (`src/i18n/locale-provider.tsx`, choice persisted in `localStorage`). The provider is React glue only: catalogs, `MessageKey`, `createTranslator`, `formatMoney` / `formatDate` / `formatCompact` and the `AppLocale` type (`'vi' | 'en'`) all come from `@repo/i18n`. Add or change UI text in `packages/i18n/src/messages/{en,vi}.ts`, never in components. Cart math uses `@repo/core/money` (`sum`).
 - **Types:** `src/types.ts` holds local shapes until `@repo/core` Zod schemas land (then `z.infer` exports replace them).
 - **Auth pages** render only the Google + Facebook OAuth buttons (Golden Rule #5); handlers are no-ops.
 - **Guest cart:** `CartProvider` (`src/store/cart-store.tsx`) keeps lines `{ productId, variantId, qty }` in `localStorage` (`guest-cart`), seeded from `src/mocks/cart.ts` on first visit and resolved against the mock catalogue (unit price = variant price when a variant is chosen). Stored data is sanitized (unknown ids dropped, duplicates merged, qty clamped to stock) and synced across tabs via the `storage` event. State is empty until hydrated (`hydrated` flag) so the prerendered HTML never shows stale lines. Qty change / remove / add-to-cart work client-side; "Place order" clears the cart and checkout choices. Merge into the server `Cart` comes with the API.
@@ -28,6 +28,8 @@ Interim deviations from the stack above (to be replaced, not copied):
 - **Platform tunables** (free-shipping threshold, default currency) come from `src/mocks/platform-settings.ts` until `PlatformSettings` is served by the API.
 
 ## Run
+
+`@repo/i18n` and `@repo/core` are consumed from their built `dist/`. `pnpm dev` (turbo) builds them once at start (no watch — after editing package source, re-run the build); for a bare filtered run, build them once: `pnpm turbo run build --filter=@apps/web^...`.
 
 ```bash
 pnpm --filter @apps/web dev          # → http://localhost:3000

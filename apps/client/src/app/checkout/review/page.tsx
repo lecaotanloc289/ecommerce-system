@@ -10,7 +10,7 @@ import { StepTabs } from '../../../components/checkout/step-tabs';
 import { OrderSummary } from '../../../components/checkout/order-summary';
 import { useLocale } from '../../../i18n/locale-provider';
 import { lineTotal } from '../../../lib/cart';
-import { formatMoney } from '../../../lib/format';
+import { formatMoney } from '@repo/i18n';
 import { useCart } from '../../../store/cart-store';
 import { useCheckout, useOrderTotals } from '../../../store/checkout-store';
 

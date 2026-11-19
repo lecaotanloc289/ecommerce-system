@@ -12,7 +12,7 @@ import { ProductCard } from '../components/product/product-card';
 import { CategoryItem } from '../components/product/category-item';
 import { BrandLogoRow } from '../components/product/brand-logo-row';
 import { useLocale, type MessageKey } from '../i18n/locale-provider';
-import { formatMoney } from '../lib/format';
+import { formatMoney } from '@repo/i18n';
 import { getProduct, products } from '../mocks/products';
 import { categories } from '../mocks/categories';
 import { cn } from '../lib/utils';

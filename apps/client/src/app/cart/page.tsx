@@ -12,7 +12,7 @@ import { OrderSummary } from '../../components/checkout/order-summary';
 import { QuantityStepper } from '../../components/checkout/quantity-stepper';
 import { ProductCard } from '../../components/product/product-card';
 import { useLocale } from '../../i18n/locale-provider';
-import { formatMoney } from '../../lib/format';
+import { formatMoney } from '@repo/i18n';
 import { products } from '../../mocks/products';
 import { useCart } from '../../store/cart-store';
 import { useOrderTotals } from '../../store/checkout-store';

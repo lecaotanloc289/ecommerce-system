@@ -3,7 +3,7 @@
 import { Truck } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@repo/ui';
 import { useLocale } from '../../i18n/locale-provider';
-import { formatMoney } from '../../lib/format';
+import { formatMoney } from '@repo/i18n';
 import { shippingMethods } from '../../mocks/cart';
 import { useCheckout } from '../../store/checkout-store';
 import { cn } from '../../lib/utils';

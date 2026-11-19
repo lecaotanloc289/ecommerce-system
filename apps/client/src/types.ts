@@ -4,7 +4,6 @@
  * Money is integer minor units + ISO currency (Golden Rule #2): VND = đồng, USD = cent.
  */
 
-export type Locale = 'vi' | 'en';
 export type Currency = 'VND' | 'USD';
 
 export interface Money {

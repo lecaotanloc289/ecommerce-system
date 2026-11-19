@@ -24,7 +24,7 @@ import { StarRating } from './star-rating';
 import { QuantityStepper } from '../checkout/quantity-stepper';
 import { useLocale, type MessageKey } from '../../i18n/locale-provider';
 import { MAX_LINE_QTY } from '../../lib/cart';
-import { formatCompact, formatMoney, formatDate } from '../../lib/format';
+import { formatCompact, formatMoney, formatDate } from '@repo/i18n';
 import { cn } from '../../lib/utils';
 import { categories } from '../../mocks/categories';
 import { products, reviews } from '../../mocks/products';

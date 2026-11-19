@@ -21,7 +21,8 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 - `server` — NestJS bootstrap + `PrismaService` + DB readiness probe; no domain modules yet.
 - `apps/admin` — scaffold only.
 - `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
-- `packages/{i18n,sdk,payments}` — placeholders (empty `src/index.ts`, scripts print `echo 'TODO: ...'`).
+- `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
+- `packages/{sdk,payments}` — placeholders (empty `src/index.ts`, scripts print `echo 'TODO: ...'`).
 
 Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
 
@@ -86,7 +87,7 @@ ecommerce-system/
 │   │                              Re-exports Zod response schemas so web/admin can parse responses.
 │   ├── payments/                  PaymentProvider interface + VNPay / Stripe adapters.
 │   │                              Pure logic, no DB access; injected into `server/` services.
-│   ├── i18n/                      Messages vi/en (JSON), formatters (currency, date, plural).
+│   ├── i18n/                      Messages vi/en (typed TS catalogs), translator, formatters (currency, date).
 │   │                              Follows next-intl conventions, shared between web and admin.
 │   └── config/                    Shared ESLint / TS / Tailwind / Prettier / commitlint configs.
 ├── docker-compose.yml + docker/   Local Postgres + Redis + MinIO + Mailhog

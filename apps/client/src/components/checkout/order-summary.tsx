@@ -5,7 +5,7 @@ import { Card } from '@repo/ui';
 import { useLocale } from '../../i18n/locale-provider';
 import type { OrderTotals } from '../../lib/cart';
 import { lineTotal } from '../../lib/cart';
-import { formatMoney } from '../../lib/format';
+import { formatMoney } from '@repo/i18n';
 import { cn } from '../../lib/utils';
 import type { CartLine } from '../../types';
 

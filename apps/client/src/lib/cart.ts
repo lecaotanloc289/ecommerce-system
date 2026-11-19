@@ -1,5 +1,5 @@
 import type { CartLine, Currency, Money, ShippingMethod, Voucher } from '../types';
-import { sumMoney } from './format';
+import { sum } from '@repo/core/money';
 
 /** Upper bound for a single line's quantity when stock is unknown. */
 export const MAX_LINE_QTY = 99;
@@ -39,7 +39,7 @@ export interface OrderTotals {
 }
 
 /**
- * Single source of truth for cart/checkout totals. `sumMoney` throws if lines,
+ * Single source of truth for cart/checkout totals. `sum` (@repo/core) throws if lines,
  * shipping, or discount mix currencies.
  */
 export function computeTotals(
@@ -49,14 +49,14 @@ export function computeTotals(
   fallbackCurrency: Currency,
 ): OrderTotals {
   const currency = lines[0]?.unitPrice.currency ?? fallbackCurrency;
-  const subtotal = sumMoney(lines.map(lineTotal), currency);
+  const subtotal = sum(lines.map(lineTotal), currency);
   // Nothing to ship → no fee.
   const shipping =
     shippingMethod && lines.length > 0
-      ? sumMoney([shippingMethod.fee], currency)
+      ? sum([shippingMethod.fee], currency)
       : { amount: 0, currency };
   const discount = voucherDiscount(voucher, subtotal);
-  const gross = sumMoney([subtotal, shipping], currency);
+  const gross = sum([subtotal, shipping], currency);
   return {
     itemCount: cartItemCount(lines),
     subtotal,
