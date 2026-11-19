@@ -14,9 +14,16 @@ Read the root `CLAUDE.md` first — it is the constitution (Golden Rules, NEVER 
 - `react-hook-form` + `@hookform/resolvers/zod` for forms (schemas from `@repo/core`)
 - API calls go through `@repo/sdk` (typed)
 
-## Scaffold state (as of 2026-05-20)
+## Current state (as of 2026-11-19)
 
-Next 15 App Router hello page + `/design-system` showcase, Tailwind v4, shadcn config. Domain pages not started.
+UI for the 12 storefront screens in `SCREENS.md` (home, categories, search, product/[slug], cart, checkout info/shipping/review, order success/track, sign-in, register) built from the Elma kit against **mock data** (`src/mocks/`). No API calls yet — `@repo/sdk` doesn't exist.
+
+Interim deviations from the stack above (to be replaced, not copied):
+
+- **i18n:** static export (`output: 'export'`) rules out next-intl route prefixes/middleware, so locale lives in a client `LocaleProvider` (`src/i18n/locale-provider.tsx`, typed `t()` over `src/i18n/messages/{vi,en}.ts`, choice persisted in `localStorage`). Moves to `@repo/i18n` once that package has content.
+- **Types:** `src/types.ts` holds local shapes until `@repo/core` Zod schemas land (then `z.infer` exports replace them).
+- **Auth pages** render only the Google + Facebook OAuth buttons (Golden Rule #5); handlers are no-ops.
+- Shipping fee / discount on cart + checkout pages are mock literals, not derived from the chosen method or voucher yet.
 
 ## Run
 

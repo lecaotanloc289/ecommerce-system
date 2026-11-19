@@ -14,11 +14,15 @@ A single order may contain products from multiple vendors → the backend automa
 
 This file is the **constitution**. Every PR must respect the Golden Rules and NEVER DO list. Any deviation must be justified in the PR description and the file updated accordingly.
 
-### Implementation status (as of 2026-05-20)
+### Implementation status (as of 2026-11-19)
 
-All three app/server workspaces are scaffold-only; `packages/*` are placeholders (empty `src/index.ts`, scripts print `echo 'TODO: ...'`). Per-workspace scaffold state lives in each workspace's own `CLAUDE.md` (`apps/client`, `apps/admin`, `server`).
+- `packages/db` — done: full Prisma schema, migrations, seed, tests (see `packages/db/CLAUDE.md`).
+- `apps/client` — storefront UI for all `SCREENS.md` screens, on mock data (see `apps/client/CLAUDE.md`).
+- `server` — NestJS bootstrap + `PrismaService` + DB readiness probe; no domain modules yet.
+- `apps/admin` — scaffold only.
+- `packages/{core,i18n,sdk,payments}` — placeholders (empty `src/index.ts`, scripts print `echo 'TODO: ...'`).
 
-Domain logic (Prisma schema, auth, services, payments, sdk) **not started**. Unblocked once open business numbers (commission %, hold period, refund window, KYC docs, idempotency TTL) are decided. See `project-open-business-decisions` memory entry.
+Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
 
 ---
 
