@@ -21,7 +21,7 @@
     "reset": "prisma migrate reset",
     "seed": "tsx src/seed.ts",
     "lint": "echo 'TODO: eslint'",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
     "test": "vitest run"
   },
   "prisma": {
@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6",
+    "@repo/core": "workspace:*",
     "prisma": "^6",
     "ulid": "^3.0.2"
   }

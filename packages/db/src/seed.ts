@@ -1,22 +1,7 @@
 import { ulid } from 'ulid';
 import { prisma } from './client.js';
+import { SEED_IDS as IDS } from './seed-ids.js';
 import { Currency, Locale, Role, VendorStatus, ProductStatus } from '@prisma/client';
-
-// Stable ids so re-running upserts the same rows (idempotent).
-const IDS = {
-  settings: 'settings_singleton',
-  demoUser: 'user_demo_customer',
-  vendorAOwner: 'user_vendor_a_owner',
-  vendorBOwner: 'user_vendor_b_owner',
-  vendorA: 'vendor_a',
-  vendorB: 'vendor_b',
-  walletA: 'wallet_a',
-  walletB: 'wallet_b',
-  catRoot: 'cat_root',
-  catApparel: 'cat_apparel',
-  productA1: 'product_a1',
-  variantA1: 'variant_a1',
-} as const;
 
 async function main() {
   // Platform settings singleton.
@@ -95,7 +80,12 @@ async function main() {
     await prisma.wallet.upsert({
       where: { id: v.wallet },
       update: {},
-      create: { id: v.wallet, vendorId: v.vendor, balanceAmount: 0, balanceCurrency: Currency.VND },
+      create: {
+        id: v.wallet,
+        vendorId: v.vendor,
+        balanceAmount: 0n,
+        balanceCurrency: Currency.VND,
+      },
     });
   }
 
@@ -129,7 +119,7 @@ async function main() {
       id: IDS.productA1,
       vendorId: IDS.vendorA,
       status: ProductStatus.ACTIVE,
-      basePriceAmount: 199_000,
+      basePriceAmount: 199_000n,
       basePriceCurrency: Currency.VND,
       translations: {
         create: [
@@ -155,7 +145,7 @@ async function main() {
           id: IDS.variantA1,
           sku: 'TEE-BLK-M',
           attributes: { size: 'M', color: 'black' },
-          priceAmount: 199_000,
+          priceAmount: 199_000n,
           priceCurrency: Currency.VND,
           stockOnHand: 100,
           stockReserved: 0,

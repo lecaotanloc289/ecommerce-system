@@ -238,7 +238,7 @@ model VendorApplication {
 model Wallet {
   id              String   @id
   vendorId        String   @unique @map("vendor_id")
-  balanceAmount   Int      @default(0) @map("balance_amount")
+  balanceAmount   BigInt   @default(0) @map("balance_amount")
   balanceCurrency Currency @default(VND) @map("balance_currency")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -285,7 +285,7 @@ model Product {
   id                String        @id
   vendorId          String        @map("vendor_id")
   status            ProductStatus @default(DRAFT)
-  basePriceAmount   Int           @map("base_price_amount")
+  basePriceAmount   BigInt        @map("base_price_amount")
   basePriceCurrency Currency      @default(VND) @map("base_price_currency")
   primaryImageUrl   String?       @map("primary_image_url")
   createdAt         DateTime      @default(now()) @map("created_at")
@@ -338,7 +338,7 @@ model ProductVariant {
   productId     String   @map("product_id")
   sku           String   @unique
   attributes    Json     @default("{}")
-  priceAmount   Int      @map("price_amount")
+  priceAmount   BigInt   @map("price_amount")
   priceCurrency Currency @default(VND) @map("price_currency")
   stockOnHand   Int      @default(0) @map("stock_on_hand")
   stockReserved Int      @default(0) @map("stock_reserved")
@@ -401,10 +401,10 @@ model Order {
   customerId          String      @map("customer_id")
   status              OrderStatus @default(AWAITING_PAYMENT)
   currency            Currency
-  itemsTotalAmount    Int         @map("items_total_amount")
-  shippingTotalAmount Int         @map("shipping_total_amount")
-  discountTotalAmount Int         @default(0) @map("discount_total_amount")
-  grandTotalAmount    Int         @map("grand_total_amount")
+  itemsTotalAmount    BigInt      @map("items_total_amount")
+  shippingTotalAmount BigInt      @map("shipping_total_amount")
+  discountTotalAmount BigInt      @default(0) @map("discount_total_amount")
+  grandTotalAmount    BigInt      @map("grand_total_amount")
   idempotencyKey      String      @unique @map("idempotency_key")
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
@@ -425,10 +425,10 @@ model SubOrder {
   orderId          String         @map("order_id")
   vendorId         String         @map("vendor_id")
   status           SubOrderStatus @default(AWAITING_PAYMENT)
-  subtotalAmount   Int            @map("subtotal_amount")
-  shippingAmount   Int            @map("shipping_amount")
-  discountAmount   Int            @default(0) @map("discount_amount")
-  commissionAmount Int            @default(0) @map("commission_amount")
+  subtotalAmount   BigInt         @map("subtotal_amount")
+  shippingAmount   BigInt         @map("shipping_amount")
+  discountAmount   BigInt         @default(0) @map("discount_amount")
+  commissionAmount BigInt         @default(0) @map("commission_amount")
   currency         Currency
   shippingMethodId String?        @map("shipping_method_id")
   shippingAddress  Json           @map("shipping_address")
@@ -458,9 +458,9 @@ model OrderItem {
   variantId                 String   @map("variant_id")
   productTitleSnapshot      String   @map("product_title_snapshot")
   variantAttributesSnapshot Json     @map("variant_attributes_snapshot")
-  unitPriceAmount           Int      @map("unit_price_amount")
+  unitPriceAmount           BigInt   @map("unit_price_amount")
   quantity                  Int
-  lineTotalAmount           Int      @map("line_total_amount")
+  lineTotalAmount           BigInt   @map("line_total_amount")
   currency                  Currency
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
@@ -477,7 +477,7 @@ model ShippingMethod {
   id            String   @id
   vendorId      String   @map("vendor_id")
   name          String
-  priceAmount   Int      @map("price_amount")
+  priceAmount   BigInt   @map("price_amount")
   priceCurrency Currency @default(VND) @map("price_currency")
   estDays       Int      @map("est_days")
   isActive      Boolean  @default(true) @map("is_active")
@@ -496,7 +496,7 @@ model Payment {
   orderId       String          @map("order_id")
   provider      PaymentProvider
   status        PaymentStatus   @default(PENDING)
-  amount        Int
+  amount        BigInt
   currency      Currency
   providerTxnId String?         @map("provider_txn_id")
   rawPayload    Json?           @map("raw_payload")
@@ -517,7 +517,7 @@ model LedgerEntry {
   txnGroupId String          @map("txn_group_id")
   account    LedgerAccount
   entryType  LedgerEntryType @map("entry_type")
-  amount     Int
+  amount     BigInt
   currency   Currency
   orderId    String?         @map("order_id")
   subOrderId String?         @map("sub_order_id")
@@ -542,8 +542,8 @@ model Coupon {
   vendorId       String?      @map("vendor_id")
   code           String
   discountType   DiscountType @map("discount_type")
-  discountValue  Int          @map("discount_value")
-  minSpendAmount Int?         @map("min_spend_amount")
+  discountValue  BigInt       @map("discount_value")
+  minSpendAmount BigInt?      @map("min_spend_amount")
   currency       Currency?
   maxRedemptions Int?         @map("max_redemptions")
   perUserLimit   Int?         @map("per_user_limit")
@@ -567,7 +567,7 @@ model CouponRedemption {
   userId         String   @map("user_id")
   orderId        String?  @map("order_id")
   subOrderId     String?  @map("sub_order_id")
-  discountAmount Int      @map("discount_amount")
+  discountAmount BigInt   @map("discount_amount")
   currency       Currency
   redeemedAt     DateTime @default(now()) @map("redeemed_at")
 

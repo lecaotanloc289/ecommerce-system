@@ -26,13 +26,11 @@ whichever path it was imported from). Consumers need `@repo/core` built first (t
   `half-even` explicitly. `allocate` (largest-remainder) always sums back to the input.
 - **Money ↔ DB:** the API shape is nested `{ amount, currency }`; DB columns are flat `xxxAmount` +
   `xxxCurrency` (or a row-level `currency`). The server's repository layer maps between them.
-  ⚠️ Open issue: DB money columns are Prisma `Int` (int4, max 2,147,483,647) while `Money` allows up to
-  2^53 − 1 — a VND total over ~2.1B đồng passes core but fails on insert. Needs a decision in `@repo/db`
-  (move to `BigInt`) before checkout/wallet code ships.
+  DB columns are `BigInt`; convert with `toMoney` / `toDbAmount` from `@repo/db`.
 - **Enums:** values must equal `packages/db/prisma/schema.prisma` exactly. `test/enums.test.ts` parses the
   schema file and fails if an enum is added, removed or changed on either side — update both together.
-- **IDs:** canonical uppercase ULID (`ulid` package output). Non-ULID ids fail validation — the db seed's
-  fixed ids (`vendor_a`, `product_a1`, …) do not pass `XxxIdSchema`.
+- **IDs:** canonical uppercase ULID (`ulid` package output). Non-ULID ids fail validation (the db seed uses
+  fixed canonical ULIDs for this reason).
 - **Errors:** codes are i18n keys, `<domain>.error.<kebab>`. New code → add to `ERROR_CODES` and
   `ERROR_HTTP_STATUS` (the compiler enforces the second). No user-facing text in this package.
 - **Schemas:** read shapes mirror DB nullability (`null`, not optional). Request schemas never carry

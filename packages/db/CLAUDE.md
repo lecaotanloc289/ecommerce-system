@@ -1,14 +1,15 @@
 # @repo/db
 
-Prisma schema (DB source of truth), client singleton, ledger helpers, seed.
+Prisma schema (DB source of truth), client singleton, ledger + money boundary helpers, seed.
 
 ## State
 
 - Schema: 27 models, 15 enums (identity, vendor/KYC, catalog+i18n, cart, orders, payment+ledger, coupons, reviews, settings, outbox).
-- Migrations: `init`, `add_search_indexes` (pg_trgm + tsvector, hand-written SQL), `register_search_vector` (registers the generated `search_vector` column via `Unsupported("tsvector")`), `add_platform_coupon_code_unique` (partial unique index so platform coupons — `vendor_id IS NULL` — have globally-unique codes; Prisma's `@@unique` can't express a `WHERE` clause).
+- Migrations: `init`, `add_search_indexes` (pg_trgm + tsvector, hand-written SQL), `register_search_vector` (registers the generated `search_vector` column via `Unsupported("tsvector")`), `add_platform_coupon_code_unique` (partial unique index so platform coupons — `vendor_id IS NULL` — have globally-unique codes; Prisma's `@@unique` can't express a `WHERE` clause), `widen_money_columns_to_bigint` (every money column int4 → int8; hand-edited to strip the search-index drift statements below).
 - Client: singleton in `src/client.ts`, exported as `prisma` from `src/index.ts`. NEVER export the `PrismaClient` constructor outside this package.
-- IDs: ULID supplied at create-time (no DB default). Use `ulid()` from the `ulid` package.
-- Money: paired `*_amount Int` + `*_currency Currency`. Never float.
+- IDs: ULID supplied at create-time (no DB default). Use `ulid()` from the `ulid` package. Seed rows use the fixed canonical ULIDs in `src/seed-ids.ts` (`01SEED…`), so they parse through `@repo/core` id schemas. A local DB seeded before these ids existed (`vendor_a`, …) needs `pnpm db:reset` — the new seed collides on unique slugs/emails.
+- Money: paired `*_amount BigInt` + `*_currency Currency` (or a row-level `currency`). Never float. Prisma returns `bigint`; convert at the repository boundary with `toMoney(amount, currency)` → `@repo/core` Money (throws `money.error.overflow` beyond 2^53 − 1) and `toDbAmount(money)` → `bigint`, both exported from `src/money.ts`. bps, percents, counts and quantities stay `Int`. `Coupon.discountValue` is BigInt because it can hold a FIXED amount: pass it through `toMoney` only when `discountType = FIXED` (and `currency` is set). For `PERCENT` it is not money; its unit (percent vs bps) is not pinned by the schema yet and must be decided before coupon code lands.
+- Never `JSON.stringify` a raw Prisma row: `bigint` throws ("Do not know how to serialize a BigInt"). Map amounts with `toMoney` before building DTOs, API responses or `OutboxEvent.payload`.
 
 ## ⚠️ Search-index drift (read before running migrate dev)
 
@@ -27,4 +28,5 @@ Add new search/partial-index SQL as a new hand-written migration instead. `prism
 
 - `pnpm --filter @repo/db migrate` — migrate dev
 - `pnpm --filter @repo/db seed` — idempotent seed
-- `pnpm --filter @repo/db test` — vitest (needs local postgres via `pnpm services:up`)
+- `pnpm --filter @repo/db test` — vitest (needs local postgres via `pnpm services:up`; `@repo/core` must be built first — `pnpm --filter @repo/core build`, or run through turbo `pnpm test`, which builds deps)
+- `pnpm --filter @repo/db typecheck` — `tsc` for `src/` and `test/` (`test/tsconfig.json`); also needs `@repo/core` built
