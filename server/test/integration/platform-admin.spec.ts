@@ -571,9 +571,29 @@ describe('platform admin API (Testcontainers)', () => {
         url: `/v1/platform/users/${a1.id}/roles/PLATFORM_ADMIN`,
         headers: { authorization: `Bearer ${stale}`, 'idempotency-key': ulid() },
       });
-      expect(res.statusCode).toBe(409);
-      expect(code(res.json())).toBe('common.error.conflict');
+      // the demoted admin's stale token is re-checked against the DB: refused, a1 stays admin
+      expect(res.statusCode).toBe(403);
+      expect(code(res.json())).toBe('common.error.forbidden');
       expect(await t.db.userRole.count({ where: { role: 'PLATFORM_ADMIN' } })).toBe(1);
+      // and the same stale token cannot change settings or grant itself the role back
+      const settings = await t.app.inject({
+        method: 'PATCH',
+        url: '/v1/platform/settings',
+        headers: { authorization: `Bearer ${stale}`, 'idempotency-key': ulid() },
+        payload: { commissionBps: 5000 },
+      });
+      expect(settings.statusCode).toBe(403);
+      const regrant = await t.app.inject({
+        method: 'POST',
+        url: `/v1/platform/users/${a2.id}/roles`,
+        headers: { authorization: `Bearer ${stale}`, 'idempotency-key': ulid() },
+        payload: { role: 'PLATFORM_ADMIN' },
+      });
+      expect(regrant.statusCode).toBe(403);
+      expect(await t.db.userRole.count({ where: { role: 'PLATFORM_ADMIN' } })).toBe(1);
+      // revoking a role the target never held stays a 200 no-op while a1 is the only admin
+      const noop = await call(a1, 'DELETE', `/platform/users/${a2.id}/roles/PLATFORM_ADMIN`);
+      expect(noop.status).toBe(200);
     });
 
     it('concurrent demotions of the last two admins leave one', async () => {
@@ -583,7 +603,7 @@ describe('platform admin API (Testcontainers)', () => {
         call(a1, 'DELETE', `/platform/users/${a2.id}/roles/PLATFORM_ADMIN`),
         call(a2, 'DELETE', `/platform/users/${a1.id}/roles/PLATFORM_ADMIN`),
       ]);
-      expect([r1.status, r2.status].sort()).toEqual([200, 409]);
+      expect([r1.status, r2.status].sort()).toEqual([200, 403]);
       expect(await t.db.userRole.count({ where: { role: 'PLATFORM_ADMIN' } })).toBe(1);
     });
   });

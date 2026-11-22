@@ -12,6 +12,7 @@ import type { Prisma } from '@repo/db';
 import { ulid } from 'ulid';
 import { cursorPageArgs, toPage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertPlatformAdmin } from './platform-admin-guard';
 
 const WITH_ROLES = {
   include: { roles: { select: { role: true } } },
@@ -67,6 +68,7 @@ export class PlatformUsersService {
   async grant(actorId: string, userId: string, role: PlatformRole): Promise<PlatformUser> {
     const row = await this.prisma.client.$transaction(async (tx) => {
       await this.lock(tx);
+      await assertPlatformAdmin(tx, actorId);
       const exists = await tx.user.findUnique({ where: { id: userId }, select: { id: true } });
       if (!exists) throw new DomainError('common.error.not-found', { id: userId });
       const held = await tx.userRole.findFirst({ where: { userId, role, vendorId: null } });
@@ -87,17 +89,21 @@ export class PlatformUsersService {
     }
     const row = await this.prisma.client.$transaction(async (tx) => {
       await this.lock(tx);
+      await assertPlatformAdmin(tx, actorId);
       const exists = await tx.user.findUnique({ where: { id: userId }, select: { id: true } });
       if (!exists) throw new DomainError('common.error.not-found', { id: userId });
-      if (role === 'PLATFORM_ADMIN') {
-        const others = await tx.userRole.count({
-          where: { role: 'PLATFORM_ADMIN', userId: { not: userId } },
-        });
-        if (others === 0) {
-          throw new DomainError('common.error.conflict', { reason: 'last-platform-admin' });
+      const held = await tx.userRole.findFirst({ where: { userId, role, vendorId: null } });
+      if (held) {
+        if (role === 'PLATFORM_ADMIN') {
+          const others = await tx.userRole.count({
+            where: { role: 'PLATFORM_ADMIN', userId: { not: userId } },
+          });
+          if (others === 0) {
+            throw new DomainError('common.error.conflict', { reason: 'last-platform-admin' });
+          }
         }
+        await tx.userRole.deleteMany({ where: { userId, role, vendorId: null } });
       }
-      await tx.userRole.deleteMany({ where: { userId, role, vendorId: null } });
       return tx.user.findUniqueOrThrow({ where: { id: userId }, ...WITH_ROLES });
     });
     this.logger.log({ actorId, userId, role }, 'platform role revoked');

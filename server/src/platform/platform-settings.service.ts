@@ -7,6 +7,7 @@ import {
 } from '@repo/core';
 import type { Prisma } from '@repo/db';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertPlatformAdmin } from './platform-admin-guard';
 
 type SettingsRow = Prisma.PlatformSettingsGetPayload<object>;
 
@@ -32,7 +33,7 @@ export class PlatformSettingsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async get(): Promise<PlatformSettings> {
-    const row = await this.prisma.client.platformSettings.findFirst();
+    const row = await this.prisma.client.platformSettings.findFirst({ orderBy: { id: 'asc' } });
     if (!row) throw new DomainError('common.error.internal', { reason: 'settings-missing' });
     return toSettings(row);
   }
@@ -44,6 +45,7 @@ export class PlatformSettingsService {
    */
   async update(adminId: string, body: PlatformSettingsUpdate): Promise<PlatformSettings> {
     const updated = await this.prisma.client.$transaction(async (tx) => {
+      await assertPlatformAdmin(tx, adminId);
       const locked = await tx.$queryRaw<{ id: string }[]>`
         SELECT id FROM platform_settings ORDER BY id LIMIT 1 FOR UPDATE`;
       const id = locked[0]?.id;
