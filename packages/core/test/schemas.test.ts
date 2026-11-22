@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AddressInputSchema,
   AddressSchema,
+  AddressUpdateSchema,
   CartLineInputSchema,
   CartLineSchema,
   CategorySchema,
@@ -93,6 +94,26 @@ describe('Address', () => {
     const row = { ...input, id: ulid(1), line2: null, country: 'VN', isDefault: true };
     expect(AddressSchema.parse(row).line2).toBeNull();
     expect(AddressSchema.safeParse({ ...row, id: 'addr_1' }).success).toBe(false);
+  });
+});
+
+describe('AddressUpdateSchema', () => {
+  it('accepts a partial body without applying defaults', () => {
+    expect(AddressUpdateSchema.parse({ city: ' Hà Nội ' })).toEqual({ city: 'Hà Nội' });
+  });
+
+  it('blank or null line2 clears it', () => {
+    expect(AddressUpdateSchema.parse({ line2: '  ' }).line2).toBeNull();
+    expect(AddressUpdateSchema.parse({ line2: null }).line2).toBeNull();
+  });
+
+  it.each([
+    ['empty body', {}],
+    ['bad phone', { phone: 'abc' }],
+    ['lowercase country', { country: 'vn' }],
+    ['blank name', { recipientName: ' ' }],
+  ])('rejects %s', (_label, value) => {
+    expect(AddressUpdateSchema.safeParse(value).success).toBe(false);
   });
 });
 
