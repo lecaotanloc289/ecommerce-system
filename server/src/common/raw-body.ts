@@ -14,7 +14,8 @@ export const SignedWebhookRoute = (): MethodDecorator =>
 
 /**
  * `preParsing` hook: for routes whose config has `rawBody: true`, buffers the body (up to the
- * route's body limit → else 413), stores it on `request.rawBody`, and hands the same bytes to the
+ * route's body limit, else 422 `common.error.validation-failed` — checked on the declared
+ * Content-Length before reading and again while reading), stores it on `request.rawBody`, and hands the same bytes to the
  * normal content-type parser. Every other route is untouched (JSON parsing is unchanged; no raw
  * copy is kept). Must run before `app.init()` like `registerRateLimit`.
  */
@@ -23,14 +24,15 @@ export function registerRawBodyCapture(app: NestFastifyApplication): void {
   fastify.addHook('preParsing', async (request, _reply, payload) => {
     if (request.routeOptions.config.rawBody !== true) return payload;
     const limit = request.routeOptions.bodyLimit ?? fastify.initialConfig.bodyLimit ?? 1_048_576;
+    const tooLarge = () =>
+      new DomainError('common.error.validation-failed', { reason: 'body-too-large' });
+    if (Number(request.headers['content-length'] ?? 0) > limit) throw tooLarge();
     const chunks: Buffer[] = [];
     let size = 0;
     for await (const chunk of payload) {
       const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
       size += buffer.length;
-      if (size > limit) {
-        throw new DomainError('common.error.validation-failed', { reason: 'body-too-large' });
-      }
+      if (size > limit) throw tooLarge();
       chunks.push(buffer);
     }
     const raw = Buffer.concat(chunks);

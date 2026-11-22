@@ -53,7 +53,7 @@ function vnpayQuery(
 function stripeEvent(
   type: string,
   paymentId: string,
-  amount: number,
+  amount: number | null,
   options: { paymentStatus?: string; currency?: string } = {},
 ): string {
   return JSON.stringify({
@@ -286,9 +286,9 @@ describe('payment webhooks + confirmation (Testcontainers)', () => {
 
       const mismatch = await ipn(vnpayQuery(payment.id, order.grandTotal.amount - 1));
       expect(mismatch.json()).toEqual({ RspCode: '04', Message: 'invalid amount' });
-      expect((await t.db.payment.findUniqueOrThrow({ where: { id: payment.id } })).status).toBe(
-        'FAILED',
-      );
+      const failedRow = await t.db.payment.findUniqueOrThrow({ where: { id: payment.id } });
+      // FAILED, but the provider reference stays for a manual refund of the money it holds.
+      expect(failedRow).toMatchObject({ status: 'FAILED', providerTxnId: '14000001' });
       expect((await t.db.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe(
         'AWAITING_PAYMENT',
       );
@@ -530,9 +530,28 @@ describe('payment webhooks + confirmation (Testcontainers)', () => {
       );
     });
 
-    it('JSON parsing elsewhere is unaffected (no raw body kept on other routes)', async () => {
+    it('acknowledges an authentic event with an unreadable amount (no retry storm, no writes)', async () => {
+      const { order, payment } = await twoVendorOrder('STRIPE');
+      const res = await stripe(
+        stripeEvent('checkout.session.expired', payment.id, null, { paymentStatus: 'unpaid' }),
+      );
+      expect(res.statusCode).toBe(200);
+      expect((await t.db.payment.findUniqueOrThrow({ where: { id: payment.id } })).status).toBe(
+        'PENDING',
+      );
+      await expectNoMoneyWrites(order.id);
+    });
+
+    it('JSON parsing elsewhere is unaffected; unknown routes still 404', async () => {
       const { order } = await twoVendorOrder();
       expect(order.subOrders).toHaveLength(2);
+      const missing = await t.app.inject({
+        method: 'POST',
+        url: '/v1/payments/webhook/unknown',
+        headers: { 'content-type': 'application/json' },
+        payload: '{"a":1}',
+      });
+      expect(missing.statusCode).toBe(404);
     });
   });
 
@@ -609,6 +628,38 @@ describe('payment webhooks + confirmation (Testcontainers)', () => {
       await expect(service.confirmZeroAmount(paidOrder.payment.id)).rejects.toMatchObject({
         code: 'payment.error.amount-mismatch',
       });
+    });
+
+    it('confirmZeroAmount on a cancelled free order writes nothing', async () => {
+      const buyer = await customer();
+      const s = await shop(40_000, 5, 0);
+      const coupon = await makeCoupon(t.db, { discountValue: 10_000 });
+      const res = await t.app.inject({
+        method: 'POST',
+        url: '/v1/orders/checkout',
+        headers: { ...buyer.headers, 'idempotency-key': ulid() },
+        payload: {
+          items: [{ variantId: s.variant.id, quantity: 1 }],
+          addressId: buyer.address.id,
+          shippingMethodIds: [s.method.id],
+          couponCodes: [coupon.code],
+          provider: 'VNPAY',
+        },
+      });
+      const order = res.json<OrderBody>();
+      const cancel = await t.app.inject({
+        method: 'POST',
+        url: `/v1/orders/${order.id}/cancel`,
+        headers: { ...buyer.headers, 'idempotency-key': ulid() },
+      });
+      expect(cancel.statusCode).toBe(200);
+      const payment = await t.db.payment.findFirstOrThrow({ where: { orderId: order.id } });
+      const service = t.app.get(PaymentConfirmationService);
+      await expect(service.confirmZeroAmount(payment.id)).resolves.toBe('already-processed');
+      expect((await t.db.payment.findUniqueOrThrow({ where: { id: payment.id } })).status).toBe(
+        'FAILED',
+      );
+      await expectNoMoneyWrites(order.id);
     });
   });
 });

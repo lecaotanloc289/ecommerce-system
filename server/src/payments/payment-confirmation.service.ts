@@ -153,9 +153,16 @@ export class PaymentConfirmationService {
     const expected = toMoney(payment.amount, payment.currency);
     if (!(input.amount.currency === expected.currency && input.amount.amount === expected.amount)) {
       if (payment.status === 'PENDING') {
+        // A CONFIRMED result keeps its provider reference on the FAILED row, so the money the
+        // provider holds can be found and refunded manually (the log is not the only trail).
+        const trail = input.status === 'CONFIRMED' && payment.providerTxnId === null;
         await tx.payment.updateMany({
           where: { id: payment.id, status: 'PENDING' },
-          data: { status: 'FAILED' },
+          data: {
+            status: 'FAILED',
+            ...(trail && { providerTxnId: input.providerTxnId }),
+            ...(trail && input.rawPayload !== null && { rawPayload: input.rawPayload }),
+          },
         });
       }
       this.logger.error(
@@ -176,6 +183,8 @@ export class PaymentConfirmationService {
 
     // CONFIRMED. A CONFIRMED/REFUNDED payment has been handled before (replay) → no-op.
     if (payment.status !== 'PENDING' && payment.status !== 'FAILED') return 'already-processed';
+    // A zero-amount confirmation moves no money: only an unpaid order can use it.
+    if (Money.isZero(expected) && order.status !== 'AWAITING_PAYMENT') return 'already-processed';
 
     // Money is real from here on: the payment becomes CONFIRMED whatever the order state.
     const marked = await tx.payment.updateMany({
@@ -189,8 +198,12 @@ export class PaymentConfirmationService {
     if (marked.count !== 1) throw new Error(`payment ${payment.id} changed under its row lock`);
 
     if (order.status === 'AWAITING_PAYMENT') {
-      await this.markOrderPaid(tx, order, payment.id);
-      return 'confirmed';
+      if (await this.markOrderPaid(tx, order, payment.id)) return 'confirmed';
+      // Inconsistent order (status says unpaid, a sub-order moved on): never loop the provider
+      // on a rollback — record the money and hand it to a human.
+      this.recordUnallocatedPayment(order.id, payment.id, expected, 'sub-orders not payable');
+      await this.insertLedger(tx, this.orderLevelEscrowIn(order.id, expected));
+      return 'manual-review';
     }
     if (order.status === 'CANCELLED') {
       return this.refundLatePayment(tx, order, payment.id, expected);
@@ -204,28 +217,32 @@ export class PaymentConfirmationService {
    * Order AWAITING_PAYMENT → PAID. Also used when the confirmed attempt had been marked FAILED
    * (superseded by a retry): the customer paid the order's exact grand total, so the order is
    * paid and the newer PENDING attempt is failed instead of refunding the older one.
+   * Returns false (nothing written) when not every sub-order is AWAITING_PAYMENT.
    */
   private async markOrderPaid(
     tx: Tx,
     order: { id: string; customerId: string },
     paymentId: string,
-  ): Promise<void> {
-    await tx.payment.updateMany({
-      where: { orderId: order.id, status: 'PENDING', id: { not: paymentId } },
-      data: { status: 'FAILED' },
-    });
-
+  ): Promise<boolean> {
     const subOrders = await tx.subOrder.findMany({
       where: { orderId: order.id },
       orderBy: { id: 'asc' },
       include: { items: { select: { variantId: true, quantity: true } } },
     });
+    if (subOrders.length === 0 || subOrders.some((so) => so.status !== 'AWAITING_PAYMENT')) {
+      return false;
+    }
+
+    await tx.payment.updateMany({
+      where: { orderId: order.id, status: 'PENDING', id: { not: paymentId } },
+      data: { status: 'FAILED' },
+    });
     const paid = await tx.subOrder.updateMany({
       where: { orderId: order.id, status: 'AWAITING_PAYMENT' },
       data: { status: 'PAID' },
     });
-    if (subOrders.length === 0 || paid.count !== subOrders.length) {
-      throw new Error(`markOrderPaid: sub-orders of ${order.id} are not all AWAITING_PAYMENT`);
+    if (paid.count !== subOrders.length) {
+      throw new Error(`markOrderPaid: sub-orders of ${order.id} changed under the order lock`);
     }
 
     await this.commitStock(
@@ -255,6 +272,7 @@ export class PaymentConfirmationService {
         payload: OrderPaidEventSchema.parse({ orderId: order.id, customerId: order.customerId }),
       },
     });
+    return true;
   }
 
   /**

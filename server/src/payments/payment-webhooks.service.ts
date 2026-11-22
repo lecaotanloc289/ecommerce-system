@@ -6,6 +6,7 @@ import {
   type VnpayIpnResponse,
   type WebhookPaymentResult,
   type WebhookRequest,
+  type WebhookResult,
 } from '@repo/payments';
 import { z } from 'zod';
 import { ENV } from '../config/config.module';
@@ -18,6 +19,17 @@ import {
 import { PAYMENT_PROVIDERS, type PaymentProviders, requireProvider } from './payment-providers';
 
 export type QueryRecord = Readonly<Record<string, string | string[] | undefined>>;
+
+/** Fastify's parsed query (strings / string arrays) as a typed record; anything else dropped. */
+export function toQueryRecord(query: unknown): QueryRecord {
+  if (typeof query !== 'object' || query === null) return {};
+  const out: Record<string, string | string[]> = {};
+  for (const [key, value] of Object.entries(query)) {
+    if (typeof value === 'string') out[key] = value;
+    else if (Array.isArray(value)) out[key] = value.map(String);
+  }
+  return out;
+}
 
 /** Storefront page for a payment that failed / could not be verified (built by the web app). */
 export const PAYMENT_FAILED_PATH = 'order/payment-failed';
@@ -91,7 +103,18 @@ export class PaymentWebhooksService {
    */
   async handleStripe(headers: WebhookRequest['headers'], rawBody: Buffer | undefined) {
     const provider = requireProvider(this.providers, 'STRIPE');
-    const result = provider.verifyWebhook({ headers, rawBody: rawBody ?? '', query: {} });
+    let result: WebhookResult;
+    try {
+      result = provider.verifyWebhook({ headers, rawBody: rawBody ?? '', query: {} });
+    } catch (error) {
+      // Authentic event whose amount/currency we cannot read (null total, unknown currency):
+      // acknowledge it — Stripe would retry it for days without a different outcome.
+      if (error instanceof DomainError && error.code === 'payment.error.amount-mismatch') {
+        this.logger.warn('STRIPE webhook with an unreadable amount/currency ignored');
+        return;
+      }
+      throw error;
+    }
     if (result.status === 'IGNORED') return;
     const outcome = await this.confirmation.apply(this.toInput('STRIPE', result));
     this.logOutcome('STRIPE', result.paymentId, outcome);
