@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import { RefundStatusSchema } from '../enums';
-import { PaymentIdSchema, RefundIdSchema, SubOrderIdSchema, UserIdSchema } from '../ids';
+import {
+  OrderIdSchema,
+  PaymentIdSchema,
+  RefundIdSchema,
+  SubOrderIdSchema,
+  UserIdSchema,
+  VendorIdSchema,
+} from '../ids';
+import { PageQuerySchema, PageSchema } from './common';
 import { IsoDateTimeSchema } from './datetime';
 import { NonNegativeMoneySchema } from './money';
 
@@ -26,3 +34,19 @@ export const RefundSchema = z.object({
   updatedAt: IsoDateTimeSchema,
 });
 export type Refund = z.infer<typeof RefundSchema>;
+
+/** `GET /v1/platform/refunds?status=&cursor=&limit=` (platform console), newest first. */
+export const RefundListQuerySchema = PageQuerySchema.extend({
+  status: RefundStatusSchema.optional(),
+});
+export type RefundListQuery = z.infer<typeof RefundListQuerySchema>;
+
+/** Console row: the refund plus the order and vendor it belongs to (for linking). */
+export const RefundListItemSchema = RefundSchema.extend({
+  orderId: OrderIdSchema,
+  vendorId: VendorIdSchema,
+});
+export type RefundListItem = z.infer<typeof RefundListItemSchema>;
+
+export const RefundPageSchema = PageSchema(RefundListItemSchema);
+export type RefundPage = z.infer<typeof RefundPageSchema>;
