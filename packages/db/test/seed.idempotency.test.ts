@@ -29,9 +29,9 @@ describe('seed idempotency', () => {
     expect(count).toBe(2);
   });
 
-  it('creates exactly one product variant', async () => {
+  it('creates exactly three product variants', async () => {
     const count = await prisma.productVariant.count();
-    expect(count).toBe(1);
+    expect(count).toBe(3);
   });
 
   it('does not duplicate any other seeded row on re-run', async () => {
@@ -40,9 +40,11 @@ describe('seed idempotency', () => {
     expect(await prisma.wallet.count()).toBe(2);
     expect(await prisma.category.count()).toBe(2);
     expect(await prisma.categoryTranslation.count()).toBe(2);
-    expect(await prisma.product.count()).toBe(1);
-    expect(await prisma.productTranslation.count()).toBe(2);
-    expect(await prisma.productCategory.count()).toBe(1);
+    expect(await prisma.product.count()).toBe(3);
+    expect(await prisma.productTranslation.count()).toBe(6);
+    expect(await prisma.productCategory.count()).toBe(3);
+    expect(await prisma.liveSession.count()).toBe(2);
+    expect(await prisma.liveSessionProduct.count()).toBe(5);
   });
 
   it('gives every seeded row a canonical ULID id (parses through @repo/core id schemas)', async () => {
@@ -58,6 +60,7 @@ describe('seed idempotency', () => {
       ...(await prisma.product.findMany(select)),
       ...(await prisma.productTranslation.findMany(select)),
       ...(await prisma.productVariant.findMany(select)),
+      ...(await prisma.liveSession.findMany(select)),
     ];
     expect(rows.length).toBeGreaterThan(0);
     const invalid = rows.filter((r) => !UlidSchema.safeParse(r.id).success).map((r) => r.id);

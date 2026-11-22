@@ -1,7 +1,15 @@
 import { ulid } from 'ulid';
 import { prisma } from './client.js';
 import { SEED_IDS as IDS } from './seed-ids.js';
-import { Currency, Locale, Role, VendorStatus, ProductStatus } from '@prisma/client';
+import {
+  Currency,
+  Locale,
+  Role,
+  VendorStatus,
+  ProductStatus,
+  LiveSessionStatus,
+  LiveEndReason,
+} from '@prisma/client';
 
 async function main() {
   // Platform settings singleton.
@@ -16,6 +24,8 @@ async function main() {
       maxCouponStack: 1,
       supportedCurrencies: [Currency.VND, Currency.USD],
       defaultCurrency: Currency.VND,
+      liveDisconnectGraceSeconds: 120,
+      liveChatCooldownSeconds: 2,
     },
   });
 
@@ -150,6 +160,100 @@ async function main() {
           stockOnHand: 100,
           stockReserved: 0,
         },
+      },
+    },
+  });
+
+  // Two more ACTIVE products on Vendor A (live sessions pin 2-3 products).
+  for (const p of [
+    {
+      id: IDS.productA2,
+      variant: IDS.variantA2,
+      sku: 'HOODIE-GRY-L',
+      price: 399_000n,
+      vi: ['Áo hoodie', 'ao-hoodie'],
+      en: ['Hoodie', 'hoodie'],
+    },
+    {
+      id: IDS.productA3,
+      variant: IDS.variantA3,
+      sku: 'CAP-BLK-OS',
+      price: 99_000n,
+      vi: ['Mũ lưỡi trai', 'mu-luoi-trai'],
+      en: ['Baseball Cap', 'baseball-cap'],
+    },
+  ]) {
+    await prisma.product.upsert({
+      where: { id: p.id },
+      update: {},
+      create: {
+        id: p.id,
+        vendorId: IDS.vendorA,
+        status: ProductStatus.ACTIVE,
+        basePriceAmount: p.price,
+        basePriceCurrency: Currency.VND,
+        translations: {
+          create: [
+            { id: ulid(), locale: Locale.VI, name: p.vi[0]!, slug: p.vi[1]! },
+            { id: ulid(), locale: Locale.EN, name: p.en[0]!, slug: p.en[1]! },
+          ],
+        },
+        categories: { create: { categoryId: IDS.catApparel } },
+        variants: {
+          create: {
+            id: p.variant,
+            sku: p.sku,
+            attributes: { size: 'M' },
+            priceAmount: p.price,
+            priceCurrency: Currency.VND,
+            stockOnHand: 100,
+            stockReserved: 0,
+          },
+        },
+      },
+    });
+  }
+
+  // Live sessions for Vendor A: one ENDED (3 products) and one SCHEDULED (2 products).
+  await prisma.liveSession.upsert({
+    where: { id: IDS.liveSessionEnded },
+    update: {},
+    create: {
+      id: IDS.liveSessionEnded,
+      vendorId: IDS.vendorA,
+      createdById: IDS.vendorAOwner,
+      idempotencyKey: 'seed-live-ended',
+      title: 'Seed replay',
+      status: LiveSessionStatus.ENDED,
+      startedAt: new Date('2026-11-20T10:00:00Z'),
+      endedAt: new Date('2026-11-20T11:00:00Z'),
+      endReason: LiveEndReason.VENDOR,
+      recordingVideoId: 'seed-recording-1',
+      peakViewers: 128,
+      products: {
+        create: [IDS.productA1, IDS.productA2, IDS.productA3].map((productId, position) => ({
+          productId,
+          position,
+        })),
+      },
+    },
+  });
+  await prisma.liveSession.upsert({
+    where: { id: IDS.liveSessionScheduled },
+    update: {},
+    create: {
+      id: IDS.liveSessionScheduled,
+      vendorId: IDS.vendorA,
+      createdById: IDS.vendorAOwner,
+      idempotencyKey: 'seed-live-scheduled',
+      title: 'Seed upcoming live',
+      status: LiveSessionStatus.SCHEDULED,
+      scheduledAt: new Date('2026-12-01T10:00:00Z'),
+      products: {
+        create: [IDS.productA1, IDS.productA2].map((productId, position) => ({
+          productId,
+          position,
+        })),
       },
     },
   });
