@@ -98,7 +98,7 @@ The storefront renders SSR on a Worker built by `@opennextjs/cloudflare` (roadma
 | `dev`  | `dev`        | `elma-web-dev`  | `https://elma-web-dev.<account>.workers.dev`  |
 | `prod` | `prod`       | `elma-web-prod` | `https://elma-web-prod.<account>.workers.dev` |
 
-`deploy-web.yml` steps: `pnpm install --frozen-lockfile` → `pnpm turbo run build --filter=@apps/web^...` (builds `@repo/core` / `@repo/i18n` dist) → in `apps/client`: `pnpm exec opennextjs-cloudflare build --env $BRANCH` (runs `next build`, writes `.open-next/`) → `pnpm exec opennextjs-cloudflare deploy --env $BRANCH`. `NEXT_PUBLIC_API_URL` is set at build time (inlined); `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` are exposed to the deploy step only.
+`deploy-web.yml` steps: `pnpm install --frozen-lockfile` → `pnpm turbo run build --filter=@apps/web^...` (builds `@repo/core` / `@repo/i18n` / `@repo/sdk` dist) → in `apps/client`: `pnpm exec opennextjs-cloudflare build --env $BRANCH` (runs `next build`, writes `.open-next/`) → `pnpm exec opennextjs-cloudflare deploy --env $BRANCH`. `NEXT_PUBLIC_API_URL` is set at build time (inlined); `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` are exposed to the deploy step only.
 
 Caching: `open-next.config.ts` uses the read-only static-assets incremental cache, so no R2 bucket / KV / Durable Object is needed yet. When pages start using ISR or `revalidate`, switch to the R2 incremental cache and add the bucket + `WORKER_SELF_REFERENCE` service binding to `wrangler.jsonc` (https://opennext.js.org/cloudflare/caching). Custom domains: add a `routes` entry per env in `wrangler.jsonc`.
 

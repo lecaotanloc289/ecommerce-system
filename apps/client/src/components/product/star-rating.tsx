@@ -14,7 +14,7 @@ export function StarRating({
   value: number;
   count?: number;
   size?: 'sm' | 'md';
-  className?: string;
+  className?: string | undefined;
 }) {
   const t = useT();
   const px = size === 'sm' ? 'size-3.5' : 'size-5';

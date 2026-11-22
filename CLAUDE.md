@@ -17,7 +17,7 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 ### Implementation status (as of 2026-11-23)
 
 - `packages/db` — done: full Prisma schema, migrations, seed, tests (see `packages/db/CLAUDE.md`).
-- `apps/client` — storefront UI for all `SCREENS.md` screens, on mock data (see `apps/client/CLAUDE.md`).
+- `apps/client` — storefront UI for all `SCREENS.md` screens; catalog (home, categories, search, product, vendor pages) read from the API in RSC, OAuth sign-in + in-memory session, guest cart on API data; cart/checkout/orders still on mocks until T5.1 (see `apps/client/CLAUDE.md`).
 - `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), `@Idempotent()` interceptor, Redis-backed rate limit (`@RateLimit('strict')`), cursor pagination helper, Zod-validated env, ESLint, Jest with a Testcontainers integration harness + factories; me/addresses, cart, public catalog, checkout + customer orders (see `server/CLAUDE.md`).
 - `apps/admin` — scaffold only.
 - `workers/jobs` (`@workers/jobs`) — outbox dispatcher (claims only event types it has a handler for, `FOR UPDATE SKIP LOCKED`, exponential backoff, dead-letter after 10 attempts) with handlers for `payment.requested` (provider session via `@repo/payments`) and transactional emails (nodemailer, vi/en via `@repo/i18n`); Vitest + Testcontainers; own Dockerfile / Fly app `elma-worker-{env}` (see `workers/jobs/CLAUDE.md`).

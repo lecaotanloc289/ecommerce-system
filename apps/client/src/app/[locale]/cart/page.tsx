@@ -1,27 +1,31 @@
 'use client';
 
+import * as React from 'react';
 import { Link } from '@/i18n/navigation';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { Card } from '@repo/ui';
 import { Container } from '@/components/layout/container';
 import { ButtonLink } from '@/components/common/button-link';
-import { SectionHeading } from '@/components/common/section-heading';
 import { StepTabs } from '@/components/checkout/step-tabs';
 import { ApplyVoucher } from '@/components/checkout/apply-voucher';
 import { OrderSummary } from '@/components/checkout/order-summary';
 import { QuantityStepper } from '@/components/checkout/quantity-stepper';
-import { ProductCard } from '@/components/product/product-card';
+import { ProductImage } from '@/components/product/product-image';
 import { useLocale } from '@/i18n/use-locale';
 import { formatMoney } from '@repo/i18n';
-import { products } from '@/mocks/products';
+import { attributesLabel } from '@/lib/cart';
 import { useCart } from '@/store/cart-store';
 import { useOrderTotals } from '@/store/checkout-store';
 
 export default function CartPage() {
   const { locale, t } = useLocale();
-  const { setQty, remove } = useCart();
+  const { setQty, remove, refresh } = useCart();
   const { hydrated, lines, totals } = useOrderTotals();
-  const suggestions = products.slice(6, 12);
+
+  // Re-read current price / stock / name (in this locale) of what the guest cart holds.
+  React.useEffect(() => {
+    if (hydrated) void refresh(locale);
+  }, [hydrated, locale, refresh]);
 
   return (
     <Container as="section" className="py-8 lg:py-12">
@@ -50,26 +54,22 @@ export default function CartPage() {
             <p className="p-8 text-center text-body-m text-text-muted">{t('cart.empty')}</p>
           ) : null}
           {lines.map((line) => (
-            <div key={line.key} className="flex gap-4 p-4">
-              <Link href={`/product/${line.product.slug}`} className="shrink-0">
-                <img
-                  src={line.product.image}
-                  alt={line.product.title}
-                  width={80}
-                  height={80}
-                  className="size-20 rounded-md object-cover"
-                  loading="lazy"
+            <div key={line.variantId} className="flex gap-4 p-4">
+              <Link href={`/product/${line.productSlug}`} className="shrink-0">
+                <ProductImage
+                  src={line.imageUrl}
+                  alt={line.productName}
+                  className="size-20 rounded-md"
                 />
               </Link>
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <Link href={`/product/${line.product.slug}`}>
+                <Link href={`/product/${line.productSlug}`}>
                   <h3 className="line-clamp-2 text-body-m font-medium text-text-primary hover:text-brand-text">
-                    {line.product.title}
+                    {line.productName}
                   </h3>
                 </Link>
                 <span className="text-body-s text-text-muted">
-                  {line.variantLabel ? `${line.variantLabel} · ` : ''}
-                  {line.product.vendorName}
+                  {[attributesLabel(line.attributes), line.vendorName].filter(Boolean).join(' · ')}
                 </span>
                 <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-2">
                   <span className="text-body-l font-bold text-text-price">
@@ -77,15 +77,15 @@ export default function CartPage() {
                   </span>
                   <div className="flex items-center gap-3">
                     <QuantityStepper
-                      value={line.qty}
+                      value={line.quantity}
                       max={line.maxQty}
-                      label={t('cart.qtyFor', { title: line.product.title })}
-                      onChange={(qty) => setQty(line.key, qty)}
+                      label={t('cart.qtyFor', { title: line.productName })}
+                      onChange={(qty) => setQty(line.variantId, qty)}
                     />
                     <button
                       type="button"
-                      onClick={() => remove(line.key)}
-                      aria-label={t('cart.removeItem', { title: line.product.title })}
+                      onClick={() => remove(line.variantId)}
+                      aria-label={t('cart.removeItem', { title: line.productName })}
                       className="inline-flex size-9 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-danger-bg hover:text-danger-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                     >
                       <Trash2 className="size-4" />
@@ -113,16 +113,6 @@ export default function CartPage() {
           />
         </div>
       </div>
-
-      {/* Suggestions */}
-      <section className="mt-14">
-        <SectionHeading title={t('cart.youMayLike')} />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {suggestions.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
     </Container>
   );
 }
