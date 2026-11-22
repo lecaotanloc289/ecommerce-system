@@ -6,6 +6,7 @@ import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import { AppModule } from './app.module';
+import { registerRawBodyCapture } from './common/raw-body';
 import { ENV } from './config/config.module';
 import type { Env } from './config/env';
 
@@ -18,6 +19,7 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix('v1');
+  registerRawBodyCapture(app.getHttpAdapter().getInstance());
   const env = app.get<Env>(ENV);
 
   await app.register(helmet, { contentSecurityPolicy: false });

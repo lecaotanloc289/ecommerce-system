@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { DomainErrorFilter } from './common/domain-error.filter';
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
+import { devLiveRoutesEnabled, LiveModule } from './live/live.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 
@@ -26,6 +27,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     RedisModule,
     HealthModule,
     AuthModule,
+    LiveModule.register({ devRoutes: devLiveRoutesEnabled(process.env) }),
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
