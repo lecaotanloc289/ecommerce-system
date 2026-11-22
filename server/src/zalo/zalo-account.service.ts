@@ -34,6 +34,21 @@ const ACCOUNT_SELECT = {
   lastSeenAt: true,
 } as const;
 
+/**
+ * `zalo:login:vendor:{vendorId}` → the shop's latest loginId. A new request while that QR flow is
+ * still live (same user, PENDING / QR_READY / SCANNED) returns the same id instead of queuing
+ * another flow, so one shop can't fill the worker's login slots. The pointer lives as long as the
+ * worker's hard cap on one QR flow (ZALO_QR_LOGIN_TIMEOUT_MS default), so a flow lost to a worker
+ * crash never blocks the shop for longer than that.
+ */
+const vendorLoginKey = (vendorId: string): string => `zalo:login:vendor:${vendorId}`;
+const VENDOR_LOGIN_POINTER_TTL_SECONDS = 180;
+const LIVE_LOGIN_STATES: ReadonlySet<ZaloLoginState['state']> = new Set([
+  'PENDING',
+  'QR_READY',
+  'SCANNED',
+]);
+
 function toAccount(row: AccountRow): ZaloAccount {
   return {
     status: row.status,
@@ -64,25 +79,71 @@ export class ZaloAccountService {
     return { account: row ? toAccount(row) : null };
   }
 
-  /** Queues a QR login for workers/zalo; the client polls `getLoginState` with the returned id. */
+  /**
+   * Queues a QR login for workers/zalo; the client polls `getLoginState` with the returned id.
+   * Order matters for concurrent requests (double click, two tabs): the record is written first,
+   * then the vendor pointer is claimed with `SET NX` — the loser finds the winner's record already
+   * there, reuses it and drops its own. Only the claimed id is pushed onto the worker queue.
+   */
   async startLogin(vendorId: string, userId: string): Promise<ZaloLoginStart> {
     await assertVendorOwner(this.db, vendorId, userId);
+    const live = await this.liveLogin(vendorId, userId);
+    if (live !== null) return ZaloLoginStartSchema.parse({ loginId: live });
+
     const loginId = ulid();
     const record: ZaloLoginRecord = ZaloLoginRecordSchema.parse({
       vendorId,
       requestedById: userId,
       state: { state: 'PENDING' },
     });
-    const results = await this.redis
-      .multi()
-      .set(zaloLoginKey(loginId), JSON.stringify(record), 'EX', ZALO_LOGIN_TTL_SECONDS)
-      .lpush(ZALO_LOGIN_QUEUE_KEY, loginId)
-      .exec();
-    const failed = results?.find(([err]) => err !== null);
-    if (!results || failed) {
-      throw new Error('zalo: failed to queue the login request', { cause: failed?.[0] });
+    const pointer = vendorLoginKey(vendorId);
+    await this.redis.set(
+      zaloLoginKey(loginId),
+      JSON.stringify(record),
+      'EX',
+      ZALO_LOGIN_TTL_SECONDS,
+    );
+    const claimed = await this.redis.set(
+      pointer,
+      loginId,
+      'EX',
+      VENDOR_LOGIN_POINTER_TTL_SECONDS,
+      'NX',
+    );
+    if (claimed === null) {
+      const winner = await this.liveLogin(vendorId, userId);
+      if (winner !== null) {
+        await this.redis.del(zaloLoginKey(loginId));
+        return ZaloLoginStartSchema.parse({ loginId: winner });
+      }
+      // The pointer is a finished flow or another user's: this request takes over.
+      await this.redis.set(pointer, loginId, 'EX', VENDOR_LOGIN_POINTER_TTL_SECONDS);
     }
+    await this.redis.lpush(ZALO_LOGIN_QUEUE_KEY, loginId);
     return ZaloLoginStartSchema.parse({ loginId });
+  }
+
+  /** The shop's in-flight login of this user, if any (see `vendorLoginKey`). */
+  private async liveLogin(vendorId: string, userId: string): Promise<string | null> {
+    const loginId = await this.redis.get(vendorLoginKey(vendorId));
+    if (loginId === null) return null;
+    const raw = await this.redis.get(zaloLoginKey(loginId));
+    if (raw === null) return null;
+    let json: unknown;
+    try {
+      json = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+    const parsed = ZaloLoginRecordSchema.safeParse(json);
+    if (
+      !parsed.success ||
+      parsed.data.vendorId !== vendorId ||
+      parsed.data.requestedById !== userId
+    ) {
+      return null;
+    }
+    return LIVE_LOGIN_STATES.has(parsed.data.state.state) ? loginId : null;
   }
 
   /**

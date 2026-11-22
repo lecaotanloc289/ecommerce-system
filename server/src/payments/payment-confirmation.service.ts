@@ -22,6 +22,7 @@ import {
 } from '@repo/db';
 import { ulid } from 'ulid';
 import { PrismaService } from '../prisma/prisma.service';
+import { queueZaloStatusMessages } from '../zalo/zalo-message-queue';
 
 type Tx = Prisma.TransactionClient;
 
@@ -244,6 +245,12 @@ export class PaymentConfirmationService {
     if (paid.count !== subOrders.length) {
       throw new Error(`markOrderPaid: sub-orders of ${order.id} changed under the order lock`);
     }
+    await queueZaloStatusMessages(
+      tx,
+      subOrders.map((so) => so.id),
+      'PAID',
+      new Date(),
+    );
 
     await this.commitStock(
       tx,

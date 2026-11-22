@@ -1,10 +1,14 @@
 import {
+  Money,
   ZALO_LOGIN_QUEUE_KEY,
   ZaloLoginRecordSchema,
   type ZaloAccountStatus,
   zaloLoginKey,
 } from '@repo/core';
 import { ulid } from 'ulid';
+import { transitionSubOrder } from '../../src/orders/sub-order-transition';
+import { PaymentConfirmationService } from '../../src/payments/payment-confirmation.service';
+import { RefundsService } from '../../src/refunds/refunds.service';
 import { queueZaloStatusMessages } from '../../src/zalo/zalo-message-queue';
 import {
   type TestApp,
@@ -238,6 +242,44 @@ describe('vendor Zalo API + message queue (Testcontainers)', () => {
       expect((await get(headers, '/v1/vendor/zalo/login-requests/not-a-ulid')).statusCode).toBe(
         422,
       );
+    });
+
+    it('reuses the live QR flow of the same user; a finished one starts a new flow', async () => {
+      const { vendor, owner, headers } = await vendorWithOwner();
+      const first = (await send('POST', headers, '/v1/vendor/zalo/login-requests')).json<{
+        loginId: string;
+      }>().loginId;
+      const again = await send('POST', headers, '/v1/vendor/zalo/login-requests');
+      expect(again.statusCode).toBe(202);
+      expect(again.json<{ loginId: string }>().loginId).toBe(first);
+      expect(await t.redis.llen(ZALO_LOGIN_QUEUE_KEY)).toBe(1);
+
+      // The worker finished it (EXPIRED) → the next request queues a fresh flow.
+      await t.redis.set(
+        zaloLoginKey(first),
+        JSON.stringify({
+          vendorId: vendor.id,
+          requestedById: owner.id,
+          state: { state: 'EXPIRED' },
+        }),
+      );
+      const next = (await send('POST', headers, '/v1/vendor/zalo/login-requests')).json<{
+        loginId: string;
+      }>().loginId;
+      expect(next).not.toBe(first);
+      expect(await t.redis.llen(ZALO_LOGIN_QUEUE_KEY)).toBe(2);
+    });
+
+    it('two concurrent requests of one owner share one QR flow', async () => {
+      const { headers } = await vendorWithOwner();
+      const [a, b] = await Promise.all([
+        send('POST', headers, '/v1/vendor/zalo/login-requests'),
+        send('POST', headers, '/v1/vendor/zalo/login-requests'),
+      ]);
+      expect([a.statusCode, b.statusCode]).toEqual([202, 202]);
+      expect(a.json<{ loginId: string }>().loginId).toBe(b.json<{ loginId: string }>().loginId);
+      expect(await t.redis.llen(ZALO_LOGIN_QUEUE_KEY)).toBe(1);
+      expect(await t.redis.keys('zalo:login:0*')).toHaveLength(1);
     });
 
     it('disconnect wipes the session; nothing connected → 404', async () => {
@@ -474,6 +516,120 @@ describe('vendor Zalo API + message queue (Testcontainers)', () => {
           queueZaloStatusMessages(tx, subOrderIds, 'AWAITING_PAYMENT', now),
         ),
       ).toBe(0);
+    });
+  });
+
+  describe('status writers queue their messages', () => {
+    /** Opted-in order of one shop with an ACTIVE account, confirmed through the real payment path. */
+    async function paidOrder(careDelayMinutes?: number) {
+      const s = await shop('Shop');
+      await addAccount(s.vendor.id);
+      if (careDelayMinutes !== undefined) {
+        await t.db.zaloMessageTemplate.create({
+          data: {
+            id: ulid(),
+            vendorId: s.vendor.id,
+            event: 'AFTER_DELIVERY',
+            body: 'Cảm ơn!',
+            delayMinutes: careDelayMinutes,
+          },
+        });
+      }
+      const { user, order } = await placeOrder([s], true);
+      const payment = await t.db.payment.findFirstOrThrow({ where: { orderId: order.id } });
+      const outcome = await t.app.get(PaymentConfirmationService).apply({
+        provider: payment.provider,
+        status: 'CONFIRMED',
+        paymentId: payment.id,
+        providerTxnId: `txn-${payment.id}`,
+        amount: Money.of(Number(payment.amount), payment.currency),
+        rawPayload: null,
+      });
+      expect(outcome).toBe('confirmed');
+      const subOrder = order.subOrders[0];
+      if (!subOrder) throw new Error('no sub-order');
+      const ref = {
+        subOrderId: subOrder.id,
+        orderId: order.id,
+        vendorId: s.vendor.id,
+        customerId: user.id,
+      };
+      return { ref };
+    }
+
+    const eventsOf = async (subOrderId: string) =>
+      (await t.db.zaloMessage.findMany({ where: { subOrderId }, orderBy: { id: 'asc' } })).map(
+        (m) => m.event,
+      );
+
+    it('payment → fulfilment → completion queue one message per status + the care message', async () => {
+      const { ref } = await paidOrder(120);
+      await t.db.$transaction((tx) =>
+        transitionSubOrder(tx, ref, { to: 'PROCESSING', actor: 'VENDOR' }),
+      );
+      await t.db.$transaction((tx) =>
+        transitionSubOrder(tx, ref, {
+          to: 'SHIPPED',
+          actor: 'VENDOR',
+          ship: { carrier: 'GHN', trackingNumber: 'GHN123' },
+        }),
+      );
+      const deliveredAt = new Date('2026-11-23T08:00:00Z');
+      await t.db.$transaction((tx) =>
+        transitionSubOrder(tx, ref, { to: 'DELIVERED', actor: 'VENDOR' }, deliveredAt),
+      );
+      await t.db.$transaction((tx) =>
+        transitionSubOrder(tx, ref, { to: 'COMPLETED', actor: 'CUSTOMER' }),
+      );
+
+      expect(await eventsOf(ref.subOrderId)).toEqual([
+        'ORDER_PLACED',
+        'ORDER_PAID',
+        'ORDER_PROCESSING',
+        'ORDER_SHIPPED',
+        'ORDER_DELIVERED',
+        'AFTER_DELIVERY',
+        'ORDER_COMPLETED',
+      ]);
+      const care = await t.db.zaloMessage.findFirstOrThrow({
+        where: { subOrderId: ref.subOrderId, event: 'AFTER_DELIVERY' },
+      });
+      expect(care.scheduledAt.toISOString()).toBe('2026-11-23T10:00:00.000Z');
+    });
+
+    it('confirm-received straight from SHIPPED still schedules the care message', async () => {
+      const { ref } = await paidOrder(30);
+      await t.db.$transaction((tx) =>
+        transitionSubOrder(tx, ref, { to: 'PROCESSING', actor: 'VENDOR' }),
+      );
+      await t.db.$transaction((tx) =>
+        transitionSubOrder(tx, ref, {
+          to: 'SHIPPED',
+          actor: 'VENDOR',
+          ship: { carrier: 'GHN', trackingNumber: 'X' },
+        }),
+      );
+      const now = new Date('2026-11-23T09:00:00Z');
+      await t.db.$transaction((tx) =>
+        transitionSubOrder(tx, ref, { to: 'COMPLETED', actor: 'CUSTOMER' }, now),
+      );
+      const care = await t.db.zaloMessage.findFirstOrThrow({
+        where: { subOrderId: ref.subOrderId, event: 'AFTER_DELIVERY' },
+      });
+      expect(care.scheduledAt.toISOString()).toBe('2026-11-23T09:30:00.000Z');
+    });
+
+    it('an admin refund queues ORDER_REFUNDED', async () => {
+      const { ref } = await paidOrder();
+      const admin = await makeUser(t.db);
+      await t.app
+        .get(RefundsService)
+        .refundSubOrder(admin.id, ref.subOrderId, { reason: 'Hết hàng' });
+      expect(await eventsOf(ref.subOrderId)).toEqual([
+        'ORDER_PLACED',
+        'ORDER_PAID',
+        'ORDER_REFUNDED',
+      ]);
     });
   });
 

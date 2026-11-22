@@ -13,6 +13,7 @@ import {
 import type { Prisma } from '@repo/db';
 import { ulid } from 'ulid';
 import { assertVendorActive } from '../vendor/vendor-scope';
+import { queueZaloStatusMessages } from '../zalo/zalo-message-queue';
 
 /** Fulfilment moves (D11) done through this helper; payment/cancel/refund have their own writers. */
 export type FulfilmentTarget =
@@ -39,6 +40,7 @@ export interface SubOrderRef {
  * 4. Conditional `UPDATE … WHERE id = $1 AND status = <from>` + timestamps; 0 rows → 409.
  * 5. `orders.status` = `deriveOrderStatus(all sub-orders)`.
  * 6. Outbox `sub-order.shipped` / `.delivered` / `.completed` (PROCESSING emits nothing).
+ * 7. Zalo messages for the new status (`queueZaloStatusMessages`; opted-in orders only).
  *
  * Ownership/scope is the caller's job: `ref` must come from a lookup scoped by the vendor (JWT)
  * or the customer (JWT).
@@ -79,6 +81,8 @@ export async function transitionSubOrder(
     where: { id: ref.orderId },
     data: { status: deriveOrderStatus(statuses.map((s) => s.status)) },
   });
+
+  await queueZaloStatusMessages(tx, [ref.subOrderId], target.to, now);
 
   const event = outboxEvent(ref, target.to);
   if (event) {

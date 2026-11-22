@@ -1,6 +1,9 @@
 import { type SubOrderStatus, type ZaloMessageEvent, zaloEventForSubOrderStatus } from '@repo/core';
 import type { Prisma } from '@repo/db';
-import { ulid } from 'ulid';
+import { monotonicFactory } from 'ulid';
+
+// Monotonic: the vendor's message log pages by id, so rows of one call keep their creation order.
+const ulid = monotonicFactory();
 
 /** Vendors whose account may still deliver (EXPIRED can be re-scanned before the message ages out). */
 const DELIVERABLE_ACCOUNT_STATUSES = ['ACTIVE', 'EXPIRED'] as const;
@@ -15,8 +18,9 @@ export interface QueueZaloMessagesInput {
  * Zalo-specific outbox (Golden Rule #9): call inside the transaction that changes the sub-orders.
  * Inserts one PENDING `ZaloMessage` (scheduledAt = now) per sub-order whose order opted in
  * (`Order.zaloOptIn`) and whose vendor has a ZaloAccount ACTIVE or EXPIRED — none / DISCONNECTED
- * → no row. ORDER_DELIVERED also queues AFTER_DELIVERY when the vendor's AFTER_DELIVERY template
- * is enabled, at `(deliveredAt ?? now) + delayMinutes`. Duplicates (same sub-order + event) are
+ * → no row. ORDER_DELIVERED and ORDER_COMPLETED (a customer may confirm receipt straight from
+ * SHIPPED) also queue AFTER_DELIVERY when the vendor's AFTER_DELIVERY template is enabled, at
+ * `(deliveredAt ?? now) + delayMinutes` — at most once per sub-order (unique sub-order + event). Duplicates (same sub-order + event) are
  * skipped, so replays are safe. workers/zalo renders the template and sends at delivery time.
  */
 export async function queueZaloMessages(
@@ -48,7 +52,7 @@ export async function queueZaloMessages(
     nextAttemptAt: input.now,
   }));
 
-  if (input.event === 'ORDER_DELIVERED') {
+  if (input.event === 'ORDER_DELIVERED' || input.event === 'ORDER_COMPLETED') {
     const careTemplates = await tx.zaloMessageTemplate.findMany({
       where: {
         vendorId: { in: [...new Set(subOrders.map((so) => so.vendorId))] },
@@ -68,7 +72,11 @@ export async function queueZaloMessages(
         subOrderId: so.id,
         event: 'AFTER_DELIVERY',
         status: 'PENDING',
-        scheduledAt: new Date(deliveredAt.getTime() + delayMinutes * 60_000),
+        // Never in the past (e.g. the template was enabled after delivery and the delay has
+        // passed by completion): send now rather than let housekeeping age it out.
+        scheduledAt: new Date(
+          Math.max(deliveredAt.getTime() + delayMinutes * 60_000, input.now.getTime()),
+        ),
         nextAttemptAt: input.now,
       });
     }
