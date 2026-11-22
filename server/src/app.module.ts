@@ -11,6 +11,7 @@ import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
 import { MeModule } from './me/me.module';
 import { OrdersModule } from './orders/orders.module';
+import { PlatformModule } from './platform/platform.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { StorageModule } from './storage/storage.module';
@@ -39,6 +40,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     CartModule,
     CatalogModule,
     OrdersModule,
+    PlatformModule,
     StorageModule,
     VendorApplicationsModule,
     VendorModule,
