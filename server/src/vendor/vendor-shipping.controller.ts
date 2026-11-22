@@ -16,6 +16,7 @@ import {
   ShippingMethodParamsDto,
 } from './vendor.dto';
 import { VendorShippingService } from './vendor-shipping.service';
+import { VendorMembershipGuard } from './vendor-membership.guard';
 import { requireVendorId } from './vendor-scope';
 
 const IDEMPOTENCY_HEADER = {
@@ -28,7 +29,7 @@ const IDEMPOTENCY_HEADER = {
 @ApiTags('vendor-catalog')
 @ApiBearerAuth(BEARER_AUTH)
 @Controller('vendor/shipping-methods')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, VendorMembershipGuard)
 @Roles('VENDOR_OWNER', 'VENDOR_STAFF')
 export class VendorShippingController {
   constructor(private readonly shipping: VendorShippingService) {}

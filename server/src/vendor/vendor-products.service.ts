@@ -152,13 +152,9 @@ export class VendorProductsService {
   async update(vendorId: string, id: string, body: ProductUpsert): Promise<VendorProduct> {
     await this.write(async (tx) => {
       await assertVendorActive(tx, vendorId);
-      const product = await tx.product.findFirst({
-        where: { id, vendorId },
-        select: { id: true, status: true },
-      });
-      if (!product) throw notFound(id);
-      // Serialises concurrent edits of the same product.
-      await tx.$queryRaw`SELECT id FROM products WHERE id = ${id} FOR UPDATE`;
+      // Locks the row (serialises concurrent edits) and reads the status after the lock.
+      const product = await this.lockOwned(tx, vendorId, id);
+      if (product.status === 'BLOCKED') throw new DomainError('product.error.blocked', { id });
       const existing = await tx.productVariant.findMany({ where: { productId: id } });
       await this.apply(
         tx,
@@ -246,13 +242,14 @@ export class VendorProductsService {
     return locked;
   }
 
-  /** Publishable = a Vietnamese name and at least one variant priced above zero. */
+  /** Publishable = a Vietnamese name and at least one variant, every variant priced above zero. */
   private async assertPublishable(tx: Prisma.TransactionClient, id: string): Promise<void> {
-    const [vi, priced] = await Promise.all([
+    const [vi, variants, free] = await Promise.all([
       tx.productTranslation.count({ where: { productId: id, locale: 'VI', name: { not: '' } } }),
-      tx.productVariant.count({ where: { productId: id, priceAmount: { gt: 0 } } }),
+      tx.productVariant.count({ where: { productId: id } }),
+      tx.productVariant.count({ where: { productId: id, priceAmount: { lte: 0 } } }),
     ]);
-    if (vi === 0 || priced === 0) {
+    if (vi === 0 || variants === 0 || free > 0) {
       throw new DomainError('product.error.not-publishable', { id });
     }
   }

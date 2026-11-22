@@ -16,6 +16,8 @@ import { UploadKeySchema } from './upload';
 const MAX_VARIANTS = 100;
 const MAX_IMAGES = 20;
 const MAX_CATEGORIES = 10;
+/** Postgres int4 upper bound of `product_variants.stock_on_hand`. */
+const MAX_STOCK = 2_147_483_647;
 
 const isUnique = (values: readonly string[]): boolean => new Set(values).size === values.length;
 
@@ -42,7 +44,7 @@ export const ProductVariantInputSchema = z.object({
   sku: z.string().trim().min(1).max(64),
   attributes: VariantAttributesSchema,
   price: NonNegativeMoneySchema,
-  stockOnHand: z.number().int().nonnegative(),
+  stockOnHand: z.number().int().nonnegative().max(MAX_STOCK),
 });
 export type ProductVariantInput = z.infer<typeof ProductVariantInputSchema>;
 
@@ -154,6 +156,6 @@ export type VendorProductPage = z.infer<typeof VendorProductPageSchema>;
 
 /** Body of `PATCH /v1/vendor/variants/:id/stock` — absolute on-hand count (never below reserved). */
 export const VariantStockUpdateSchema = z.object({
-  stockOnHand: z.number().int().nonnegative(),
+  stockOnHand: z.number().int().nonnegative().max(MAX_STOCK),
 });
 export type VariantStockUpdate = z.infer<typeof VariantStockUpdateSchema>;

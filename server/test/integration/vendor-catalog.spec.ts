@@ -374,6 +374,35 @@ describe('vendor catalog API (Testcontainers)', () => {
       expect(read).toMatchObject({ status: 'BLOCKED', blockedReason: 'counterfeit' });
     });
 
+    it('refuses to publish while any variant is priced at zero', async () => {
+      const created = await createProduct({
+        variants: [
+          {
+            sku: `S-${word()}`,
+            attributes: {},
+            price: { amount: 1000, currency: 'VND' },
+            stockOnHand: 1,
+          },
+          {
+            sku: `S-${word()}`,
+            attributes: {},
+            price: { amount: 0, currency: 'VND' },
+            stockOnHand: 1,
+          },
+        ],
+      });
+      const res = await call('POST', `/v1/vendor/products/${created.id}/publish`);
+      expect(code(res)).toBe('product.error.not-publishable');
+    });
+
+    it('refuses to edit a BLOCKED product', async () => {
+      const created = await createProduct();
+      await t.db.product.update({ where: { id: created.id }, data: { status: 'BLOCKED' } });
+      const put = await call('PUT', `/v1/vendor/products/${created.id}`, body());
+      expect(put.statusCode).toBe(409);
+      expect(code(put)).toBe('product.error.blocked');
+    });
+
     it('archives a published product out of the public catalog', async () => {
       const created = await createProduct();
       await call('POST', `/v1/vendor/products/${created.id}/publish`);
@@ -555,6 +584,15 @@ describe('vendor catalog API (Testcontainers)', () => {
       }
       // Reads stay available.
       expect((await call('GET', '/v1/vendor/products', undefined, stale)).statusCode).toBe(200);
+    });
+
+    it('locks out staff whose vendor role was revoked, despite a valid token', async () => {
+      const staff = await makeUser(t.db, { roles: ['VENDOR_STAFF'], vendorId });
+      const auth = await t.authHeader(staff);
+      expect((await call('GET', '/v1/vendor/products', undefined, auth)).statusCode).toBe(200);
+      await t.db.userRole.deleteMany({ where: { userId: staff.id } });
+      const res = await call('GET', '/v1/vendor/products', undefined, auth);
+      expect(res.statusCode).toBe(403);
     });
 
     it('reports a PENDING vendor as not active', async () => {

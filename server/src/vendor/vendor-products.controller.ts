@@ -31,6 +31,7 @@ import {
   VendorVariantParamsDto,
 } from './vendor.dto';
 import { VendorProductsService } from './vendor-products.service';
+import { VendorMembershipGuard } from './vendor-membership.guard';
 import { requireVendorId } from './vendor-scope';
 
 const IDEMPOTENCY_HEADER = {
@@ -43,7 +44,7 @@ const IDEMPOTENCY_HEADER = {
 @ApiTags('vendor-catalog')
 @ApiBearerAuth(BEARER_AUTH)
 @Controller('vendor')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, VendorMembershipGuard)
 @Roles('VENDOR_OWNER', 'VENDOR_STAFF')
 export class VendorProductsController {
   constructor(private readonly products: VendorProductsService) {}
