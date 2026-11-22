@@ -111,6 +111,7 @@ describe('StorageService', () => {
       ['leading slash', `/kyc/${USER}/${ULID}.jpg`, userOwner],
       ['extra nesting', `kyc/${USER}/x/${ULID}.jpg`, userOwner],
       ['a non-ULID name', `kyc/${USER}/evil.jpg`, userOwner],
+      ['a pdf under media', `media/vendors/${VENDOR}/${ULID}.pdf`, vendorOwner],
       ['an unknown extension', `kyc/${USER}/${ULID}.exe`, userOwner],
       ['an unknown prefix', `other/${USER}/${ULID}.jpg`, userOwner],
       ['a prefix-only owner', `kyc/${USER.slice(0, 10)}/${ULID}.jpg`, userOwner],

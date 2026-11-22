@@ -12,6 +12,7 @@ import { ulid } from 'ulid';
 import { ENV } from '../config/config.module';
 import type { Env } from '../config/env';
 import {
+  IMAGE_EXTENSIONS,
   KEY_EXTENSIONS,
   MAX_UPLOAD_BYTES,
   PRESIGN_GET_TTL_SECONDS,
@@ -26,7 +27,8 @@ export type StorageOwner = { type: 'user'; userId: string } | { type: 'vendor'; 
 export const S3_CLIENT = Symbol('S3_CLIENT');
 
 const KEY_PATTERN = new RegExp(
-  `^(?:kyc/([A-Za-z0-9_-]+)|media/vendors/([A-Za-z0-9_-]+))/[0-9A-HJKMNP-TV-Z]{26}\\.(?:${KEY_EXTENSIONS.join('|')})$`,
+  `^(?:kyc/([A-Za-z0-9_-]+)/[0-9A-HJKMNP-TV-Z]{26}\\.(?:${KEY_EXTENSIONS.join('|')})` +
+    `|media/vendors/([A-Za-z0-9_-]+)/[0-9A-HJKMNP-TV-Z]{26}\\.(?:${IMAGE_EXTENSIONS.join('|')}))$`,
 );
 
 /** Builds the S3 client (lazy: nothing connects until the first request). */

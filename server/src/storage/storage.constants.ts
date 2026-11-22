@@ -23,5 +23,7 @@ export const PURPOSE_RULES: Readonly<Record<UploadPurpose, PurposeRule>> = {
   'vendor-logo': { bucket: 'media', extensions: IMAGES },
 };
 
-/** Every extension the server ever writes (used to validate keys on the way back in). */
+export const IMAGE_EXTENSIONS = ['jpg', 'png', 'webp'] as const;
+
+/** Extensions allowed in `kyc/` keys (media keys are images only); validates keys coming back in. */
 export const KEY_EXTENSIONS = ['jpg', 'png', 'webp', 'pdf'] as const;

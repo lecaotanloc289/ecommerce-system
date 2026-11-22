@@ -72,6 +72,15 @@ export const EnvSchema = z
   .refine(
     (env) =>
       env.NODE_ENV !== 'production' ||
+      (!env.S3_ENDPOINT.includes('localhost') && !env.MEDIA_PUBLIC_BASE_URL.includes('localhost')),
+    {
+      message: 'S3_ENDPOINT and MEDIA_PUBLIC_BASE_URL must not point at localhost in production',
+      path: ['S3_ENDPOINT'],
+    },
+  )
+  .refine(
+    (env) =>
+      env.NODE_ENV !== 'production' ||
       (!env.JWT_ACCESS_SECRET.startsWith('change-me') &&
         !env.JWT_REFRESH_SECRET.startsWith('change-me')),
     {
