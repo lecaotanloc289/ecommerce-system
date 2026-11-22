@@ -1,34 +1,33 @@
 'use client';
 
-import { Link } from '@/i18n/navigation';
-import { Heart, ShoppingCart } from 'lucide-react';
-import { Badge, Button } from '@repo/ui';
+import * as React from 'react';
+import { Link, useRouter } from '@/i18n/navigation';
+import { Check, ShoppingCart } from 'lucide-react';
+import { Button } from '@repo/ui';
+import type { ProductSummary } from '@repo/core';
+import { formatMoney, translateError } from '@repo/i18n';
 import { StarRating } from './star-rating';
+import { ProductImage } from './product-image';
 import { useLocale } from '../../i18n/use-locale';
-import { formatMoney } from '@repo/i18n';
+import { fetchProduct } from '../../lib/api/browser';
+import { purchasableVariants, toCartSnapshot } from '../../lib/cart';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../store/cart-store';
-import type { Product } from '../../types';
 
 type Variant = 'grid' | 'list' | 'compact';
+type AddState = 'idle' | 'busy' | 'added' | 'error';
 
-const badgeTone: Record<NonNullable<Product['badge']>, 'danger' | 'success' | 'warning'> = {
-  sale: 'danger',
-  new: 'success',
-  bestseller: 'warning',
-};
-
+/** Product tile for lists and search results (`ProductSummary` from the catalog API). */
 export function ProductCard({
   product,
   variant = 'grid',
   className,
 }: {
-  product: Product;
+  product: ProductSummary;
   variant?: Variant;
   className?: string;
 }) {
   const { locale, t } = useLocale();
-  const { add } = useCart();
   const href = `/product/${product.slug}`;
 
   if (variant === 'list') {
@@ -40,23 +39,24 @@ export function ProductCard({
         )}
       >
         <Link href={href} className="shrink-0">
-          <img
-            src={product.image}
-            alt={product.title}
-            className="size-20 rounded-md object-cover sm:size-24"
-            loading="lazy"
+          <ProductImage
+            src={product.primaryImageUrl}
+            alt={product.name}
+            className="size-20 rounded-md sm:size-24"
           />
         </Link>
         <div className="flex min-w-0 flex-1 flex-col justify-between">
           <div>
             <Link href={href}>
               <h3 className="line-clamp-2 text-body-m font-medium text-text-primary transition-colors group-hover:text-brand-text">
-                {product.title}
+                {product.name}
               </h3>
             </Link>
-            <StarRating value={product.rating} count={product.reviewCount} className="mt-1" />
+            <ProductRating product={product} className="mt-1" />
           </div>
-          <PriceRow product={product} locale={locale} />
+          <span className="text-body-l font-bold text-text-price">
+            {formatMoney(product.basePrice, locale)}
+          </span>
         </div>
       </div>
     );
@@ -71,31 +71,15 @@ export function ProductCard({
         className,
       )}
     >
-      <div className="relative">
-        <Link href={href} className="block overflow-hidden">
-          <img
-            src={product.image}
-            alt={product.title}
-            className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            loading="lazy"
-          />
-        </Link>
-        {product.badge ? (
-          <Badge variant={badgeTone[product.badge]} className="absolute left-3 top-3">
-            {t(`product.badge.${product.badge}`)}
-          </Badge>
-        ) : null}
-        <button
-          type="button"
-          aria-label={t('product.wishlist')}
-          className="absolute right-3 top-3 inline-flex size-8 items-center justify-center rounded-full bg-bg-elevated/90 text-text-muted shadow-1 transition-colors hover:text-danger-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
-        >
-          <Heart className="size-4" />
-        </button>
-      </div>
+      <Link href={href} className="block overflow-hidden">
+        <ProductImage
+          src={product.primaryImageUrl}
+          alt={product.name}
+          className="aspect-square w-full transition-transform duration-300 group-hover:scale-105"
+        />
+      </Link>
 
       <div className={cn('flex flex-1 flex-col gap-2', compact ? 'p-3' : 'p-4')}>
-        {!compact ? <span className="text-body-s text-text-muted">{product.brand}</span> : null}
         <Link href={href} className="flex-1">
           <h3
             className={cn(
@@ -103,44 +87,90 @@ export function ProductCard({
               compact ? 'text-body-s' : 'text-body-m',
             )}
           >
-            {product.title}
+            {product.name}
           </h3>
         </Link>
-        {!compact ? <StarRating value={product.rating} count={product.reviewCount} /> : null}
-        <PriceRow product={product} locale={locale} />
-        {!compact ? (
-          <Button
-            size="md"
-            fullWidth
-            iconLeft={<ShoppingCart className="size-4" />}
-            disabled={!product.inStock}
-            onClick={() => add(product.id, product.variants?.[0]?.id, 1)}
-            className="mt-1"
-          >
-            {product.inStock ? t('common.addToCart') : t('product.outOfStock')}
-          </Button>
-        ) : null}
+        {!compact ? <ProductRating product={product} /> : null}
+        <span className="text-body-l font-bold text-text-price">
+          {formatMoney(product.basePrice, locale)}
+        </span>
+        {!compact ? <QuickAdd product={product} label={t('common.addToCart')} /> : null}
       </div>
     </div>
   );
 }
 
-function PriceRow({
-  product,
-  locale,
-}: {
-  product: Product;
-  locale: ReturnType<typeof useLocale>['locale'];
-}) {
+function ProductRating({ product, className }: { product: ProductSummary; className?: string }) {
+  const { t } = useLocale();
+  if (product.rating.average === null) {
+    return (
+      <span className={cn('text-body-s text-text-muted', className)}>{t('product.noRating')}</span>
+    );
+  }
   return (
-    <div className="flex items-baseline gap-2">
-      <span className="text-body-l font-bold text-text-price">
-        {formatMoney(product.price, locale)}
-      </span>
-      {product.compareAt ? (
-        <span className="text-body-s text-text-muted line-through">
-          {formatMoney(product.compareAt, locale)}
-        </span>
+    <StarRating value={product.rating.average} count={product.rating.count} className={className} />
+  );
+}
+
+/**
+ * "Add to cart" from a card: a summary has no variants, so the detail is fetched on click.
+ * One buyable variant → added straight to the guest cart; several (or none in stock) → the
+ * product page, where the shopper picks an option.
+ */
+function QuickAdd({ product, label }: { product: ProductSummary; label: string }) {
+  const { locale, t } = useLocale();
+  const router = useRouter();
+  const { add } = useCart();
+  const [state, setState] = React.useState<AddState>('idle');
+  const [message, setMessage] = React.useState<string | null>(null);
+
+  const onClick = async () => {
+    setState('busy');
+    setMessage(null);
+    try {
+      const detail = await fetchProduct(product.slug, locale);
+      const buyable = detail ? purchasableVariants(detail) : [];
+      const only = buyable[0];
+      if (!detail || detail.variants.length !== 1 || !only) {
+        setState('idle');
+        router.push(`/product/${product.slug}`);
+        return;
+      }
+      const result = add(toCartSnapshot(detail, only), 1);
+      if (result === 'added') {
+        setState('added');
+        return;
+      }
+      setState('error');
+      setMessage(
+        result === 'currency-mismatch'
+          ? translateError(locale, 'checkout.error.currency-mismatch')
+          : t('product.outOfStock'),
+      );
+    } catch {
+      setState('error');
+      setMessage(translateError(locale, 'common.error.internal'));
+    }
+  };
+
+  return (
+    <div className="mt-1 flex flex-col gap-1">
+      <Button
+        size="md"
+        fullWidth
+        iconLeft={
+          state === 'added' ? <Check className="size-4" /> : <ShoppingCart className="size-4" />
+        }
+        disabled={state === 'busy'}
+        aria-busy={state === 'busy'}
+        onClick={() => void onClick()}
+      >
+        {state === 'added' ? t('product.added') : label}
+      </Button>
+      {message ? (
+        <p role="alert" className="text-body-s text-danger-fg">
+          {message}
+        </p>
       ) : null}
     </div>
   );

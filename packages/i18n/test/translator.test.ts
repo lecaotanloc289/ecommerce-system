@@ -22,8 +22,8 @@ describe('createTranslator', () => {
   });
 
   it('interpolates params', () => {
-    expect(createTranslator('en')('categories.productsCount', { count: 12 })).toBe('12 products');
-    expect(createTranslator('vi')('categories.productsCount', { count: 12 })).toBe('12 sản phẩm');
+    expect(createTranslator('en')('product.reviewsCount', { count: 12 })).toBe('12 reviews');
+    expect(createTranslator('vi')('product.reviewsCount', { count: 12 })).toBe('12 đánh giá');
   });
 
   it('returns the key when the path is not a string leaf', () => {
