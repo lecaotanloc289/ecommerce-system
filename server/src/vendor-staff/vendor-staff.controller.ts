@@ -65,6 +65,7 @@ export class VendorStaffController {
   @ApiHeader(IDEMPOTENCY_HEADER)
   @ZodResponse({ status: 201, description: 'The pending invitation', type: InvitationDto })
   @Post('invitations')
+  @RateLimit('strict')
   @Idempotent()
   invite(
     @CurrentUser() user: AuthUser,

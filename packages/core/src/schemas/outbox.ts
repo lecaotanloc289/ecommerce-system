@@ -78,7 +78,7 @@ export const VendorInvitationCreatedEventSchema = z.object({
   invitationId: VendorInvitationIdSchema,
   vendorId: VendorIdSchema,
   email: z.string(),
-  token: z.string(),
+  token: z.string().min(16),
 });
 export type VendorInvitationCreatedEvent = z.infer<typeof VendorInvitationCreatedEventSchema>;
 

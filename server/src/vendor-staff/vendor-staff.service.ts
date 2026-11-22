@@ -23,6 +23,9 @@ import { assertVendorActive, isUniqueViolation } from '../vendor/vendor-scope';
 
 export const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** Cap on simultaneously open invitations per vendor (limits email abuse via revoke + re-invite). */
+export const MAX_OPEN_INVITATIONS = 50;
+
 const VENDOR_ROLES = ['VENDOR_OWNER', 'VENDOR_STAFF'] as const;
 
 /** sha256 hex of the raw token — the only form stored. */
@@ -86,6 +89,12 @@ export class VendorStaffService {
           where: { vendorId, email, acceptedAt: null, revokedAt: null, expiresAt: { gt: now } },
         });
         if (open > 0) throw new DomainError('common.error.conflict', { field: 'email' });
+        const openTotal = await tx.vendorInvitation.count({
+          where: { vendorId, acceptedAt: null, revokedAt: null, expiresAt: { gt: now } },
+        });
+        if (openTotal >= MAX_OPEN_INVITATIONS) {
+          throw new DomainError('common.error.conflict', { field: 'invitations' });
+        }
         const row = await tx.vendorInvitation.create({
           data: {
             id: ulid(),
@@ -168,6 +177,8 @@ export class VendorStaffService {
   /** Drops the VENDOR_STAFF role on this vendor; the owner cannot be removed (403). */
   async removeStaff(vendorId: string, userId: string): Promise<void> {
     await this.prisma.client.$transaction(async (tx) => {
+      // Same user-row lock as accept(): a remove cannot interleave with an accept of that user.
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
       const roles = await tx.userRole.findMany({
         where: { vendorId, userId, role: { in: [...VENDOR_ROLES] } },
         select: { id: true, role: true },
