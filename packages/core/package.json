@@ -27,6 +27,11 @@
       "import": "./dist/pricing/index.js",
       "require": "./dist/pricing/index.cjs"
     },
+    "./orders": {
+      "types": "./dist/orders/index.d.ts",
+      "import": "./dist/orders/index.js",
+      "require": "./dist/orders/index.cjs"
+    },
     "./errors": {
       "types": "./dist/errors/index.d.ts",
       "import": "./dist/errors/index.js",

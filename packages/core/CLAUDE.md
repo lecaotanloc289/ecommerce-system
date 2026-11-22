@@ -11,6 +11,7 @@ Pure TypeScript + `zod` — runs in browser and Node. Never imports `@repo/db`, 
 | `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`                                                  |
 | `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum                                               |
 | `src/pricing/`  | `@repo/core/pricing`   | `priceOrder`, `evaluateCoupon`, `couponDiscount`, `resolveCommissionBps`, `computePayoutPostings` — pure checkout/payout money math (D5-D8) |
+| `src/orders/`   | `@repo/core/orders`    | `deriveOrderStatus(subOrderStatuses)` — Order status from its sub-orders (D11); shared by checkout, webhook, fulfilment, refunds            |
 | `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                                                                    |
 | `src/schemas/*` | `@repo/core/schemas/*` | one file per area — see "Schemas" below                                                                                                     |
 
@@ -30,7 +31,8 @@ Read shapes use Money, ISO-datetime strings and branded ids. Input shapes never 
 - `me`: `TokenResponse`, `MeResponse` (moved from the server), `ProfileUpdate`.
 - `upload`: `UploadPurpose`, `UploadKey`, `PresignRequest`, `PresignResponse`. Clients send upload **keys**, never URLs (D13).
 - `vendor`: `VendorPublic`, `VendorApplicationCreate`, `VendorApplication`, `VendorReject`.
-- `order`: `Order`, `SubOrder`, `VendorSubOrder` (adds commission + net), `OrderItem`, `OrderSummary`, `ShippingAddressSnapshot`, `PaymentSession` (`redirectUrl` null until the worker creates the session), `SubOrderShip`.
+- `order`: `Order`, `SubOrder`, `VendorSubOrder` (adds commission + net), `OrderItem`, `OrderSummary` + `OrderSummaryPage`, `ShippingAddressSnapshot`, `PaymentSession` (`redirectUrl` null until the worker creates the session), `PaymentRetry` (`{ provider? }` body of a new payment attempt), `SubOrderShip`.
+- `outbox`: payload schemas of `outbox_events` rows (ids only; `aggregateType` = `ORDER_AGGREGATE_TYPE` `'order'`, `aggregateId` = orderId) — `OrderCreatedEvent {orderId, customerId}`, `PaymentRequestedEvent {orderId, paymentId, provider, attemptNo}`, `OrderCancelledEvent {orderId, customerId, reason: OrderCancelReason}` (`CUSTOMER` / `PAYMENT_EXPIRED`); `OUTBOX_EVENT_SCHEMAS` maps event type → schema for the worker. Add new event types here.
 - `shipping-method`: `ShippingMethod`, `ShippingMethodInput`.
 - `coupon`: `CouponInput`, `Coupon` — a union on `discountType`: FIXED carries `discount: Money`, PERCENT carries `discountBps` (basis points, 1..10000). Scope comes from the endpoint, not the body.
 - `review`: `ReviewCreate`, `Review`, `RatingSummary` (`average` is null when there are no reviews).
@@ -54,6 +56,18 @@ across sub-orders by `Money.allocate` over (subtotal − vendorDiscount); vendor
 `evaluateCoupon` returns `{ ok } | { ok:false, code }`. Usage counts are inputs (caller loads them, locking the
 coupon row). Invariants asserted: `paid = subtotal + shipping − vendorDiscount − platformDiscount ≥ 0`,
 `net = subtotal + shipping − vendorDiscount − commission`, payout postings sum to 0.
+
+**Pricing result → DB columns** (server checkout): `SubOrder.subtotalAmount` = `subtotal`, `shippingAmount` =
+`shipping`, `discountAmount` = `vendorDiscount`, `platformDiscountAmount` = `platformDiscount`,
+`commissionAmount` = `commission`; `Order.itemsTotal/shippingTotal/discountTotal/grandTotal` = the order totals;
+`Payment.amount` = `grandTotal`; each `redemptions[]` entry → one `CouponRedemption` (`discount`).
+
+## Orders (`src/orders`)
+
+`deriveOrderStatus(statuses)` (D11, first match wins): all CANCELLED → CANCELLED; all AWAITING_PAYMENT →
+AWAITING_PAYMENT; all REFUNDED → REFUNDED; any REFUNDED → PARTIALLY_REFUNDED; all COMPLETED ignoring
+REFUNDED/CANCELLED (≥ 1 COMPLETED) → COMPLETED; otherwise PAID. Empty input throws `common.error.internal`.
+Every writer of `SubOrder.status` must recompute `Order.status` with it in the same transaction.
 
 ## Rules specific to this package
 

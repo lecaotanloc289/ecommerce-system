@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { OrderStatusSchema, PaymentStatusSchema, SubOrderStatusSchema } from '../enums';
+import {
+  OrderStatusSchema,
+  PaymentProviderSchema,
+  PaymentStatusSchema,
+  SubOrderStatusSchema,
+} from '../enums';
 import {
   OrderIdSchema,
   OrderItemIdSchema,
@@ -9,7 +14,7 @@ import {
   VendorIdSchema,
 } from '../ids';
 import { AddressSchema } from './address';
-import { HttpUrlSchema } from './common';
+import { HttpUrlSchema, PageSchema } from './common';
 import { IsoDateTimeSchema } from './datetime';
 import { NonNegativeMoneySchema } from './money';
 import { VariantAttributesSchema } from './product';
@@ -92,6 +97,10 @@ export const OrderSummarySchema = z.object({
 });
 export type OrderSummary = z.infer<typeof OrderSummarySchema>;
 
+/** Page of `GET /v1/orders` (newest first). */
+export const OrderSummaryPageSchema = PageSchema(OrderSummarySchema);
+export type OrderSummaryPage = z.infer<typeof OrderSummaryPageSchema>;
+
 /**
  * Response of `GET /v1/orders/:id/payment`. The worker creates the provider session
  * asynchronously, so `redirectUrl` is null until it is ready (clients poll).
@@ -102,6 +111,15 @@ export const PaymentSessionSchema = z.object({
   expiresAt: IsoDateTimeSchema.nullable(),
 });
 export type PaymentSession = z.infer<typeof PaymentSessionSchema>;
+
+/**
+ * Body of `POST /v1/orders/:id/payments` (new payment attempt). `provider` switches the gateway;
+ * omitted = same provider as the previous attempt. The amount is always re-read from the order.
+ */
+export const PaymentRetrySchema = z.object({
+  provider: PaymentProviderSchema.optional(),
+});
+export type PaymentRetry = z.infer<typeof PaymentRetrySchema>;
 
 /** Body of `POST /v1/vendor/sub-orders/:id/ship`. */
 export const SubOrderShipSchema = z.object({

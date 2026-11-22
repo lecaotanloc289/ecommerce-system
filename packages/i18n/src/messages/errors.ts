@@ -71,6 +71,8 @@ export const errorsEn: ErrorMessages = {
     'This invitation was sent to a different email than your account.',
   'refund.error.not-refundable': 'This order can’t be refunded.',
   'payment.error.session-not-ready': 'The payment session isn’t ready yet. Please wait a moment.',
+  'payment.error.retry-not-allowed':
+    'You can’t start a new payment for this order right now. Please refresh the order.',
 };
 
 export const errorsVi: ErrorMessages = {
@@ -138,4 +140,6 @@ export const errorsVi: ErrorMessages = {
     'Lời mời này được gửi cho một email khác với tài khoản của bạn.',
   'refund.error.not-refundable': 'Đơn hàng này không thể hoàn tiền.',
   'payment.error.session-not-ready': 'Phiên thanh toán chưa sẵn sàng. Vui lòng đợi trong giây lát.',
+  'payment.error.retry-not-allowed':
+    'Hiện chưa thể tạo lần thanh toán mới cho đơn hàng này. Vui lòng tải lại đơn hàng.',
 };

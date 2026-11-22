@@ -10,6 +10,7 @@ export * from './me';
 export * from './upload';
 export * from './vendor';
 export * from './order';
+export * from './outbox';
 export * from './shipping-method';
 export * from './coupon';
 export * from './review';

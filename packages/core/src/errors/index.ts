@@ -82,6 +82,7 @@ export const ERROR_CODES = [
   'invitation.error.email-mismatch',
   'refund.error.not-refundable',
   'payment.error.session-not-ready',
+  'payment.error.retry-not-allowed',
 ] as const;
 
 export const ErrorCodeSchema = z.enum(ERROR_CODES);
@@ -149,6 +150,7 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'invitation.error.email-mismatch': 403,
   'refund.error.not-refundable': 409,
   'payment.error.session-not-ready': 409,
+  'payment.error.retry-not-allowed': 409,
 };
 
 /** Interpolation values for the translated message (e.g. `{ sku, available }`). */

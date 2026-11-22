@@ -1,0 +1,84 @@
+import { describe, expect, it } from 'vitest';
+import type { OrderStatus, SubOrderStatus } from '../src/enums';
+import { DomainError } from '../src/errors';
+import { deriveOrderStatus } from '../src/orders';
+import { PaymentRetrySchema } from '../src/schemas/order';
+import {
+  OrderCancelledEventSchema,
+  OrderCreatedEventSchema,
+  PaymentRequestedEventSchema,
+} from '../src/schemas/outbox';
+
+describe('deriveOrderStatus (D11)', () => {
+  const cases: [SubOrderStatus[], OrderStatus][] = [
+    [['CANCELLED'], 'CANCELLED'],
+    [['CANCELLED', 'CANCELLED'], 'CANCELLED'],
+    [['AWAITING_PAYMENT'], 'AWAITING_PAYMENT'],
+    [['AWAITING_PAYMENT', 'AWAITING_PAYMENT'], 'AWAITING_PAYMENT'],
+    [['REFUNDED'], 'REFUNDED'],
+    [['REFUNDED', 'REFUNDED'], 'REFUNDED'],
+    [['REFUNDED', 'PAID'], 'PARTIALLY_REFUNDED'],
+    [['REFUNDED', 'COMPLETED'], 'PARTIALLY_REFUNDED'],
+    [['REFUNDED', 'CANCELLED'], 'PARTIALLY_REFUNDED'],
+    [['COMPLETED'], 'COMPLETED'],
+    [['COMPLETED', 'COMPLETED'], 'COMPLETED'],
+    [['COMPLETED', 'CANCELLED'], 'COMPLETED'],
+    [['PAID'], 'PAID'],
+    [['PAID', 'PROCESSING'], 'PAID'],
+    [['SHIPPED', 'DELIVERED'], 'PAID'],
+    [['COMPLETED', 'DELIVERED'], 'PAID'],
+    [['PAID', 'CANCELLED'], 'PAID'],
+  ];
+
+  it.each(cases)('%j → %s', (subs, expected) => {
+    expect(deriveOrderStatus(subs)).toBe(expected);
+  });
+
+  it('rejects an order without sub-orders', () => {
+    expect(() => deriveOrderStatus([])).toThrow(DomainError);
+  });
+});
+
+describe('outbox payload schemas', () => {
+  const orderId = '01JABCDEFGHJKMNPQRSTVWXYZ0';
+  const userId = '01JABCDEFGHJKMNPQRSTVWXYZ1';
+
+  it('parse valid payloads', () => {
+    expect(OrderCreatedEventSchema.parse({ orderId, customerId: userId })).toBeTruthy();
+    expect(
+      PaymentRequestedEventSchema.parse({
+        orderId,
+        paymentId: userId,
+        provider: 'VNPAY',
+        attemptNo: 1,
+      }),
+    ).toBeTruthy();
+    expect(
+      OrderCancelledEventSchema.parse({ orderId, customerId: userId, reason: 'PAYMENT_EXPIRED' }),
+    ).toBeTruthy();
+  });
+
+  it('reject malformed payloads', () => {
+    expect(OrderCreatedEventSchema.safeParse({ orderId: 'x', customerId: userId }).success).toBe(
+      false,
+    );
+    expect(
+      PaymentRequestedEventSchema.safeParse({ orderId, paymentId: userId, provider: 'VNPAY' })
+        .success,
+    ).toBe(false);
+    expect(
+      OrderCancelledEventSchema.safeParse({ orderId, customerId: userId, reason: 'BORED' }).success,
+    ).toBe(false);
+  });
+});
+
+describe('PaymentRetrySchema', () => {
+  it('accepts an empty body or a known provider', () => {
+    expect(PaymentRetrySchema.parse({})).toEqual({});
+    expect(PaymentRetrySchema.parse({ provider: 'STRIPE' })).toEqual({ provider: 'STRIPE' });
+  });
+
+  it('rejects an unknown provider', () => {
+    expect(PaymentRetrySchema.safeParse({ provider: 'PAYPAL' }).success).toBe(false);
+  });
+});
