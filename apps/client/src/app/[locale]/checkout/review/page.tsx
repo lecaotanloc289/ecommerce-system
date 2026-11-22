@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
 import { ArrowLeft, CreditCard, MapPin, Pencil } from 'lucide-react';
-import { Card } from '@repo/ui';
+import { Card, Checkbox } from '@repo/ui';
 import { Container } from '@/components/layout/container';
 import { ButtonLink } from '@/components/common/button-link';
 import { StepTabs } from '@/components/checkout/step-tabs';
@@ -50,7 +50,7 @@ export default function CheckoutReviewPage() {
   const { locale, t } = useLocale();
   const { lines, totals, shippingMethod } = useOrderTotals();
   const { clear } = useCart();
-  const { reset } = useCheckout();
+  const { reset, zaloOptIn, setZaloOptIn } = useCheckout();
   return (
     <Container as="section" className="py-8 lg:py-12">
       <h1 className="font-heading text-h4 font-bold tracking-tight text-text-primary lg:text-h3">
@@ -129,6 +129,24 @@ export default function CheckoutReviewPage() {
               ))}
             </Card>
           </div>
+
+          <label
+            htmlFor="zaloOptIn"
+            className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-default bg-bg-elevated p-4"
+          >
+            <Checkbox
+              id="zaloOptIn"
+              className="mt-0.5"
+              checked={zaloOptIn}
+              onCheckedChange={(checked) => setZaloOptIn(checked === true)}
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="text-body-m font-medium text-text-primary">
+                {t('checkout.zaloOptIn')}
+              </span>
+              <span className="text-body-s text-text-muted">{t('checkout.zaloOptInHint')}</span>
+            </span>
+          </label>
 
           <ButtonLink href="/checkout/shipping" variant="outline" size="lg" className="w-fit">
             <ArrowLeft className="size-4" />

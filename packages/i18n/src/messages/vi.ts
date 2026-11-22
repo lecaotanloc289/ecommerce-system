@@ -228,6 +228,9 @@ export const vi: Messages = {
     itemsInCart: 'Sản phẩm trong giỏ',
     placeOrder: 'Đặt hàng',
     payNow: 'Thanh toán',
+    zaloOptIn: 'Nhận thông báo đơn hàng qua Zalo',
+    zaloOptInHint:
+      'Mỗi shop trong đơn có thể nhắn Zalo tới số điện thoại giao hàng ở trên về đơn và việc giao hàng.',
   },
   payment: {
     vnpay: 'VNPay',

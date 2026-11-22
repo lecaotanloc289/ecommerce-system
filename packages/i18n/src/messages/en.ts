@@ -226,6 +226,9 @@ export const en = {
     itemsInCart: 'Items in cart',
     placeOrder: 'Place order',
     payNow: 'Pay now',
+    zaloOptIn: 'Get order updates on Zalo',
+    zaloOptInHint:
+      'Each shop in this order may message the phone number above on Zalo about this order and its delivery.',
   },
   payment: {
     vnpay: 'VNPay',

@@ -17,11 +17,14 @@ const STORAGE_KEY = 'checkout';
 interface CheckoutState {
   shippingMethodId: string | null;
   voucherCode: string | null;
+  /** "Notify me on Zalo" — sent as `Checkout.zaloOptIn`; shops only message opted-in orders. */
+  zaloOptIn: boolean;
 }
 
 interface CheckoutContextValue extends CheckoutState {
   setShippingMethodId: (id: string) => void;
   setVoucherCode: (code: string | null) => void;
+  setZaloOptIn: (optIn: boolean) => void;
   /** Back to defaults — called once an order is placed. */
   reset: () => void;
 }
@@ -29,6 +32,7 @@ interface CheckoutContextValue extends CheckoutState {
 const DEFAULT_STATE: CheckoutState = {
   shippingMethodId: shippingMethods[0]?.id ?? null,
   voucherCode: null,
+  zaloOptIn: false,
 };
 
 const CheckoutContext = React.createContext<CheckoutContextValue | null>(null);
@@ -46,6 +50,7 @@ function sanitize(stored: unknown): CheckoutState | undefined {
       ? shippingMethodId
       : DEFAULT_STATE.shippingMethodId,
     voucherCode: findVoucher(voucherCode) ? voucherCode : null,
+    zaloOptIn: 'zaloOptIn' in stored && stored.zaloOptIn === true,
   };
 }
 
@@ -71,11 +76,15 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
     setState((s) => ({ ...s, voucherCode: findVoucher(code)?.code ?? null }));
   }, []);
 
+  const setZaloOptIn = React.useCallback((optIn: boolean) => {
+    setState((s) => ({ ...s, zaloOptIn: optIn }));
+  }, []);
+
   const reset = React.useCallback(() => setState(DEFAULT_STATE), []);
 
   const value = React.useMemo<CheckoutContextValue>(
-    () => ({ ...state, setShippingMethodId, setVoucherCode, reset }),
-    [state, setShippingMethodId, setVoucherCode, reset],
+    () => ({ ...state, setShippingMethodId, setVoucherCode, setZaloOptIn, reset }),
+    [state, setShippingMethodId, setVoucherCode, setZaloOptIn, reset],
   );
 
   return <CheckoutContext.Provider value={value}>{children}</CheckoutContext.Provider>;
