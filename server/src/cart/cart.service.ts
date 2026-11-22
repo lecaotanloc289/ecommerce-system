@@ -10,6 +10,7 @@ import {
   type Currency,
   DomainError,
   MAX_CART_LINE_QUANTITY,
+  MAX_CART_LINES,
   Money,
   VariantAttributesSchema,
 } from '@repo/core';
@@ -74,7 +75,13 @@ export class CartService {
     if (!variant) throw new DomainError('product.error.variant-not-found', { variantId });
     if (!isSellable(variant)) throw new DomainError('product.error.not-available', { variantId });
     const available = stockAvailable(variant);
-    if (quantity > available) {
+    const cartId = await this.ensureCart(this.prisma.client, userId);
+    const line = await this.prisma.client.cartItem.findUnique({
+      where: { cartId_variantId: { cartId, variantId } },
+      select: { quantity: true },
+    });
+    // Lowering a line is always allowed (stock may have dropped under it); only raising is checked.
+    if (quantity > (line?.quantity ?? 0) && quantity > available) {
       throw new DomainError('cart.error.quantity-exceeds-stock', {
         variantId,
         requested: quantity,
@@ -82,7 +89,7 @@ export class CartService {
       });
     }
 
-    const cartId = await this.ensureCart(this.prisma.client, userId);
+    if (!line) await this.assertRoomForNewLine(this.prisma.client, cartId, 1);
     await this.prisma.client.cartItem.upsert({
       where: { cartId_variantId: { cartId, variantId } },
       create: { id: ulid(), cartId, variantId, quantity },
@@ -151,6 +158,7 @@ export class CartService {
           });
         }
         if (applied === current) continue;
+        if (current === 0) await this.assertRoomForNewLine(tx, cartId, 1);
         await tx.cartItem.upsert({
           where: { cartId_variantId: { cartId, variantId } },
           create: { id: ulid(), cartId, variantId, quantity: applied },
@@ -194,17 +202,26 @@ export class CartService {
     };
   }
 
+  private async assertRoomForNewLine(
+    db: Pick<Prisma.TransactionClient, 'cartItem'>,
+    cartId: string,
+    adding: number,
+  ): Promise<void> {
+    const count = await db.cartItem.count({ where: { cartId } });
+    if (count + adding > MAX_CART_LINES) {
+      throw new DomainError('cart.error.too-many-lines', { max: MAX_CART_LINES });
+    }
+  }
+
   /** Race-safe lazy creation: upsert on the unique `userId` (INSERT … ON CONFLICT), never find-then-create. */
   private async ensureCart(
     db: Pick<Prisma.TransactionClient, 'cart'>,
     userId: string,
   ): Promise<string> {
-    const cart = await db.cart.upsert({
-      where: { userId },
-      create: { id: ulid(), userId },
-      update: {},
-      select: { id: true },
-    });
+    // INSERT … ON CONFLICT DO NOTHING (Prisma's upsert can still raise P2002 under a race, which
+    // would also abort a surrounding transaction), then read the winner's row.
+    await db.cart.createMany({ data: [{ id: ulid(), userId }], skipDuplicates: true });
+    const cart = await db.cart.findUniqueOrThrow({ where: { userId }, select: { id: true } });
     return cart.id;
   }
 
@@ -238,7 +255,7 @@ function buildCart(items: readonly CartItemRow[], locale: CartLocale): Cart {
       vendorId: product.vendorId as CartLine['vendorId'],
       productName: translation.name,
       productSlug: translation.slug,
-      attributes: VariantAttributesSchema.parse(variant.attributes),
+      attributes: parseAttributes(variant.attributes),
       imageUrl: product.primaryImageUrl ?? product.images[0]?.url ?? null,
       unitPrice,
       quantity: item.quantity,
@@ -275,4 +292,10 @@ function buildCart(items: readonly CartItemRow[], locale: CartLocale): Cart {
     hasMixedCurrency: currencies.size > 1,
     currencies: [...currencies],
   };
+}
+
+/** A malformed JSONB row must not take the whole cart down: fall back to no attributes. */
+function parseAttributes(value: unknown): CartLine['attributes'] {
+  const parsed = VariantAttributesSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
 }

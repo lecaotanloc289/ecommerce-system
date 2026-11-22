@@ -87,7 +87,7 @@ All routes `@Roles('CUSTOMER')`, scoped to `req.user.id`; shapes in `@repo/core/
 | `POST /v1/cart/merge {items[]}`            | `@Idempotent`. Guest-cart merge: quantities add to existing lines (duplicates summed), clamped to `stockAvailable`; a merge never lowers an existing line; unknown/unsellable variants are dropped. Returns `{ cart, adjustments[] }` (`CLAMPED` / `UNAVAILABLE`). Same key replays; a **new key adds the quantities again**, so the client calls merge once after login, then clears the guest cart. |
 | `GET /v1/cart/shipping-options`            | Active `ShippingMethod`s per vendor present in the cart (sellable lines only), `{ groups: [{ vendorId, methods }] }`.                                                                                                                                                                                                                                                                                 |
 
-Lazy cart creation is `upsert` on the unique `userId` (race-safe); merge locks the cart row (`SELECT … FOR UPDATE`) in its transaction. Tests: `test/integration/cart.spec.ts`.
+Lazy cart creation is `createMany({ skipDuplicates })` (INSERT … ON CONFLICT DO NOTHING) on the unique `userId` then a read — race-safe, unlike Prisma `upsert` which can still raise P2002; the number of distinct lines is capped at `MAX_CART_LINES` (100, `cart.error.too-many-lines`); `stockAvailable` is advisory, checkout re-checks stock atomically; lowering a line is always allowed; merge locks the cart row (`SELECT … FOR UPDATE`) in its transaction. Tests: `test/integration/cart.spec.ts`.
 
 ## OpenAPI / SDK
 

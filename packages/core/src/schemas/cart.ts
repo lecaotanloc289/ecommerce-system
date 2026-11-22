@@ -40,8 +40,9 @@ export const CartLineSchema = z.object({
 });
 export type CartLine = z.infer<typeof CartLineSchema>;
 
-/** Max lines accepted by `POST /v1/cart/merge` (a guest cart sanity bound). */
-const MAX_MERGE_LINES = 100;
+/** Max distinct lines in one cart — a DB/payload sanity bound (`cart.error.too-many-lines`). */
+export const MAX_CART_LINES = 100;
+const MAX_MERGE_LINES = MAX_CART_LINES;
 
 /** Query of the cart read endpoints: the locale product names/slugs are resolved to. */
 export const CartQuerySchema = z.object({
@@ -96,6 +97,7 @@ export type CartMergeAdjustmentReason = z.infer<typeof CartMergeAdjustmentReason
 export const CartMergeAdjustmentSchema = z.object({
   variantId: ProductVariantIdSchema,
   reason: CartMergeAdjustmentReasonSchema,
+  /** `CLAMPED`: existing + incoming quantity wanted; `UNAVAILABLE`: the incoming quantity. */
   requestedQuantity: z.number().int().positive(),
   appliedQuantity: z.number().int().nonnegative(),
 });

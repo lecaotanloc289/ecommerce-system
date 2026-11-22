@@ -224,7 +224,74 @@ describe('cart API (Testcontainers)', () => {
     expect((await getCart()).json<CartBody>().itemCount).toBe(1);
   });
 
+  it('lets a line be lowered after stock dropped, but not raised', async () => {
+    const { vendor } = await makeVendor(t.db);
+    const p = await makeProduct(t.db, { vendorId: vendor.id, variants: [{ stockOnHand: 5 }] });
+    const v = p.variants[0];
+    if (!v) throw new Error('seed');
+    await mutate('PUT', `/v1/cart/items/${v.id}`, { quantity: 5 });
+    await t.db.productVariant.update({ where: { id: v.id }, data: { stockOnHand: 2 } });
+    expect((await mutate('PUT', `/v1/cart/items/${v.id}`, { quantity: 3 })).statusCode).toBe(200);
+    expect((await mutate('PUT', `/v1/cart/items/${v.id}`, { quantity: 4 })).statusCode).toBe(409);
+  });
+
+  it('caps the number of distinct lines', async () => {
+    const { vendor } = await makeVendor(t.db);
+    const p = await makeProduct(t.db, {
+      vendorId: vendor.id,
+      variants: Array.from({ length: 101 }, () => ({ stockOnHand: 5 })),
+    });
+    const ids = p.variants.map((v) => v.id);
+    await t.db.cart.create({
+      data: {
+        id: ulid(),
+        userId,
+        items: {
+          create: ids.slice(0, 100).map((variantId) => ({ id: ulid(), variantId, quantity: 1 })),
+        },
+      },
+    });
+    const extra = ids[100];
+    const res = await mutate('PUT', `/v1/cart/items/${extra}`, { quantity: 1 });
+    expect(res.statusCode).toBe(422);
+    expect(res.json()).toMatchObject({ errorCode: 'cart.error.too-many-lines' });
+    const merged = await mutate('POST', '/v1/cart/merge', {
+      items: [{ variantId: extra, quantity: 1 }],
+    });
+    expect(merged.json()).toMatchObject({ errorCode: 'cart.error.too-many-lines' });
+    // An existing line can still change.
+    expect((await mutate('PUT', `/v1/cart/items/${ids[0]}`, { quantity: 2 })).statusCode).toBe(200);
+  });
+
   describe('POST /v1/cart/merge', () => {
+    it('adds exactly once per request under concurrent merges', async () => {
+      const { pb } = await seed();
+      const [v] = pb.variants;
+      if (!v) throw new Error('seed');
+      const payload = { items: [{ variantId: v.id, quantity: 1 }] };
+      const res = await Promise.all(
+        Array.from({ length: 5 }, () => mutate('POST', '/v1/cart/merge', payload)),
+      );
+      expect(res.map((r) => r.statusCode)).toEqual(Array.from({ length: 5 }, () => 200));
+      expect((await getCart()).json<CartBody>().itemCount).toBe(5);
+    });
+
+    it('leaves an existing line of a now-unsellable variant untouched and reports it', async () => {
+      const { pa } = await seed();
+      const [v] = pa.variants;
+      if (!v) throw new Error('seed');
+      await mutate('PUT', `/v1/cart/items/${v.id}`, { quantity: 2 });
+      await t.db.product.update({ where: { id: pa.id }, data: { status: 'BLOCKED' } });
+      const res = await mutate('POST', '/v1/cart/merge', {
+        items: [{ variantId: v.id, quantity: 1 }],
+      });
+      const body = res.json<MergeBody>();
+      expect(body.adjustments).toEqual([
+        { variantId: v.id, reason: 'UNAVAILABLE', requestedQuantity: 1, appliedQuantity: 0 },
+      ]);
+      expect(body.cart.groups[0]?.lines[0]).toMatchObject({ quantity: 2, unavailable: true });
+    });
+
     it('sums with existing lines, clamps to stock, drops unknown/unsellable, reports adjustments', async () => {
       const { pa, pb } = await seed();
       const [a1, a2] = pa.variants; // stock 5, available 2
