@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { OrderStatus, SubOrderStatus } from '../src/enums';
 import { DomainError } from '../src/errors';
-import { deriveOrderStatus } from '../src/orders';
+import { deriveOrderStatus, providerSupportsCurrency } from '../src/orders';
 import { PaymentRetrySchema } from '../src/schemas/order';
 import {
   OrderCancelledEventSchema,
@@ -36,6 +36,15 @@ describe('deriveOrderStatus (D11)', () => {
 
   it('rejects an order without sub-orders', () => {
     expect(() => deriveOrderStatus([])).toThrow(DomainError);
+  });
+});
+
+describe('providerSupportsCurrency', () => {
+  it('VNPay charges VND only; Stripe charges VND and USD', () => {
+    expect(providerSupportsCurrency('VNPAY', 'VND')).toBe(true);
+    expect(providerSupportsCurrency('VNPAY', 'USD')).toBe(false);
+    expect(providerSupportsCurrency('STRIPE', 'VND')).toBe(true);
+    expect(providerSupportsCurrency('STRIPE', 'USD')).toBe(true);
   });
 });
 

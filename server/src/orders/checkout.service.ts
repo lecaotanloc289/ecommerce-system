@@ -14,6 +14,7 @@ import {
   ShippingAddressSnapshotSchema,
   VendorIdSchema,
   priceOrder,
+  providerSupportsCurrency,
   resolveCommissionBps,
 } from '@repo/core';
 import { type Prisma, toDbAmount, toMoney } from '@repo/db';
@@ -77,11 +78,11 @@ export class CheckoutService {
         { timeout: CHECKOUT_TX_TIMEOUT_MS },
       );
     } catch (error) {
-      // DB backstop: a concurrent request with the same key committed first (`orders.idempotency_key` unique).
-      if (isUniqueViolation(error)) {
-        const winner = await this.findByIdempotencyKey(userId, idempotencyKey, input);
-        if (winner) return winner;
-      }
+      // DB backstop: a concurrent request with the same key may have committed first. It surfaces
+      // as P2002 on `orders.idempotency_key` — or as any earlier failure (e.g. out-of-stock on the
+      // unit the winner just reserved) — so on every error, answer with the winner's order if any.
+      const winner = await this.findByIdempotencyKey(userId, idempotencyKey, input);
+      if (winner) return winner;
       throw error;
     }
   }
@@ -167,6 +168,12 @@ export class CheckoutService {
     }
     if (!settings.supportedCurrencies.includes(currency)) {
       throw new DomainError('checkout.error.currency-mismatch', { currency });
+    }
+    if (!providerSupportsCurrency(input.provider, currency)) {
+      throw new DomainError('payment.error.provider-currency-unsupported', {
+        provider: input.provider,
+        currency,
+      });
     }
 
     // 4. The buyer's own address → immutable snapshot.
@@ -505,9 +512,4 @@ function groupByVendor(lines: readonly Line[]): VendorGroup[] {
 
 function compareIds(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
-}
-
-/** Prisma P2002 (unique constraint), e.g. `orders.idempotency_key` taken by a concurrent request. */
-export function isUniqueViolation(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
 }

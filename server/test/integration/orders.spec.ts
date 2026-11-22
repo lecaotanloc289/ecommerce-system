@@ -1,6 +1,8 @@
-import { CouponSchema, Money, priceOrder, VendorIdSchema } from '@repo/core';
+import { CheckoutSchema, CouponSchema, Money, priceOrder, VendorIdSchema } from '@repo/core';
 import { ulid } from 'ulid';
 import { IDEMPOTENT_REPLAYED_HEADER } from '../../src/common/idempotency/idempotency.interceptor';
+import { CheckoutService } from '../../src/orders/checkout.service';
+import { SESSION_CREATION_TIMEOUT_MS } from '../../src/orders/orders.service';
 import {
   type TestApp,
   createTestApp,
@@ -515,6 +517,105 @@ describe('orders API (Testcontainers)', () => {
 
     expect(await t.db.order.count()).toBe(1);
     expect(await reserved(variant.id)).toBe(1);
+  });
+
+  it('DB backstop: concurrent same-key checkouts (no Redis in the way) yield one order', async () => {
+    const { user, address } = await customer();
+    const { variant, method } = await shop({ stock: 1 });
+    const service = t.app.get(CheckoutService);
+    const input = CheckoutSchema.parse({
+      items: [{ variantId: variant.id, quantity: 1 }],
+      addressId: address.id,
+      shippingMethodIds: [method.id],
+      provider: 'VNPAY',
+    });
+    const key = ulid();
+    // The loser fails on the last unit (or on the unique key) and must answer with the winner.
+    const ids = await Promise.all([
+      service.checkout(user.id, input, key),
+      service.checkout(user.id, input, key),
+    ]);
+    expect(ids[0]).toBe(ids[1]);
+    expect(await t.db.order.count()).toBe(1);
+    expect(await reserved(variant.id)).toBe(1);
+  });
+
+  it('enforces the coupon limit under concurrent checkouts', async () => {
+    const { variant, method } = await shop({ stock: 10 });
+    await makeCoupon(t.db, { code: 'RACE', maxRedemptions: 1 });
+    const buyers = await Promise.all([customer(), customer(), customer()]);
+    const results = await Promise.all(
+      buyers.map(({ address, headers }) =>
+        checkout(headers, {
+          items: [{ variantId: variant.id, quantity: 1 }],
+          addressId: address.id,
+          shippingMethodIds: [method.id],
+          couponCodes: ['RACE'],
+          provider: 'VNPAY',
+        }),
+      ),
+    );
+    expect(results.map((r) => r.statusCode).sort()).toEqual([201, 422, 422]);
+    expect(await t.db.couponRedemption.count()).toBe(1);
+    expect(await reserved(variant.id)).toBe(1);
+  });
+
+  it('rejects a payment provider that cannot charge the order currency', async () => {
+    const { address, headers } = await customer();
+    const { vendor } = await makeVendor(t.db, { currency: 'USD' });
+    const product = await makeProduct(t.db, { vendorId: vendor.id, currency: 'USD', price: 2_500 });
+    const method = await makeShippingMethod(t.db, {
+      vendorId: vendor.id,
+      currency: 'USD',
+      price: 500,
+    });
+    const body = {
+      items: [{ variantId: product.variants[0]?.id, quantity: 1 }],
+      addressId: address.id,
+      shippingMethodIds: [method.id],
+    };
+
+    const vnpay = await checkout(headers, { ...body, provider: 'VNPAY' });
+    expect(vnpay.statusCode).toBe(422);
+    expect(vnpay.json<ErrorBody>()).toEqual({
+      errorCode: 'payment.error.provider-currency-unsupported',
+      params: { provider: 'VNPAY', currency: 'USD' },
+    });
+    expect(await t.db.order.count()).toBe(0);
+
+    const stripe = await checkout(headers, { ...body, provider: 'STRIPE' });
+    expect(stripe.statusCode).toBe(201);
+    const order = stripe.json<OrderBody>();
+    expect(order.grandTotal).toEqual({ amount: 3_000, currency: 'USD' });
+
+    await t.db.payment.updateMany({ where: { orderId: order.id }, data: { status: 'FAILED' } });
+    const retry = await post(headers, `/v1/orders/${order.id}/payments`, { provider: 'VNPAY' });
+    expect(retry.statusCode).toBe(422);
+    expect(retry.json<ErrorBody>().errorCode).toBe('payment.error.provider-currency-unsupported');
+  });
+
+  it('lets a payment stuck without a session be retried after the session-creation timeout', async () => {
+    const { address, headers } = await customer();
+    const { variant, method } = await shop();
+    const order = (
+      await checkout(headers, {
+        items: [{ variantId: variant.id, quantity: 1 }],
+        addressId: address.id,
+        shippingMethodIds: [method.id],
+        provider: 'VNPAY',
+      })
+    ).json<OrderBody>();
+    await t.db.payment.updateMany({
+      where: { orderId: order.id },
+      data: { createdAt: new Date(Date.now() - SESSION_CREATION_TIMEOUT_MS - 1000) },
+    });
+    const res = await post(headers, `/v1/orders/${order.id}/payments`, {});
+    expect(res.statusCode).toBe(201);
+    const attempts = await t.db.payment.findMany({
+      where: { orderId: order.id },
+      orderBy: { attemptNo: 'asc' },
+    });
+    expect(attempts.map((p) => p.status)).toEqual(['FAILED', 'PENDING']);
   });
 
   it('rejects a coupon past its usage limit', async () => {

@@ -1,5 +1,16 @@
-import type { OrderStatus, SubOrderStatus } from '../enums';
+import type { Currency, OrderStatus, PaymentProvider, SubOrderStatus } from '../enums';
 import { DomainError } from '../errors';
+
+/** Currencies each payment gateway can charge in (VNPay is VND-only; Stripe takes both). */
+export const PROVIDER_CURRENCIES: Readonly<Record<PaymentProvider, readonly Currency[]>> = {
+  VNPAY: ['VND'],
+  STRIPE: ['VND', 'USD'],
+};
+
+/** Can `provider` charge an order in `currency`? Checked at checkout and on payment retry. */
+export function providerSupportsCurrency(provider: PaymentProvider, currency: Currency): boolean {
+  return PROVIDER_CURRENCIES[provider].includes(currency);
+}
 
 /**
  * Order status derived from its sub-orders (roadmap D11). Rules, first match wins:

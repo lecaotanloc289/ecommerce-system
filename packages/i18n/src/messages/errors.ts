@@ -73,6 +73,8 @@ export const errorsEn: ErrorMessages = {
   'payment.error.session-not-ready': 'The payment session isn’t ready yet. Please wait a moment.',
   'payment.error.retry-not-allowed':
     'You can’t start a new payment for this order right now. Please refresh the order.',
+  'payment.error.provider-currency-unsupported':
+    'This payment method doesn’t support the order’s currency. Please choose another one.',
 };
 
 export const errorsVi: ErrorMessages = {
@@ -142,4 +144,6 @@ export const errorsVi: ErrorMessages = {
   'payment.error.session-not-ready': 'Phiên thanh toán chưa sẵn sàng. Vui lòng đợi trong giây lát.',
   'payment.error.retry-not-allowed':
     'Hiện chưa thể tạo lần thanh toán mới cho đơn hàng này. Vui lòng tải lại đơn hàng.',
+  'payment.error.provider-currency-unsupported':
+    'Phương thức thanh toán này không hỗ trợ loại tiền của đơn hàng. Vui lòng chọn phương thức khác.',
 };

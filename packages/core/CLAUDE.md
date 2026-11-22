@@ -69,6 +69,9 @@ AWAITING_PAYMENT; all REFUNDED → REFUNDED; any REFUNDED → PARTIALLY_REFUNDED
 REFUNDED/CANCELLED (≥ 1 COMPLETED) → COMPLETED; otherwise PAID. Empty input throws `common.error.internal`.
 Every writer of `SubOrder.status` must recompute `Order.status` with it in the same transaction.
 
+`PROVIDER_CURRENCIES` / `providerSupportsCurrency(provider, currency)`: VNPay charges VND only, Stripe VND + USD.
+Checked at checkout and payment retry (`payment.error.provider-currency-unsupported`).
+
 ## Rules specific to this package
 
 - **Money:** integer minor units only. Arithmetic ops (`of`, `add`, `subtract`, `sum`, `multiply`,

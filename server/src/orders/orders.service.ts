@@ -9,6 +9,7 @@ import {
   type PaymentRetry,
   type PaymentSession,
   PaymentRequestedEventSchema,
+  providerSupportsCurrency,
 } from '@repo/core';
 import { ulid } from 'ulid';
 import { cursorPageArgs, toPage } from '../common/pagination';
@@ -22,7 +23,13 @@ import {
   toPaymentSession,
 } from './order-view';
 
-/** `ready: false` = the latest attempt is PENDING and the worker has not created its session yet (→ 202). */
+/**
+ * A PENDING attempt whose session the worker has not created after this long counts as stuck and
+ * may be retried (clients stop polling after 30s). Operational timeout, not a business tunable.
+ */
+export const SESSION_CREATION_TIMEOUT_MS = 2 * 60_000;
+
+/** `ready: false` =the latest attempt is PENDING and the worker has not created its session yet (→ 202). */
 export interface PaymentSessionView {
   session: PaymentSession;
   ready: boolean;
@@ -93,8 +100,10 @@ export class OrdersService {
   /**
    * New payment attempt (`attemptNo + 1`, PENDING, no session) + outbox `payment.requested`.
    * Allowed while the order is AWAITING_PAYMENT, its `paymentDeadlineAt` has not passed and the
-   * latest attempt is FAILED or PENDING past its `expiresAt` (that attempt is marked FAILED first,
-   * so at most one attempt is ever PENDING). The order row is locked, so concurrent retries and
+   * latest attempt is FAILED, PENDING past its `expiresAt`, or PENDING still without a session
+   * `SESSION_CREATION_TIMEOUT_MS` after it was created (that attempt is marked FAILED first, so at
+   * most one attempt is ever PENDING). The provider must support the order currency. The order
+   * row is locked, so concurrent retries and
    * a concurrent cancel serialise; `(order_id, attempt_no)` is unique as a backstop.
    */
   async retryPayment(
@@ -128,7 +137,11 @@ export class OrdersService {
       if (!latest) throw new Error(`order ${orderId} has no payment attempt`);
       if (latest.status === 'PENDING') {
         const expired = latest.expiresAt !== null && latest.expiresAt < now;
-        if (!expired) {
+        // The worker never produced a session (provider outage, dead-lettered event).
+        const stuck =
+          latest.redirectUrl === null &&
+          latest.createdAt.getTime() + SESSION_CREATION_TIMEOUT_MS < now.getTime();
+        if (!expired && !stuck) {
           throw new DomainError('payment.error.retry-not-allowed', { reason: 'payment-pending' });
         }
         await tx.payment.updateMany({
@@ -140,6 +153,12 @@ export class OrdersService {
       }
 
       const provider = input.provider ?? latest.provider;
+      if (!providerSupportsCurrency(provider, order.currency)) {
+        throw new DomainError('payment.error.provider-currency-unsupported', {
+          provider,
+          currency: order.currency,
+        });
+      }
       const attemptNo = latest.attemptNo + 1;
       const payment = await tx.payment.create({
         data: {
