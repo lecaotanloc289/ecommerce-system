@@ -13,6 +13,7 @@ import { MeModule } from './me/me.module';
 import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { ZaloModule } from './zalo/zalo.module';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -36,6 +37,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     CartModule,
     CatalogModule,
     OrdersModule,
+    ZaloModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
