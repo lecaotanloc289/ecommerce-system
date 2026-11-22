@@ -54,6 +54,21 @@ export const errorsEn: ErrorMessages = {
   'payment.error.signature-invalid': 'The payment could not be verified.',
   'payment.error.amount-mismatch': 'The paid amount does not match the order total.',
   'payment.error.already-confirmed': 'This payment has already been confirmed.',
+  'live.error.not-found': 'We couldn’t find this live session.',
+  'live.error.invalid-transition': 'This live session can’t be changed in its current state.',
+  'live.error.not-provisioned': 'The live session isn’t ready yet. Please try again in a moment.',
+  'live.error.encoder-offline':
+    'Your streaming software isn’t connected. Please check it and try again.',
+  'live.error.already-live': 'You already have a live session on air.',
+  'live.error.not-live': 'This live session isn’t on air.',
+  'live.error.product-not-owned': 'Some products don’t belong to your shop.',
+  'live.error.product-inactive': 'Some products are no longer available to add to a live session.',
+  'live.error.too-many-products': 'This live session has too many products.',
+  'live.error.chat-rate-limited': 'You’re sending messages too fast. Please wait a moment.',
+  'live.error.chat-muted': 'You can’t chat in this live session.',
+  'live.error.webhook-signature-invalid': 'We couldn’t verify this request from the video service.',
+  'live.error.stream-provider-unavailable':
+    'The video service is temporarily unavailable. Please try again later.',
 };
 
 export const errorsVi: ErrorMessages = {
@@ -104,4 +119,20 @@ export const errorsVi: ErrorMessages = {
   'payment.error.signature-invalid': 'Không thể xác thực giao dịch thanh toán.',
   'payment.error.amount-mismatch': 'Số tiền thanh toán không khớp với tổng đơn hàng.',
   'payment.error.already-confirmed': 'Giao dịch thanh toán này đã được xác nhận.',
+  'live.error.not-found': 'Không tìm thấy phiên live này.',
+  'live.error.invalid-transition':
+    'Không thể thực hiện thao tác này khi phiên live đang ở trạng thái hiện tại.',
+  'live.error.not-provisioned': 'Phiên live chưa sẵn sàng. Vui lòng thử lại sau ít phút.',
+  'live.error.encoder-offline':
+    'Phần mềm phát live chưa được kết nối. Vui lòng kiểm tra và thử lại.',
+  'live.error.already-live': 'Bạn đang có một phiên live khác đang phát.',
+  'live.error.not-live': 'Phiên live này hiện không phát.',
+  'live.error.product-not-owned': 'Có sản phẩm không thuộc gian hàng của bạn.',
+  'live.error.product-inactive': 'Có sản phẩm hiện không thể thêm vào phiên live.',
+  'live.error.too-many-products': 'Phiên live có quá nhiều sản phẩm.',
+  'live.error.chat-rate-limited': 'Bạn gửi bình luận quá nhanh. Vui lòng chờ một chút.',
+  'live.error.chat-muted': 'Bạn không thể bình luận trong phiên live này.',
+  'live.error.webhook-signature-invalid': 'Không thể xác thực yêu cầu từ dịch vụ video.',
+  'live.error.stream-provider-unavailable':
+    'Dịch vụ video tạm thời gián đoạn. Vui lòng thử lại sau.',
 };
