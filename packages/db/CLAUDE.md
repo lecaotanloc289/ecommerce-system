@@ -5,7 +5,7 @@ Prisma schema (DB source of truth), client singleton, ledger + money boundary he
 ## State
 
 - Schema: 29 models, 17 enums (identity, vendor/KYC, catalog+i18n, cart, orders, payment+ledger, coupons, reviews, settings, outbox, live shopping).
-- Migrations: `init`, `add_search_indexes` (pg_trgm + tsvector, hand-written SQL), `register_search_vector` (registers the generated `search_vector` column via `Unsupported("tsvector")`), `add_platform_coupon_code_unique` (partial unique index so platform coupons — `vendor_id IS NULL` — have globally-unique codes; Prisma's `@@unique` can't express a `WHERE` clause), `widen_money_columns_to_bigint` (every money column int4 → int8; hand-edited to strip the search-index drift statements below), `add_live_sessions` (`LiveSession`, `LiveSessionProduct`, `LiveSessionStatus` / `LiveEndReason`, `PlatformSettings.live_disconnect_grace_seconds` / `live_chat_cooldown_seconds`; drift statements stripped), `add_live_session_partial_indexes` (hand-written: at most one `LIVE` session per vendor, at most one pinned product per session).
+- Migrations: `init`, `add_search_indexes` (pg_trgm + tsvector, hand-written SQL), `register_search_vector` (registers the generated `search_vector` column via `Unsupported("tsvector")`), `add_platform_coupon_code_unique` (partial unique index so platform coupons — `vendor_id IS NULL` — have globally-unique codes; Prisma's `@@unique` can't express a `WHERE` clause), `widen_money_columns_to_bigint` (every money column int4 → int8; hand-edited to strip the search-index drift statements below), `add_live_sessions` (`LiveSession`, `LiveSessionProduct`, `LiveSessionStatus` / `LiveEndReason`, `PlatformSettings.live_disconnect_grace_seconds` / `live_chat_cooldown_seconds`; drift statements stripped), `add_live_session_partial_indexes` (hand-written: at most one `LIVE` session per vendor, at most one pinned product per session), `add_outbox_pending_index` (hand-written partial index `outbox_events_pending_idx` on `(created_at, id) WHERE processed_at IS NULL` for the outbox dispatcher claim query).
 - Live shopping: `LiveSession` lifecycle `SCHEDULED → LIVE → ENDED` (or `CANCELLED`), owned by `server/src/live` and `workers/outbox` — see `docs/superpowers/plans/2026-11-23-live-shopping.md` §1.8. `liveInputId` / `recordingVideoId` are Cloudflare Stream uids; stream keys are never stored. Seed adds one `ENDED` (with replay) and one `SCHEDULED` session for vendor A.
 - Client: singleton in `src/client.ts`, exported as `prisma` from `src/index.ts`. NEVER export the `PrismaClient` constructor outside this package.
 - IDs: ULID supplied at create-time (no DB default). Use `ulid()` from the `ulid` package. Seed rows use the fixed canonical ULIDs in `src/seed-ids.ts` (`01SEED…`), so they parse through `@repo/core` id schemas. A local DB seeded before these ids existed (`vendor_a`, …) needs `pnpm db:reset` — the new seed collides on unique slugs/emails.
@@ -20,8 +20,8 @@ The full-text/trigram indexes (`product_translations_search_vector_idx`,
 migration. Prisma's `@@index` cannot express `USING GIN`, so `prisma migrate dev` /
 `--create-only` will DETECT DRIFT and try to generate a migration that DROPS these indexes.
 **Never apply/confirm a generated migration that drops `search_vector` or the GIN indexes.**
-The same applies to the partial unique indexes `coupons_platform_code_key`,
-`live_sessions_one_live_per_vendor_key` and `live_session_products_one_pinned_key` (they have a
+The same applies to the partial indexes `coupons_platform_code_key`,
+`live_sessions_one_live_per_vendor_key`, `live_session_products_one_pinned_key` and `outbox_events_pending_idx` (they have a
 `WHERE` clause Prisma can't model) — `migrate dev` will also try to drop them; never confirm that.
 Safe recipe: `migrate dev --create-only`, delete those statements from the generated SQL, then
 apply with `pnpm --filter @repo/db migrate:deploy`.
