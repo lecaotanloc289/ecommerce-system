@@ -32,19 +32,29 @@ export class VendorWalletService {
 
   async wallet(userId: string, vendorId: string): Promise<VendorWallet> {
     await this.assertOwner(userId, vendorId);
-    const wallet = await this.prisma.client.wallet.findUnique({ where: { vendorId } });
+    // One snapshot for both reads: a payout (balance += net, payoutReleasedAt = now) committing in
+    // between must not make the money vanish from both `balance` and `pending`.
+    const { wallet, groups } = await this.prisma.client.$transaction(
+      async (tx) => ({
+        wallet: await tx.wallet.findUnique({ where: { vendorId } }),
+        groups: await tx.subOrder.groupBy({
+          by: ['currency'],
+          where: {
+            vendorId,
+            status: { in: [...PENDING_PAYOUT_STATUSES] },
+            payoutReleasedAt: null,
+          },
+          _sum: {
+            subtotalAmount: true,
+            shippingAmount: true,
+            discountAmount: true,
+            commissionAmount: true,
+          },
+        }),
+      }),
+      { isolationLevel: 'RepeatableRead' },
+    );
     if (!wallet) throw new DomainError('common.error.not-found');
-
-    const groups = await this.prisma.client.subOrder.groupBy({
-      by: ['currency'],
-      where: { vendorId, status: { in: [...PENDING_PAYOUT_STATUSES] }, payoutReleasedAt: null },
-      _sum: {
-        subtotalAmount: true,
-        shippingAmount: true,
-        discountAmount: true,
-        commissionAmount: true,
-      },
-    });
     // Alphabetical by code (Postgres would order the enum by declaration order).
     groups.sort((a, b) => a.currency.localeCompare(b.currency));
     const pending = groups.map(({ currency, _sum: s }) => {

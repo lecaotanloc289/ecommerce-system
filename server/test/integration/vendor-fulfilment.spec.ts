@@ -7,6 +7,7 @@ import {
   VendorWalletSchema,
 } from '@repo/core';
 import { monotonicFactory } from 'ulid';
+import { IDEMPOTENT_REPLAYED_HEADER } from '../../src/common/idempotency/idempotency.interceptor';
 import {
   type TestApp,
   createTestApp,
@@ -117,6 +118,7 @@ describe('vendor fulfilment + wallet (Testcontainers)', () => {
   let variantId: string;
   let ownerHeaders: Record<string, string>;
   let staffHeaders: Record<string, string>;
+  let staff: { id: string };
   let otherVendorId: string;
   let otherVariantId: string;
   let otherHeaders: Record<string, string>;
@@ -135,7 +137,7 @@ describe('vendor fulfilment + wallet (Testcontainers)', () => {
     vendorId = a.vendor.id;
     ownerHeaders = await t.authHeader(a.owner);
     variantId = nth((await makeProduct(t.db, { vendorId })).variants, 0).id;
-    const staff = await makeUser(t.db, { roles: ['CUSTOMER', 'VENDOR_STAFF'], vendorId });
+    staff = await makeUser(t.db, { roles: ['CUSTOMER', 'VENDOR_STAFF'], vendorId });
     staffHeaders = await t.authHeader(staff);
     const b = await makeVendor(t.db);
     otherVendorId = b.vendor.id;
@@ -312,7 +314,62 @@ describe('vendor fulfilment + wallet (Testcontainers)', () => {
     expect(await statusOf(nth(subOrderIds, 0))).toBe('PROCESSING');
   });
 
+  it('customer confirm-received vs vendor deliver at once: both serialise on the order lock', async () => {
+    const { orderId, subOrderIds } = await makeOrder(t.db, customer.id, [
+      { vendorId, variantId, status: 'SHIPPED' },
+    ]);
+    const id = nth(subOrderIds, 0);
+    const [confirm, deliver] = await Promise.all([
+      move(orderId, id, 'COMPLETED'),
+      move(orderId, id, 'DELIVERED'),
+    ]);
+    // Either order is legal: confirm first → deliver is 409; deliver first → confirm still completes.
+    expect(confirm.statusCode).toBe(200);
+    expect([200, 409]).toContain(deliver.statusCode);
+    expect(await statusOf(id)).toBe('COMPLETED');
+    expect((await t.db.order.findUniqueOrThrow({ where: { id: orderId } })).status).toBe(
+      'COMPLETED',
+    );
+    expect(await t.db.outboxEvent.count({ where: { eventType: 'sub-order.completed' } })).toBe(1);
+  });
+
+  it('accept emits no outbox event; a same-key retry replays without a second write', async () => {
+    const { subOrderIds } = await makeOrder(t.db, customer.id, [
+      { vendorId, variantId, status: 'PROCESSING' },
+    ]);
+    const id = nth(subOrderIds, 0);
+    const headers = { ...ownerHeaders, 'idempotency-key': ulid() };
+    const ship = () =>
+      t.app.inject({
+        method: 'POST',
+        url: `/v1/vendor/sub-orders/${id}/ship`,
+        headers,
+        payload: SHIP,
+      });
+    const first = await ship();
+    const replay = await ship();
+    expect(first.statusCode).toBe(200);
+    expect(replay.statusCode).toBe(200);
+    expect(replay.headers[IDEMPOTENT_REPLAYED_HEADER]).toBe('true');
+    expect(replay.json()).toEqual(first.json());
+    expect(await t.db.outboxEvent.count({ where: { eventType: 'sub-order.shipped' } })).toBe(1);
+
+    const paid = await makeOrder(t.db, customer.id, [{ vendorId, variantId, status: 'PAID' }]);
+    expect((await move(paid.orderId, nth(paid.subOrderIds, 0), 'PROCESSING')).statusCode).toBe(200);
+    expect(await t.db.outboxEvent.count({ where: { aggregateId: paid.orderId } })).toBe(0);
+  });
+
   describe('vendor scope', () => {
+    it('a revoked staff member is refused at once (JWT still valid)', async () => {
+      const { subOrderIds } = await makeOrder(t.db, customer.id, [
+        { vendorId, variantId, status: 'PAID' },
+      ]);
+      await t.db.userRole.deleteMany({ where: { userId: staff.id, role: 'VENDOR_STAFF' } });
+      const res = await post(`/v1/vendor/sub-orders/${nth(subOrderIds, 0)}/accept`, staffHeaders);
+      expect(res.statusCode).toBe(403);
+      expect(await statusOf(nth(subOrderIds, 0))).toBe('PAID');
+    });
+
     it("vendor B gets 404 on vendor A's sub-order (read and write)", async () => {
       const { subOrderIds } = await makeOrder(t.db, customer.id, [
         { vendorId, variantId, status: 'PAID' },
@@ -473,6 +530,15 @@ describe('vendor fulfilment + wallet (Testcontainers)', () => {
       // The owner is also a CUSTOMER, but not of this order → 404.
       expect(res.statusCode).toBe(404);
       expect(await statusOf(nth(subOrderIds, 0))).toBe('DELIVERED');
+    });
+
+    it('works while the vendor is suspended (the customer is not blocked by vendor status)', async () => {
+      const { orderId, subOrderIds } = await makeOrder(t.db, customer.id, [
+        { vendorId, variantId, status: 'SHIPPED' },
+      ]);
+      await t.db.vendor.update({ where: { id: vendorId }, data: { status: 'SUSPENDED' } });
+      expect((await move(orderId, nth(subOrderIds, 0), 'COMPLETED')).statusCode).toBe(200);
+      expect(await statusOf(nth(subOrderIds, 0))).toBe('COMPLETED');
     });
 
     it('confirming twice: the second is 409 (no second outbox event)', async () => {
