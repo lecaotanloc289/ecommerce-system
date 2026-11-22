@@ -6,12 +6,13 @@ import { paymentRequestedHandler, type PaymentRequestedDeps } from './payment-re
 export type HandlerDeps = EmailDeps & PaymentRequestedDeps;
 
 /**
- * The dispatcher's handler table: exactly one handler per `OUTBOX_EVENT_SCHEMAS` event type
- * (the `satisfies` makes a new core event type without a handler a compile error).
+ * The dispatcher's handler table — and the single source of the event types it claims: a type
+ * without an entry here is never touched (its rows wait for the handler; see CLAUDE.md "Adding a
+ * handler"). Keys must be `OUTBOX_EVENT_SCHEMAS` types (typos are compile errors).
  */
-export function createHandlers(deps: HandlerDeps): Record<OutboxEventType, OutboxHandler> {
+export function createHandlers(deps: HandlerDeps): Partial<Record<OutboxEventType, OutboxHandler>> {
   return {
     ...emailHandlers(deps),
     'payment.requested': paymentRequestedHandler(deps),
-  } satisfies Record<OutboxEventType, OutboxHandler>;
+  } satisfies Partial<Record<OutboxEventType, OutboxHandler>>;
 }

@@ -160,15 +160,37 @@ describe('OutboxDispatcher', () => {
     expect(b.lastError).toBe('PermanentError: invalid order.created payload (orderId, customerId)');
   });
 
-  it('retries an unknown event type with backoff (a newer worker may handle it)', async () => {
-    const event = await insertEvent('order.teleported', payload());
-    await dispatcher(() => Promise.resolve()).pollOnce();
+  it('never touches event types without a registered handler (another consumer owns them)', async () => {
+    const before = new Date(Date.now() - 1000);
+    // Older than the registered event, so it would come first in the batch if it were claimable.
+    const foreign = await insertEvent(
+      'live_session.started',
+      { sessionId: ulid() },
+      { createdAt: new Date(Date.now() - 60_000), nextAttemptAt: before },
+    );
+    const own = await insertEvent('order.created', payload());
+    const d = dispatcher(() => Promise.resolve(), { batchSize: 1 });
+
+    expect(await d.pollOnce()).toBe(1); // batch of 1 is not starved by the foreign row
+    for (let i = 0; i < 3; i++) expect(await d.pollOnce()).toBe(0);
+
+    expect((await eventRow(own.id)).processedAt).not.toBeNull();
+    const row = await eventRow(foreign.id);
+    expect(row).toMatchObject({ processedAt: null, attempts: 0, lastError: null });
+    expect(row.nextAttemptAt).toEqual(before);
+  });
+
+  it('a handler outliving the transaction timeout keeps the lease and leaves last_error', async () => {
+    const event = await insertEvent('order.created', payload());
+    const d = dispatcher(() => sleep(400), { txTimeoutMs: 100 });
+
+    await d.pollOnce();
+
     const row = await eventRow(event.id);
     expect(row.processedAt).toBeNull();
     expect(row.attempts).toBe(1);
-    expect(row.lastError).toBe('Error: no handler for event type "order.teleported"');
-    expect(row.nextAttemptAt).not.toEqual(DEAD_LETTER_AT);
-    expect(secondsFromNow(row.nextAttemptAt)).toBeGreaterThan(3);
+    expect(row.lastError).toMatch(/^transaction failed: /);
+    expect(secondsFromNow(row.nextAttemptAt)).toBeGreaterThan(200); // the 5-min claim lease
   });
 
   it('skips an event whose claim was taken over after the lease expired', async () => {

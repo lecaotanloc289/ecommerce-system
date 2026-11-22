@@ -16,7 +16,7 @@ Read the root `CLAUDE.md` first. Depends only on `@repo/db`, `@repo/core`, `@rep
 | `src/outbox/dispatcher.ts`          | `OutboxDispatcher` (claim / process / backoff / dead-letter), `DEAD_LETTER_AT`               |
 | `src/outbox/handler.ts`             | `defineHandler(schema, fn, { secretKeys? })`, `HandlerContext { tx, log, event }`            |
 | `src/outbox/errors.ts`              | `PermanentError` — dead-letter now, no retry                                                 |
-| `src/handlers/index.ts`             | `createHandlers(deps)` — one handler per `OUTBOX_EVENT_SCHEMAS` type (compile-time checked)  |
+| `src/handlers/index.ts`             | `createHandlers(deps)` — the handler table = the event types this worker claims              |
 | `src/handlers/payment-requested.ts` | `payment.requested` → `PaymentProvider.createSession`                                        |
 | `src/handlers/notifications.ts`     | email handlers                                                                               |
 | `src/email/mailer.ts`               | `Mailer` interface + nodemailer SMTP implementation                                          |
@@ -32,29 +32,35 @@ commit atomically with the "processed" mark (exactly-once for DB effects); and t
 queue whose state can diverge from the table. BullMQ is kept for T3.2's repeatable jobs.
 
 1. **Claim** (single autocommit `UPDATE … FROM (SELECT … FOR UPDATE SKIP LOCKED) RETURNING`):
-   `processed_at IS NULL AND next_attempt_at <= now()`, oldest `created_at` first, `LIMIT
-OUTBOX_BATCH_SIZE`; sets `attempts = attempts + 1` and `next_attempt_at = now() + lease (5 min)`.
-   Other dispatchers skip locked rows and no longer see claimed ones as due.
+   `processed_at IS NULL AND next_attempt_at <= now AND event_type = ANY(<registered types>)`,
+   oldest `created_at` first, `LIMIT OUTBOX_BATCH_SIZE`; sets `attempts = attempts + 1` and
+   `next_attempt_at = now + lease (5 min)`. Other dispatchers skip locked rows and no longer see
+   claimed ones as due.
 2. **Process** each claimed event (`OUTBOX_CONCURRENCY` in parallel) in its own interactive
    transaction (timeout 60 s): `SELECT … WHERE id = ? AND processed_at IS NULL AND attempts =
-<claimed> FOR UPDATE SKIP LOCKED` — no row means another dispatcher re-claimed it after the lease
-   expired, so skip. The row lock is held while the handler runs, so **two dispatchers never handle
-   the same event concurrently**. The handler runs inside `SAVEPOINT`; success →
-   `processed_at = now()` in the same transaction.
+<claimed> FOR UPDATE SKIP LOCKED` — no row means another dispatcher re-claimed it after the
+   lease expired, so skip. The row lock is held while the handler runs, so **two dispatchers never
+   handle the same event concurrently**. The handler runs inside `SAVEPOINT`; success →
+   `processed_at = now` in the same transaction.
 3. **Failure** → `ROLLBACK TO SAVEPOINT` (handler writes discarded), `last_error` (scrubbed),
-   `next_attempt_at = now() + backoff(attempt)` — 5 s, 10 s, 20 s, … capped at 1 h.
+   `next_attempt_at = now + backoff(attempt)` — 5 s, 10 s, 20 s, … capped at 1 h.
 4. **Dead-letter** after attempt 10, or at once for a `PermanentError` (invalid payload, provider
    refused, provider not configured, referenced row missing): `processed_at` stays NULL,
-   `next_attempt_at = 9999-12-31` (`DEAD_LETTER_AT`; not `infinity` so Prisma can read it), logged
-   at `error`. Find them: `SELECT id, event_type, attempts, last_error FROM outbox_events WHERE
-processed_at IS NULL AND next_attempt_at = '9999-12-31'`. Requeue: `UPDATE outbox_events SET
-attempts = 0, next_attempt_at = now() WHERE id = '…'`.
-5. **Crash / transaction timeout** mid-handler: nothing recorded, the claim's lease delays the
-   retry by 5 min and the attempt still counts — so a poison event that kills the process is
-   dead-lettered too (a claimed `attempts` above the max is dead-lettered without running).
-6. **Unknown event type** (API newer than the worker): treated as a transient failure — retried
-   with backoff, so deploying the newer worker within the ~2 h backoff window picks it up; after
-   that it is dead-lettered.
+   `next_attempt_at = 9999-12-31` (`DEAD_LETTER_AT`; not `infinity` so Prisma can read it),
+   logged at `error`. Find them: `SELECT id, event_type, attempts, last_error FROM outbox_events
+WHERE processed_at IS NULL AND next_attempt_at = '9999-12-31'`. Requeue: `UPDATE outbox_events
+SET attempts = 0, next_attempt_at = now() AT TIME ZONE 'UTC' WHERE id = '…'`.
+5. **Crash / transaction timeout** mid-handler: nothing but `last_error = 'transaction failed: …'`
+   is recorded (best effort), the claim's lease delays the retry by 5 min and the attempt still
+   counts — so a poison event that kills the process is dead-lettered too (a claimed `attempts`
+   above the max is dead-lettered without running).
+6. **Event types without a handler are never touched.** This is the platform's single outbox
+   worker; other modules (live-shopping `live_session.*`, CRM `crm.campaign.scheduled`, CRM
+   consumers of `sub-order.delivered` / `.completed`) will fold their handlers in here. Until a
+   type is registered, its rows keep `attempts = 0`, `processed_at` NULL and their
+   `next_attempt_at`, and they cannot starve a batch (the claim filters by type). The handler
+   table (`createHandlers`) is the single source of the claimed types. A payload that fails its
+   schema for a **registered** type is dead-lettered.
 7. **Shutdown** (SIGTERM): stop claiming, finish in-flight events, hand claimed-but-unstarted ones
    back (`attempts - 1`, due now). `fly.toml` `kill_timeout = 90s`.
 
@@ -67,9 +73,13 @@ parallel) — handlers re-read state rather than relying on order.
 Stripe calls). Keep `OUTBOX_CONCURRENCY` (default 2) below Prisma's pool (`connection_limit` in
 `DATABASE_URL`; default `2 × CPUs + 1`). A claimed batch must finish within the 5-min lease — with
 slow handlers lower `OUTBOX_BATCH_SIZE`; overrun is safe (re-claimed events are skipped here) but
-burns attempts.
+burns attempts. External calls must finish well inside the 60 s transaction: the Stripe client is
+built with a 15 s timeout and 1 network retry (`src/payments/providers.ts`); VNPay
+`createSession` is local signing; SMTP has 10/10/20 s connection/greeting/socket timeouts.
 
-**Clock:** due-ness uses Postgres `now()`, while the API's Prisma client fills
+**Time:** the columns are `timestamp(3)` without time zone holding UTC (what Prisma writes), so
+every SQL "now" in the dispatcher is `now() AT TIME ZONE 'UTC'` — correct whatever the session
+`TimeZone` is. Due-ness uses the DB clock while the API's Prisma client fills
 `next_attempt_at @default(now())` from its own clock; app/DB skew only delays events by that skew.
 
 ## Handlers (`OUTBOX_EVENT_SCHEMAS` in `@repo/core/schemas/outbox`)
@@ -91,9 +101,23 @@ burns attempts.
   `${WEB_ORIGIN}/{locale}/order/track?orderId=`; vendor links: `ADMIN_ORIGIN`.
 - **PII:** log ids only. `describeError` replaces email addresses in `last_error` / logs (SMTP
   rejections echo the recipient). pino `redact` covers `email` / `to` / `redirectUrl` as a net.
-- **Adding an event:** schema in core `OUTBOX_EVENT_SCHEMAS` → the `satisfies` in
-  `src/handlers/index.ts` fails until a handler exists → `defineHandler(schema, fn)`; throw
-  `PermanentError` for unfixable input; use `ctx.tx` for DB writes.
+
+## Adding a handler (e.g. `live_session.*`, `crm.campaign.scheduled`, CRM consumers)
+
+1. Payload schema (ids only, unless a secret is unavoidable) in `@repo/core/schemas/outbox` and its
+   entry in `OUTBOX_EVENT_SCHEMAS`. The emitter (API) writes the row in its business transaction.
+   Until step 3 ships, those rows simply wait — this worker never claims a type it cannot handle.
+2. A module under `src/handlers/` (one file per domain, e.g. `live-session.ts`, `crm.ts`) exporting
+   `xxxHandlers(deps)` that returns `{ 'event.type': defineHandler(OUTBOX_EVENT_SCHEMAS['event.type'],
+async (payload, ctx) => { … }) }`. Rules: re-read state through `ctx.tx` and write through it
+   (atomic with the "processed" mark); be idempotent (redelivery happens); throw `PermanentError`
+   for input a retry cannot fix, anything else is retried with backoff; external calls need their
+   own timeout well under 60 s; log ids only. Secrets in the payload → `defineHandler(schema, fn,
+{ secretKeys: ['token'] })` so they are stripped when the event is done.
+3. Spread it into `createHandlers` (`src/handlers/index.ts`) — that table is the list of claimed
+   event types — and extend `HandlerDeps` / `main.ts` wiring and `src/env.ts` for new config.
+4. Tests in `test/` with `insertEvent(type, payload)` + `dispatcher.pollOnce()` (see the existing
+   files), then update the Handlers table above.
 
 ## Env
 
@@ -139,6 +163,13 @@ Add them here: a BullMQ `Queue` + `Worker` on the `connectRedis()` connection wi
 (fixed `jobId` per job = distributed lock), started from `main.ts` next to the dispatcher and closed
 on shutdown. Jobs that write business state should emit outbox events (`payout.released`,
 `order.cancelled` with `PAYMENT_EXPIRED`, `refund.requested`) rather than send email directly —
-the handlers above already exist for the first two. `refund.requested` needs a new handler (and
-`sub-order.delivered` / `sub-order.completed` if emitted) — the compile-time `satisfies` forces it.
-Zero-amount payments are left PENDING by this worker: T3.1 must confirm them.
+the handlers above already exist for the first two. `refund.requested` (and `sub-order.delivered` /
+`sub-order.completed` if emitted) need handlers — see "Adding a handler"; until then their rows wait.
+Also for T3.2/T3.1:
+
+- Zero-amount payments are left PENDING by this worker: T3.1 must confirm them.
+- `payout.released` email recomputes net from the sub-order columns (D7). Once the payout ledger
+  exists, read the credited amount from the `VENDOR_WALLET` ledger entry instead (it stays right
+  after adjustments).
+- No retention yet: add a cleanup job for processed outbox rows (e.g. `processed_at < now - 30 d`;
+  payloads hold ids and, for invitations, the invitee email).

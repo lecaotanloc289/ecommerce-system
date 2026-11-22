@@ -4,10 +4,14 @@ import { describeError, type Logger } from '../logger';
 import { PermanentError } from './errors';
 import type { OutboxHandler, Tx } from './handler';
 
+// Timestamps: `outbox_events` columns are `timestamp(3)` WITHOUT time zone holding UTC wall-clock
+// time (what Prisma writes and reads). Every SQL "now" below is therefore
+// `(now() AT TIME ZONE 'UTC')`, so results do not depend on the session's `TimeZone` setting.
+
 /**
  * `next_attempt_at` of a dead-lettered event (processed_at stays NULL). Far future instead of
  * `infinity` so Prisma can still read the row. Requeue by hand:
- * `UPDATE outbox_events SET attempts = 0, next_attempt_at = now() WHERE id = '…'`.
+ * `UPDATE outbox_events SET attempts = 0, next_attempt_at = now() AT TIME ZONE 'UTC' WHERE id = '…'`.
  */
 export const DEAD_LETTER_AT = new Date('9999-12-31T00:00:00.000Z');
 const DEAD_LETTER_SQL = '9999-12-31 00:00:00';
@@ -56,9 +60,10 @@ export type ProcessOutcome = 'processed' | 'retry' | 'dead-lettered' | 'skipped'
  * Outbox dispatcher (Golden Rule #9, roadmap D10). Runs handlers in-process; see
  * `workers/jobs/CLAUDE.md` for the full semantics. In short:
  *
- * 1. **Claim** (one autocommit statement): `FOR UPDATE SKIP LOCKED` picks due events
- *    (`processed_at IS NULL AND next_attempt_at <= now()`, oldest first), increments `attempts`
- *    and pushes `next_attempt_at` out by the lease, so no other dispatcher selects them.
+ * 1. **Claim** (one autocommit statement): `FOR UPDATE SKIP LOCKED` picks due events **of the
+ *    registered types only** (the keys of `handlers`; rows of other types are never touched),
+ *    oldest first, increments `attempts` and pushes `next_attempt_at` out by the lease, so no
+ *    other dispatcher selects them.
  * 2. **Process** each claimed event in its own transaction: re-lock the row only if it is still
  *    unprocessed with the claimed `attempts` (else another dispatcher re-claimed it after the
  *    lease expired → skip), run the handler inside a savepoint, then mark `processed_at` in the
@@ -78,6 +83,8 @@ export class OutboxDispatcher {
   private readonly leaseMs: number;
   private readonly txTimeoutMs: number;
   private readonly backoff: (attempt: number) => number;
+  /** The only event types this dispatcher claims — the handler table is the single source. */
+  private readonly eventTypes: string[];
 
   constructor(
     private readonly handlers: Readonly<Record<string, OutboxHandler>>,
@@ -88,6 +95,7 @@ export class OutboxDispatcher {
     this.leaseMs = options.leaseMs ?? DEFAULT_LEASE_MS;
     this.txTimeoutMs = options.txTimeoutMs ?? DEFAULT_TX_TIMEOUT_MS;
     this.backoff = options.backoff ?? exponentialBackoff;
+    this.eventTypes = Object.keys(handlers).sort();
   }
 
   /** Poll until `signal` aborts; the in-flight batch finishes, unstarted claims are released. */
@@ -100,6 +108,7 @@ export class OutboxDispatcher {
         pollIntervalMs,
         maxAttempts: this.maxAttempts,
         leaseMs: this.leaseMs,
+        eventTypes: this.eventTypes,
       },
       'outbox dispatcher started',
     );
@@ -136,15 +145,19 @@ export class OutboxDispatcher {
     return events.length;
   }
 
-  /** Claims up to `batchSize` due events (see class doc, step 1). Oldest first. */
+  /** Claims up to `batchSize` due events of the registered types (class doc, step 1). */
   async claim(): Promise<ClaimedEvent[]> {
+    if (this.eventTypes.length === 0) return [];
     const rows = await prisma.$queryRaw<ClaimedEvent[]>`
       UPDATE outbox_events AS o
       SET attempts = o.attempts + 1,
-          next_attempt_at = now() + interval '1 millisecond' * ${this.leaseMs}::float8
+          next_attempt_at = (now() AT TIME ZONE 'UTC')
+            + interval '1 millisecond' * ${this.leaseMs}::float8
       FROM (
         SELECT id FROM outbox_events
-        WHERE processed_at IS NULL AND next_attempt_at <= now()
+        WHERE processed_at IS NULL
+          AND next_attempt_at <= (now() AT TIME ZONE 'UTC')
+          AND event_type = ANY(${this.eventTypes}::text[])
         ORDER BY created_at, id
         LIMIT ${this.options.batchSize}::int
         FOR UPDATE SKIP LOCKED
@@ -156,7 +169,7 @@ export class OutboxDispatcher {
     );
   }
 
-  /** Handles one claimed event (see class doc, steps 2-3). Never throws. */
+  /** Handles one claimed event (class doc, steps 2-3). Never throws. */
   async process(event: ClaimedEvent): Promise<ProcessOutcome> {
     const log = this.log.child({
       outboxEventId: event.id,
@@ -184,7 +197,7 @@ export class OutboxDispatcher {
           await tx.$executeRaw`SAVEPOINT outbox_handler`;
           try {
             const handler = this.handlerFor(event.eventType);
-            // Unknown type: retried with backoff, so a newer worker deployed meanwhile can take it.
+            // Unreachable: claim() only selects registered types.
             if (!handler) throw new Error(`no handler for event type "${event.eventType}"`);
             await handler.handle(event.payload, {
               tx,
@@ -197,7 +210,8 @@ export class OutboxDispatcher {
           }
           await tx.$executeRaw`
             UPDATE outbox_events
-            SET processed_at = now(), payload = payload - ${this.secretKeys(event)}::text[]
+            SET processed_at = (now() AT TIME ZONE 'UTC'),
+                payload = payload - ${this.secretKeys(event)}::text[]
             WHERE id = ${event.id}`;
           log.debug('outbox event processed');
           return 'processed';
@@ -206,10 +220,13 @@ export class OutboxDispatcher {
       );
     } catch (error) {
       // Transaction-level failure (timeout, lost connection): nothing was recorded; the claim's
-      // lease delays the retry and the attempt still counts.
-      log.error(
-        { err: describeError(error), retryInMs: this.leaseMs },
-        'outbox event transaction failed; retried after the claim lease',
+      // lease delays the retry and the attempt still counts. Leave a trace for operators.
+      const lastError = `transaction failed: ${describeError(error)}`;
+      log.error({ err: lastError, retryInMs: this.leaseMs }, 'outbox event retried after lease');
+      await prisma.$executeRaw`
+        UPDATE outbox_events SET last_error = ${lastError}
+        WHERE id = ${event.id} AND attempts = ${event.attempts}::int AND processed_at IS NULL`.catch(
+        () => undefined,
       );
       return 'retry';
     }
@@ -238,7 +255,8 @@ export class OutboxDispatcher {
     await tx.$executeRaw`
       UPDATE outbox_events
       SET last_error = ${lastError},
-          next_attempt_at = now() + interval '1 millisecond' * ${retryInMs}::float8
+          next_attempt_at = (now() AT TIME ZONE 'UTC')
+            + interval '1 millisecond' * ${retryInMs}::float8
       WHERE id = ${event.id}`;
     log.warn({ err: lastError, retryInMs }, 'outbox event failed; will retry');
     return 'retry';
@@ -258,7 +276,7 @@ export class OutboxDispatcher {
     for (const event of events) {
       await prisma.$executeRaw`
         UPDATE outbox_events
-        SET attempts = attempts - 1, next_attempt_at = now()
+        SET attempts = attempts - 1, next_attempt_at = (now() AT TIME ZONE 'UTC')
         WHERE id = ${event.id} AND attempts = ${event.attempts}::int AND processed_at IS NULL`;
     }
     this.log.info({ released: events.length }, 'released unstarted outbox events');

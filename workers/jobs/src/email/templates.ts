@@ -48,6 +48,8 @@ function layout({ t, name, subject, paragraphs, action }: LayoutInput): EmailCon
     footer,
   ].join('\n\n');
 
+  // Inline styles with literal colours on purpose: email clients ignore stylesheets and CSS
+  // variables, so the design tokens cannot apply here.
   const p = (s: string, style = ''): string =>
     `<p style="margin:0 0 16px${style}">${escapeHtml(s)}</p>`;
   const html = [
