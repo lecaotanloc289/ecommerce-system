@@ -1,5 +1,9 @@
 {
-  "extends": "@repo/config/tsconfig/node.json",
+  "//": "Relative extends (not @repo/config/...) so ESLint's project service resolves base.json's own relative extends.",
+  "extends": "../config/tsconfig/base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

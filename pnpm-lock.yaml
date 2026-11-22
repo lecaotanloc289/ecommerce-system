@@ -243,19 +243,29 @@ importers:
         version: 4.1.8(@types/node@25.9.1)(vite@6.4.2(@types/node@25.9.1)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.47.1)(tsx@4.22.4)(yaml@2.9.1))
 
   packages/payments:
+    dependencies:
+      '@repo/core':
+        specifier: workspace:*
+        version: link:../core
+      stripe:
+        specifier: 23.1.0
+        version: 23.1.0(@types/node@22.19.19)
     devDependencies:
       '@repo/config':
         specifier: workspace:*
         version: link:../config
-      '@repo/core':
-        specifier: workspace:*
-        version: link:../core
       '@types/node':
         specifier: ^22.10.0
         version: 22.19.19
+      eslint:
+        specifier: ^10.15.0
+        version: 10.15.0(jiti@2.6.1)
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
+      vitest:
+        specifier: ^4.1.8
+        version: 4.1.8(@types/node@22.19.19)(vite@6.4.2(@types/node@22.19.19)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.47.1)(tsx@4.22.4)(yaml@2.9.1))
 
   packages/sdk:
     dependencies:
@@ -7370,6 +7380,15 @@ packages:
   strip-json-comments@3.1.1:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
+
+  stripe@23.1.0:
+    resolution: {integrity: sha512-fVUfMSfTPoukfoV//MUKAx2+YxyKmYaYtnAL9VkfnHfaPNQylFdWZMD+zgUFerI8rjbaiER8Vzj2XEUQ2AhAsQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@types/node': '>=20'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   strtok3@10.3.5:
     resolution: {integrity: sha512-ki4hZQfh5rX0QDLLkOCj+h+CVNkqmp/CMf8v8kZpkNVK6jGQooMytqzLZYUVYIZcFZ6yDB70EfD8POcFXiF5oA==}
@@ -15640,6 +15659,10 @@ snapshots:
   strip-final-newline@3.0.0: {}
 
   strip-json-comments@3.1.1: {}
+
+  stripe@23.1.0(@types/node@22.19.19):
+    optionalDependencies:
+      '@types/node': 22.19.19
 
   strtok3@10.3.5:
     dependencies:
