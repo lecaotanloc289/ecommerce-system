@@ -8,6 +8,7 @@ export * from './enums';
 export * from './ids';
 export * from './errors';
 export * from './schemas';
+export * from './pricing';
 
 // Money helpers are namespaced (`Money.of`, `Money.add`, `Money.allocate`, …) so generic
 // names like `add` / `sum` / `zero` don't pollute consumers' scope. Value + type share the

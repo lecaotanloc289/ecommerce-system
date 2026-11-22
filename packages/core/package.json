@@ -22,6 +22,11 @@
       "import": "./dist/money/index.js",
       "require": "./dist/money/index.cjs"
     },
+    "./pricing": {
+      "types": "./dist/pricing/index.d.ts",
+      "import": "./dist/pricing/index.js",
+      "require": "./dist/pricing/index.cjs"
+    },
     "./errors": {
       "types": "./dist/errors/index.d.ts",
       "import": "./dist/errors/index.js",
