@@ -27,6 +27,7 @@ Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) 
 - Config: `src/config/env.ts` — Zod schema parsed at boot (`ConfigModule`, inject `@Inject(ENV) env: Env`); missing/invalid keys abort startup with a list. Env is injected by Doppler (`doppler run -- pnpm --filter @server/api dev`) or your shell — the server does **not** read `.env` itself.
 - Auth module (`src/auth/`) — see below.
 - Platform infra (`src/common/`): idempotency, rate limit, cursor pagination — see below. Integration test harness in `test/support/`.
+- Me module (`src/me/`) — customer profile + address book, see below.
 - Not started: catalog, cart, checkout, orders, payments, payouts, outbox.
 
 ## Idempotency (Golden Rule #3, roadmap D9)
@@ -73,6 +74,21 @@ List endpoints take `PageQuerySchema` (`?cursor=<ulid>&limit=1..100`, default 20
 - **Refresh JWT** (HS256, `JWT_REFRESH_SECRET`, `JWT_REFRESH_TTL` = 30d): `{ sub, fid, jti }` in cookie `refresh_token` (HttpOnly, Secure, SameSite=Lax, Path=`/v1/auth`). State in Redis, no DB table: `auth:rt:family:<fid>` = `{ userId, current, prev, rotatedAt }` (sha256 hashes), TTL slides on rotation. Rotation is an atomic Lua compare-and-swap. Presenting `prev` within `REFRESH_REUSE_GRACE_MS` (10s) is a benign concurrent refresh (two tabs, SSR + client, StrictMode): it gets an access token but no new cookie, and the family survives (logged at info; the window uses the Redis server clock). Any other non-current token deletes the family (reuse detection → that session is logged out). The DB lookup for the access token runs _before_ the swap, so a DB failure never strands the client with a rotated-away cookie. Limit: if a successful refresh response is _lost in transit_ and the client retries within 10s, it keeps the stale cookie and is logged out at its next refresh — frontends should single-flight refresh calls (one in-flight refresh shared by all callers).
 - **Protecting routes:** import `AuthModule`, then `@UseGuards(JwtAuthGuard, RolesGuard) @Roles('VENDOR_OWNER')`; read the caller with `@CurrentUser() user: AuthUser` (`{ id, roles, vendorId? }`). `RolesGuard` fails closed — a guarded route without `@Roles` is 403; use `@Roles(...ALL_ROLES)` for "any signed-in user".
 - **Known limits:** access tokens stay valid until expiry (≤ 15m) after logout, family revocation, vendor suspension or role removal (no denylist / per-user session index yet) — services must re-check vendor status/ownership in the DB before destructive vendor or payout actions rather than trusting `req.user.vendorId` alone. The refresh cookie is always `Secure` (Golden Rule #5): Chrome/Firefox accept it on `http://localhost`, Safari may not — use Chrome for local login. SameSite=Lax means the API must be same-site with the web/admin origins in prod (e.g. `api.example.com` + `example.com`), otherwise the refresh cookie isn't sent. `TokenResponse` / `MeResponse` live in `@repo/core/schemas/me`; `src/auth/auth.schemas.ts` keeps only the server-internal schemas (token claims, `AuthUser`, OAuth profile).
+
+## Me: profile + addresses (`src/me/`)
+
+All routes `@Roles('CUSTOMER')`; ownership only via `req.user.id` (another user's address → 404 `address.error.not-found`, never 403). POST/PATCH carry `@Idempotent()`.
+
+| Endpoint                            | Behaviour                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `PATCH /v1/me`                      | `{ name?, primaryLocale? }` (non-empty) → `MeResponse`. Email/roles/avatar are not editable                        |
+| `GET /v1/me/addresses`              | Array of `Address`, default first then newest                                                                      |
+| `POST /v1/me/addresses`             | `AddressInput` (country defaults `VN`) → 201. First address is always default; `isDefault: true` moves the default |
+| `PATCH /v1/me/addresses/:id`        | `AddressUpdate` (partial, non-empty; `line2: null`/blank clears; no `isDefault`)                                   |
+| `DELETE /v1/me/addresses/:id`       | 204; deleting the default promotes the newest remaining address                                                    |
+| `POST /v1/me/addresses/:id/default` | Makes it the default, returns it (200)                                                                             |
+
+Invariant "exactly one default when >= 1 address": every mutation runs in a `$transaction` that first does `SELECT … FROM users WHERE id = $1 FOR UPDATE` (`AddressesService`), serializing a user's address writes (also covers two concurrent first creates). No DB unique index backs it yet (would need a migration: partial unique on `(user_id) WHERE is_default`).
 
 ## OpenAPI / SDK
 

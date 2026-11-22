@@ -7,6 +7,7 @@ import { DomainErrorFilter } from './common/domain-error.filter';
 import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
+import { MeModule } from './me/me.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 
@@ -28,6 +29,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     HealthModule,
     AuthModule,
     IdempotencyModule,
+    MeModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
