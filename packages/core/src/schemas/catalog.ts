@@ -54,8 +54,8 @@ const ProductListQueryShape = PageQuerySchema.extend({
   categorySlug: SlugSchema.optional(),
   vendorSlug: SlugSchema.optional(),
   currency: CurrencySchema.optional(),
-  minPrice: z.coerce.number().int().nonnegative().optional(),
-  maxPrice: z.coerce.number().int().nonnegative().optional(),
+  minPrice: z.coerce.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
+  maxPrice: z.coerce.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   sort: ProductSortSchema.default('newest'),
 });
 

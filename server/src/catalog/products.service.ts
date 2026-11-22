@@ -38,10 +38,25 @@ export class ProductsService {
       categoryIds = await this.categories.descendantIds(query.categorySlug);
       if (categoryIds === null) return { items: [], nextCursor: null };
     }
+    // Prices of different currencies are not comparable: price filters/sorts fall back to the platform default currency.
+    const needsCurrency =
+      query.minPrice !== undefined ||
+      query.maxPrice !== undefined ||
+      query.sort === 'price_asc' ||
+      query.sort === 'price_desc';
+    const currency =
+      query.currency ??
+      (needsCurrency
+        ? (
+            await this.prisma.client.platformSettings.findFirst({
+              select: { defaultCurrency: true },
+            })
+          )?.defaultCurrency
+        : undefined);
     const ids = await this.repo.listVisibleIds({
       categoryIds,
       vendorSlug: query.vendorSlug ?? null,
-      currency: query.currency ?? null,
+      currency: currency ?? null,
       minPrice: query.minPrice ?? null,
       maxPrice: query.maxPrice ?? null,
       sort: query.sort,

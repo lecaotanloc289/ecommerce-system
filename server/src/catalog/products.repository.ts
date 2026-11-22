@@ -53,7 +53,16 @@ export class ProductsRepository {
   async listVisibleIds(f: ProductIdFilters): Promise<string[]> {
     const categoryIds = f.categoryIds === null ? null : [...f.categoryIds];
     const rows = await this.prisma.client.$queryRaw<IdRow[]>`
-      WITH base AS (
+      WITH cur AS (
+        SELECT CASE ${f.sort}::text
+            WHEN 'price_asc' THEN p.base_price_amount::numeric
+            WHEN 'price_desc' THEN -p.base_price_amount::numeric
+            WHEN 'rating' THEN -COALESCE(
+              (SELECT ROUND(AVG(r.rating)::numeric, 2) FROM reviews r WHERE r.product_id = p.id), 0)
+            ELSE 0::numeric
+          END AS sort_key
+        FROM products p WHERE p.id = ${f.cursor}::text
+      ), base AS (
         SELECT p.id,
           CASE ${f.sort}::text
             WHEN 'price_asc' THEN p.base_price_amount::numeric
@@ -75,8 +84,8 @@ export class ProductsRepository {
       )
       SELECT b.id FROM base b
       WHERE ${f.cursor}::text IS NULL
-        OR b.sort_key > (SELECT c.sort_key FROM base c WHERE c.id = ${f.cursor}::text)
-        OR (b.sort_key = (SELECT c.sort_key FROM base c WHERE c.id = ${f.cursor}::text)
+        OR b.sort_key > (SELECT sort_key FROM cur)
+        OR (b.sort_key = (SELECT sort_key FROM cur)
             AND b.id < ${f.cursor}::text)
       ORDER BY b.sort_key ASC, b.id DESC
       LIMIT ${f.take}::int`;
@@ -95,7 +104,15 @@ export class ProductsRepository {
     const folded = escapeLike(foldForSlugMatch(q));
     const slugPattern = `%${folded}%`;
     const rows = await this.prisma.client.$queryRaw<IdRow[]>`
-      WITH matches AS (
+      WITH cur AS (
+        SELECT MAX(ROUND((
+            ts_rank(pt.search_vector, websearch_to_tsquery('simple', ${q}::text))
+            + word_similarity(${q}::text, pt.name)
+            + CASE WHEN ${folded}::text <> '' AND replace(pt.slug, '-', ' ') LIKE ${slugPattern}::text ESCAPE '\\'
+                   THEN 0.5 ELSE 0 END
+          )::numeric, 4)) AS rank
+        FROM product_translations pt WHERE pt.product_id = ${cursor}::text
+      ), matches AS (
         SELECT p.id,
           MAX(ROUND((
             ts_rank(pt.search_vector, websearch_to_tsquery('simple', ${q}::text))
@@ -116,8 +133,8 @@ export class ProductsRepository {
       )
       SELECT m.id FROM matches m
       WHERE ${cursor}::text IS NULL
-        OR m.rank < (SELECT c.rank FROM matches c WHERE c.id = ${cursor}::text)
-        OR (m.rank = (SELECT c.rank FROM matches c WHERE c.id = ${cursor}::text)
+        OR m.rank < (SELECT rank FROM cur)
+        OR (m.rank = (SELECT rank FROM cur)
             AND m.id < ${cursor}::text)
       ORDER BY m.rank DESC, m.id DESC
       LIMIT ${take}::int`;

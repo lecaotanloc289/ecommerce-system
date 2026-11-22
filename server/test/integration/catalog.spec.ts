@@ -152,6 +152,30 @@ describe('public catalog API', () => {
       expect((await get('/v1/products?minPrice=9&maxPrice=1')).status).toBe(422);
     });
 
+    it('keeps paginating when the cursor product becomes hidden', async () => {
+      const { vendor } = await makeVendor(t.db);
+      const made: string[] = [];
+      for (let i = 0; i < 4; i += 1)
+        made.push((await makeProduct(t.db, { vendorId: vendor.id })).id);
+      const first = await getPage('/v1/products?limit=2');
+      await t.db.product.update({
+        where: { id: first.nextCursor ?? '' },
+        data: { status: 'ARCHIVED' },
+      });
+      const second = await getPage(`/v1/products?limit=2&cursor=${first.nextCursor}`);
+      expect(second.items.map((p) => p.id)).toEqual([made[1], made[0]]);
+    });
+
+    it('price filters use the default currency and reject unsafe numbers', async () => {
+      await makePlatformSettings(t.db);
+      const { vendor } = await makeVendor(t.db);
+      const vnd = await makeProduct(t.db, { vendorId: vendor.id, price: 100_000 });
+      await makeProduct(t.db, { vendorId: vendor.id, price: 1_000, currency: 'USD' });
+      const page = await getPage('/v1/products?minPrice=500');
+      expect(page.items.map((p) => p.id)).toEqual([vnd.id]);
+      expect((await get('/v1/products?minPrice=1e300')).status).toBe(422);
+    });
+
     it('resolves locale with fallback to vi', async () => {
       const { vendor } = await makeVendor(t.db);
       const product = await makeProduct(t.db, { vendorId: vendor.id, name: 'Shirt' });
