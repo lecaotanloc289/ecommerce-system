@@ -33,7 +33,8 @@ export type Review = z.infer<typeof ReviewSchema>;
 
 /** Aggregate for a product. `distribution[i]` = number of (i+1)-star reviews. */
 export const RatingSummarySchema = z.object({
-  average: z.number().min(0).max(5),
+  /** `null` when the product has no reviews yet. */
+  average: z.number().min(0).max(5).nullable(),
   count: z.number().int().nonnegative(),
   distribution: z.tuple([
     z.number().int().nonnegative(),

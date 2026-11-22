@@ -4,6 +4,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
+import { CatalogModule } from './catalog/catalog.module';
 import { DomainErrorFilter } from './common/domain-error.filter';
 import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { ConfigModule } from './config/config.module';
@@ -32,6 +33,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     IdempotencyModule,
     MeModule,
     CartModule,
+    CatalogModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

@@ -29,7 +29,8 @@ Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) 
 - Platform infra (`src/common/`): idempotency, rate limit, cursor pagination — see below. Integration test harness in `test/support/`.
 - Me module (`src/me/`) — customer profile + address book, see below.
 - Cart module (`src/cart/`) — see "Cart" below.
-- Not started: catalog, checkout, orders, payments, payouts, outbox.
+- Catalog module (`src/catalog/`) — public read API, see below.
+- Not started: checkout, orders, payments, payouts, outbox.
 
 ## Idempotency (Golden Rule #3, roadmap D9)
 
@@ -57,6 +58,24 @@ Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) 
 ## Pagination
 
 List endpoints take `PageQuerySchema` (`?cursor=<ulid>&limit=1..100`, default 20) and return `PageSchema(item)` = `{ items, nextCursor }` — both in `@repo/core`. `src/common/pagination.ts`: `cursorPageArgs(query, 'desc' | 'asc')` → `{ take: limit + 1, where: { id: { lt | gt: cursor } }, orderBy: { id } }` (spread `where` into your filter), then `toPage(rows, query)` trims the look-ahead row and sets `nextCursor` (null on the last page). Relies on ULID ids sorting by creation time.
+
+## Catalog (public, no auth)
+
+All routes are unauthenticated, take `?locale=vi|en` (default vi; a missing en translation falls back to vi) and only expose `ACTIVE` products of `ACTIVE` vendors — anything else is 404 (detail) or absent (lists/search). Schemas: `@repo/core/schemas/catalog`.
+
+| Endpoint                           | Notes                                                                                                                                                                 |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- | -------------------------- |
+| `GET /v1/categories`               | Whole tree (`children` nested), siblings by `sortOrder`                                                                                                               |
+| `GET /v1/categories/:slug`         | Category + `breadcrumb` (root→self) + direct `children`; slug of either locale; unknown → 404 `common.error.not-found`                                                |
+| `GET /v1/products`                 | `categorySlug` (includes subcategories), `vendorSlug`, `currency`, `minPrice`/`maxPrice` (minor units), `sort=newest                                                  | price_asc | price_desc | rating`, cursor pagination |
+| `GET /v1/products/:slug`           | Variants with `stockAvailable` (= onHand − reserved; raw counters never exposed), images, vendor card, rating summary; unknown/hidden → 404 `product.error.not-found` |
+| `GET /v1/search?q=`                | See search below; same page shape as the list                                                                                                                         |
+| `GET /v1/vendors/:slug`            | Shop header + one page of its products (same query as the list minus `vendorSlug`); not ACTIVE → 404 `vendor.error.not-found`                                         |
+| `GET /v1/platform-settings/public` | `defaultCurrency`, `supportedCurrencies`, `maxCouponStack`                                                                                                            |
+
+- **Pagination:** the cursor is always the last item's product id. Every sort (newest = constant key, so `id DESC`) is a keyset on `(sort_key, id DESC)` where the key is derived in SQL from the cursor product (`ProductsRepository.listVisibleIds`). The cursor product's key is read without the visibility filter, so paging survives it being hidden. Price filters/sorts without `currency` use `PlatformSettings.defaultCurrency`. Known perf limit (no migrations this wave): each page scans all visible products; add indexes / a newest fast path later. `rating` sorts by average (2 dp), unrated last.
+- **Search** (`ProductsRepository.searchVisibleIds`, raw SQL via `$queryRaw` bound parameters): a product matches when any translation satisfies `search_vector @@ websearch_to_tsquery('simple', q)` (accent-sensitive; `simple` config, no stemming), OR `q <% name` (pg_trgm word similarity, typo tolerant), OR the accent-folded query is a substring of the ASCII slug (this gives unaccented Vietnamese matching; there is no `unaccent` extension and no migrations were added). Rank = ts_rank + word_similarity (+0.5 slug hit), keyset-paginated. Limits: unaccented queries only match slug text (keep slugs transliterated from the name); word order must match for the slug path.
+- Rating summary comes from `reviews` (`average` null when none).
 
 ## Auth (Golden Rule #5)
 
