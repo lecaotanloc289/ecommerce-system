@@ -61,7 +61,8 @@ so the adapter always calls `abort()`; a whole flow is capped by `ZALO_QR_LOGIN_
 transaction (`zalo_messages`, one per sub-order + event, PENDING, `scheduledAt`). Housekeeping (any
 replica): SENDING rows whose `lockedUntil` passed → PENDING (crash recovery); PENDING rows of a
 DISCONNECTED shop, or older than `ZALO_MESSAGE_MAX_AGE_HOURS` past `scheduledAt` (session expired and not
-re-scanned in time) → SKIPPED `account-unavailable`. Then, for each held account that is idle and past its
+re-scanned in time) → SKIPPED `account-unavailable`; at most hourly, finished rows (SENT / SKIPPED / FAILED)
+older than `ZALO_MESSAGE_RETENTION_DAYS` are deleted. Then, for each held account that is idle and past its
 pacing time: claim its oldest due row (`UPDATE … WHERE id = (SELECT … FOR UPDATE SKIP LOCKED)` → SENDING,
 `lockedUntil` = now + 120 s; DB clock in UTC to match Prisma's `timestamp(3)`). The returned
 `lockedUntil` is the **claim token**: every later write is guarded `WHERE status = 'SENDING' AND
@@ -105,6 +106,7 @@ Sessions are logged in again on every restore — avoid restart loops (Zalo noti
 | `ZALO_SEND_MIN_INTERVAL_MS`     | `3000`                 | pacing per account (lookups + sends)                                           |
 | `ZALO_MESSAGE_MAX_AGE_HOURS`    | `24`                   | PENDING past this → SKIPPED `account-unavailable`                              |
 | `ZALO_MAX_SEND_ATTEMPTS`        | `5`                    | then FAILED                                                                    |
+| `ZALO_MESSAGE_RETENTION_DAYS`   | `90` (min 7)           | SENT / SKIPPED / FAILED rows older (by `updatedAt`) are deleted, hourly        |
 | `ZALO_MAX_SESSION_FAILURES`     | `3`                    | consecutive restore / keep-alive **rejections by Zalo** → EXPIRED              |
 | `ZALO_CALL_TIMEOUT_MS`          | `20000`                | hard cap per Zalo call (max 60000; keep well under the 120 s send lock)        |
 | `ZALO_MAX_CONCURRENT_LOGINS`    | `5`                    | QR flows per replica                                                           |
@@ -137,7 +139,7 @@ wrong key / other vendor / tamper, phone normalisation, env), `accounts.test.ts`
 replicas, disconnect drop, restore rejections → EXPIRED, undecryptable → EXPIRED, cookie rotation persisted,
 keep-alive rejections → EXPIRED, network failures never expire, connect takes over the lease, already-linked), `messages.test.ts` (full
 render + send, pacing, skips without Zalo calls, recipient miss cached, retry backoff → FAILED, care delay,
-suspended shop / cancelled order guards, lease lost before send, send timeout, housekeeping), `logins.test.ts` (SUCCESS with encrypted row + KEEPTTL, expired / declined / aborted,
+suspended shop / cancelled order guards, lease lost before send, send timeout, housekeeping, retention), `logins.test.ts` (SUCCESS with encrypted row + KEEPTTL, expired / declined / aborted,
 already-linked, ignored requests, queue loop). The zca-js adapter itself has no automated test (it needs
 Zalo); it was smoke-tested by generating a real QR and aborting.
 
@@ -149,6 +151,7 @@ Zalo); it was smoke-tested by generating a real QR and aborting.
 - Recipient lookups are cached per shop account; a customer who joins Zalo later is found after ≤ 1 day.
 - No "message replies" inbox — the worker never starts the zca-js listener.
 - Send errors are not classified: a dead session is retried like any error until keep-alive expires it.
-- `BRPOP` removes the login id before the work: a crash mid-login leaves the record PENDING until its TTL.
-- A vendor can queue many QR logins (only the strict per-IP rate limit caps it); no retention job for
-  `zalo_messages` yet (SKIPPED rows accumulate for shops without templates).
+- `BRPOP` removes the login id before the work: a crash mid-login leaves the record PENDING until its TTL
+  (the shop can start a new flow once the API's 180 s live-login pointer lapses).
+- Rows are queued for every opted-in order of a shop with an account, even without a template (they end
+  SKIPPED `template-disabled` and are pruned after the retention period).

@@ -27,6 +27,7 @@ const RECIPIENT_FOUND_TTL_S = 30 * 24 * 3600;
 const RECIPIENT_MISSING_TTL_S = 24 * 3600;
 const FINISH_WRITE_ATTEMPTS = 3;
 const FINISH_RETRY_MS = 500;
+const PRUNE_EVERY_MS = 3_600_000;
 
 /** Care message only makes sense while the goods are still with the customer. */
 const AFTER_DELIVERY_STATUSES: ReadonlySet<string> = new Set(['DELIVERED', 'COMPLETED']);
@@ -55,6 +56,7 @@ export interface MessageSenderDeps {
     Env,
     | 'ZALO_SEND_MIN_INTERVAL_MS'
     | 'ZALO_MESSAGE_MAX_AGE_HOURS'
+    | 'ZALO_MESSAGE_RETENTION_DAYS'
     | 'ZALO_MAX_SEND_ATTEMPTS'
     | 'ZALO_CALL_TIMEOUT_MS'
   >;
@@ -85,6 +87,7 @@ type Outcome =
 
 export class MessageSender {
   private readonly now: () => number;
+  private lastPruneAt = Number.NEGATIVE_INFINITY;
 
   constructor(private readonly deps: MessageSenderDeps) {
     this.now = deps.now ?? Date.now;
@@ -118,6 +121,18 @@ export class MessageSender {
       where: { status: 'PENDING', scheduledAt: { lt: new Date(now.getTime() - maxAgeMs) } },
       data: { status: 'SKIPPED', skipReason: 'account-unavailable' },
     });
+    await this.prune(now.getTime());
+  }
+
+  /** Retention: finished rows past ZALO_MESSAGE_RETENTION_DAYS are deleted (at most hourly). */
+  private async prune(now: number): Promise<void> {
+    if (now - this.lastPruneAt < PRUNE_EVERY_MS) return;
+    this.lastPruneAt = now;
+    const cutoff = new Date(now - this.deps.env.ZALO_MESSAGE_RETENTION_DAYS * 86_400_000);
+    const { count } = await prisma.zaloMessage.deleteMany({
+      where: { status: { in: ['SENT', 'SKIPPED', 'FAILED'] }, updatedAt: { lt: cutoff } },
+    });
+    if (count > 0) this.deps.logger.info({ count }, 'pruned old zalo messages');
   }
 
   private async sendNext(held: HeldAccount): Promise<void> {

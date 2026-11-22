@@ -28,6 +28,10 @@ export const EnvSchema = z.object({
   ZALO_SEND_MIN_INTERVAL_MS: PositiveIntSchema.default(3_000),
   /** A message still PENDING this long after `scheduledAt` is SKIPPED (account-unavailable). */
   ZALO_MESSAGE_MAX_AGE_HOURS: PositiveIntSchema.default(24),
+  /** SENT / SKIPPED / FAILED rows older than this (by last update) are deleted, hourly. */
+  // Floor: a pruned row no longer blocks a re-queue of the same (sub-order, event), so keep rows
+  // well past the max age and any care-message delay.
+  ZALO_MESSAGE_RETENTION_DAYS: PositiveIntSchema.min(7).default(90),
   /** Send attempts before a message is FAILED (backoff 1, 2, 4, … min, capped at 60). */
   ZALO_MAX_SEND_ATTEMPTS: PositiveIntSchema.max(20).default(5),
   /** Consecutive login / keep-alive failures before an account is marked EXPIRED. */

@@ -395,4 +395,42 @@ describe('MessageSender.housekeeping', () => {
     });
     expect(byId.get(fresh.id)?.status).toBe('PENDING');
   });
+
+  it('prunes finished rows past retention, at most once per hour', async () => {
+    const a = await makeShop('A');
+    const mk = async () =>
+      makeMessage({
+        vendorId: a.vendor.id,
+        subOrderId: (await makeSubOrder({ vendorId: a.vendor.id, variantId: a.variant.id }))
+          .subOrder.id,
+        event: 'ORDER_PAID',
+      });
+    const oldSent = await mk();
+    const oldPending = await mk();
+    const recentSent = await mk();
+    const longAgo = new Date(Date.now() - 91 * 86_400_000);
+    await prisma.$executeRaw`UPDATE zalo_messages SET status = 'SENT', updated_at = ${longAgo} WHERE id = ${oldSent.id}`;
+    await prisma.$executeRaw`UPDATE zalo_messages SET scheduled_at = now() + interval '1 day', updated_at = ${longAgo} WHERE id = ${oldPending.id}`;
+    await prisma.zaloMessage.update({ where: { id: recentSent.id }, data: { status: 'SENT' } });
+
+    const sender = new MessageSender({
+      redis,
+      accounts: new AccountManager({
+        redis,
+        gateway: new FakeGateway(),
+        cipher,
+        logger,
+        env: testEnv,
+        instanceId: 'r',
+      }),
+      logger,
+      env: testEnv,
+    });
+    await sender.housekeeping();
+
+    const ids = (await prisma.zaloMessage.findMany({ select: { id: true } }))
+      .map((r) => r.id)
+      .sort();
+    expect(ids).toEqual([oldPending.id, recentSent.id].sort());
+  });
 });
