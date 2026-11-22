@@ -528,6 +528,11 @@ model Payment {
   /// Provider checkout URL, written by the worker after createSession (roadmap D2). Null until then.
   redirectUrl   String?         @map("redirect_url")
   expiresAt     DateTime?       @map("expires_at")
+  /// Provider session reference from createSession (VNPay `vnp_CreateDate`, Stripe session id),
+  /// written by the worker with `redirectUrl`. VNPay refund needs it.
+  providerRef   String?         @map("provider_ref")
+  /// Customer IP captured by the API at checkout / payment retry (VNPay `vnp_IpAddr`).
+  clientIp      String?         @map("client_ip")
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
 
