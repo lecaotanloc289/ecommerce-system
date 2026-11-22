@@ -33,8 +33,8 @@ const FALLBACK_CLIENT_IP = '127.0.0.1';
  * between `createSession` and commit re-creates the session on redelivery; the orphaned one is never
  * shown to anyone and expires at the provider.
  *
- * Zero amount (free order): no provider session (providers reject 0). Logged and marked processed;
- * confirming it is the payment-confirmation path's job (T3.1).
+ * Zero amount (free order): no provider session (providers reject 0). Logged and marked processed
+ * for now — T3.2 replaces this branch with the zero-amount confirmation (see workers/jobs/CLAUDE.md).
  */
 export function paymentRequestedHandler(deps: PaymentRequestedDeps) {
   return defineHandler(OUTBOX_EVENT_SCHEMAS['payment.requested'], async (event, ctx) => {
@@ -65,7 +65,7 @@ export function paymentRequestedHandler(deps: PaymentRequestedDeps) {
       return;
     }
     if (payment.amount === 0n) {
-      log.info('zero-amount payment; no provider session (confirmed by the T3.1 path)');
+      log.info('zero-amount payment; no provider session (confirmation not implemented yet, T3.2)');
       return;
     }
 
