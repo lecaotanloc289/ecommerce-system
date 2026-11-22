@@ -36,7 +36,9 @@
       "Bash(pnpm services:*)",
       "Bash(docker:*)",
       "Edit(.env*)",
-      "Edit(.claude/**)"
+      "Edit(.claude/settings*.json)",
+      "Edit(.claude/hooks/**)",
+      "Edit(.claude/agents/**)"
     ],
     "deny": [
       "Read(**/.env)",
