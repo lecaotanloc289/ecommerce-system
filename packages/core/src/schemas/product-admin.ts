@@ -1,7 +1,14 @@
 import { z } from 'zod';
 import { LocaleSchema, ProductStatusSchema } from '../enums';
-import { CategoryIdSchema, ProductImageIdSchema, ProductVariantIdSchema } from '../ids';
-import { SlugSchema } from './common';
+import {
+  CategoryIdSchema,
+  ProductIdSchema,
+  ProductImageIdSchema,
+  ProductVariantIdSchema,
+  VendorIdSchema,
+} from '../ids';
+import { HttpUrlSchema, PageQuerySchema, PageSchema, SlugSchema } from './common';
+import { IsoDateTimeSchema } from './datetime';
 import { NonNegativeMoneySchema } from './money';
 import { VariantAttributesSchema } from './product';
 import { UploadKeySchema } from './upload';
@@ -76,3 +83,77 @@ export const ProductUpsertSchema = z
     path: ['variants'],
   });
 export type ProductUpsert = z.infer<typeof ProductUpsertSchema>;
+
+/** Query of `GET /v1/vendor/products`: cursor page, optionally one status. */
+export const VendorProductQuerySchema = PageQuerySchema.extend({
+  status: ProductStatusSchema.optional(),
+});
+export type VendorProductQuery = z.infer<typeof VendorProductQuerySchema>;
+
+/** Vendor-side variant: unlike the public shape it exposes the raw stock counters. */
+export const VendorProductVariantSchema = z.object({
+  id: ProductVariantIdSchema,
+  productId: ProductIdSchema,
+  sku: z.string().min(1),
+  attributes: VariantAttributesSchema,
+  price: NonNegativeMoneySchema,
+  stockOnHand: z.number().int().nonnegative(),
+  stockReserved: z.number().int().nonnegative(),
+});
+export type VendorProductVariant = z.infer<typeof VendorProductVariantSchema>;
+
+export const VendorProductTranslationSchema = z.object({
+  locale: LocaleSchema,
+  name: z.string().min(1),
+  slug: SlugSchema,
+  description: z.string().nullable(),
+});
+export type VendorProductTranslation = z.infer<typeof VendorProductTranslationSchema>;
+
+export const VendorProductImageSchema = z.object({
+  id: ProductImageIdSchema,
+  url: HttpUrlSchema,
+  alt: z.string().nullable(),
+  sortOrder: z.number().int(),
+});
+export type VendorProductImage = z.infer<typeof VendorProductImageSchema>;
+
+/** Vendor-side product read: raw translations (vi + en), `status` (incl. BLOCKED) and `blockedReason`. */
+export const VendorProductSchema = z.object({
+  id: ProductIdSchema,
+  vendorId: VendorIdSchema,
+  status: ProductStatusSchema,
+  blockedReason: z.string().nullable(),
+  translations: z.array(VendorProductTranslationSchema),
+  basePrice: NonNegativeMoneySchema,
+  primaryImageUrl: HttpUrlSchema.nullable(),
+  images: z.array(VendorProductImageSchema),
+  categoryIds: z.array(CategoryIdSchema),
+  variants: z.array(VendorProductVariantSchema),
+  createdAt: IsoDateTimeSchema,
+  updatedAt: IsoDateTimeSchema,
+});
+export type VendorProduct = z.infer<typeof VendorProductSchema>;
+
+/** Row of the vendor's product list; `name` is the Vietnamese name (the required locale). */
+export const VendorProductSummarySchema = z.object({
+  id: ProductIdSchema,
+  status: ProductStatusSchema,
+  blockedReason: z.string().nullable(),
+  name: z.string(),
+  basePrice: NonNegativeMoneySchema,
+  primaryImageUrl: HttpUrlSchema.nullable(),
+  variantCount: z.number().int().nonnegative(),
+  stockOnHand: z.number().int().nonnegative(),
+  updatedAt: IsoDateTimeSchema,
+});
+export type VendorProductSummary = z.infer<typeof VendorProductSummarySchema>;
+
+export const VendorProductPageSchema = PageSchema(VendorProductSummarySchema);
+export type VendorProductPage = z.infer<typeof VendorProductPageSchema>;
+
+/** Body of `PATCH /v1/vendor/variants/:id/stock` — absolute on-hand count (never below reserved). */
+export const VariantStockUpdateSchema = z.object({
+  stockOnHand: z.number().int().nonnegative(),
+});
+export type VariantStockUpdate = z.infer<typeof VariantStockUpdateSchema>;

@@ -84,6 +84,10 @@ export const ERROR_CODES = [
   'payment.error.session-not-ready',
   'payment.error.retry-not-allowed',
   'payment.error.provider-currency-unsupported',
+  // vendor catalog
+  'product.error.not-publishable',
+  'product.error.variant-in-use',
+  'product.error.stock-below-reserved',
 ] as const;
 
 export const ErrorCodeSchema = z.enum(ERROR_CODES);
@@ -153,6 +157,9 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'payment.error.session-not-ready': 409,
   'payment.error.retry-not-allowed': 409,
   'payment.error.provider-currency-unsupported': 422,
+  'product.error.not-publishable': 422,
+  'product.error.variant-in-use': 409,
+  'product.error.stock-below-reserved': 409,
 };
 
 /** Interpolation values for the translated message (e.g. `{ sku, available }`). */
