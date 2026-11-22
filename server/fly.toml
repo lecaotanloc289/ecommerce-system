@@ -10,6 +10,8 @@ primary_region = "sin"
 [env]
   PORT = "3001"
   NODE_ENV = "production"
+  # One proxy (Fly edge) appends X-Forwarded-For; see server/CLAUDE.md "Client IP".
+  TRUSTED_PROXY_HOPS = "1"
 
 [http_service]
   internal_port = 3001

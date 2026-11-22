@@ -47,7 +47,7 @@ export const EnvSchema = z
      * Reverse proxies in front of the API that append to X-Forwarded-For (Fly.io edge = 1).
      * Decides which entry is the client IP for rate limiting; 0 = use the socket peer.
      */
-    TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).default(1),
+    TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   })
   .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {
     message: 'JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must differ',

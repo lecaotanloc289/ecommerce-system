@@ -73,7 +73,6 @@ export class AuthController {
     description: 'Sets the refresh cookie and redirects to the app (`?error=...` on failure)',
   })
   @Get('google/callback')
-  @RateLimit('strict')
   @UseGuards(OAuthCallbackGuard('google'))
   @UseFilters(OAuthCallbackFilter)
   googleCallback(
@@ -100,7 +99,6 @@ export class AuthController {
     description: 'Sets the refresh cookie and redirects to the app (`?error=...` on failure)',
   })
   @Get('facebook/callback')
-  @RateLimit('strict')
   @UseGuards(OAuthCallbackGuard('facebook'))
   @UseFilters(OAuthCallbackFilter)
   facebookCallback(

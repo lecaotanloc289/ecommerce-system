@@ -21,7 +21,7 @@ describe('parseEnv', () => {
       RATE_LIMIT_MAX: 100,
       RATE_LIMIT_STRICT_MAX: 20,
       RATE_LIMIT_WINDOW: 60,
-      TRUSTED_PROXY_HOPS: 1,
+      TRUSTED_PROXY_HOPS: 0,
     });
     expect(testEnv({ TRUSTED_PROXY_HOPS: '0' }).TRUSTED_PROXY_HOPS).toBe(0);
     expect(() => testEnv({ TRUSTED_PROXY_HOPS: '-1' })).toThrow(/TRUSTED_PROXY_HOPS/);

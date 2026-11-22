@@ -28,6 +28,7 @@ async function bootstrap() {
   await app.register(cors, {
     origin: [env.WEB_ORIGIN, env.ADMIN_ORIGIN],
     credentials: true,
+    exposedHeaders: ['retry-after', 'idempotent-replayed'],
   });
   await registerRateLimit(app);
 

@@ -89,7 +89,11 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
   app.setGlobalPrefix('v1');
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cookie);
-  await app.register(cors, { origin: [env.WEB_ORIGIN, env.ADMIN_ORIGIN], credentials: true });
+  await app.register(cors, {
+    origin: [env.WEB_ORIGIN, env.ADMIN_ORIGIN],
+    credentials: true,
+    exposedHeaders: ['retry-after', 'idempotent-replayed'],
+  });
   await registerRateLimit(app);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
