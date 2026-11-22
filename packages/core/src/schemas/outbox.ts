@@ -6,6 +6,7 @@ import {
   UserIdSchema,
   VendorApplicationIdSchema,
   VendorIdSchema,
+  VendorInvitationIdSchema,
 } from '../ids';
 
 // Payloads of `outbox_events` rows (Golden Rule #9). Written by the API inside the business
@@ -64,6 +65,23 @@ export const VendorApplicationRejectedEventSchema = z.object({
 });
 export type VendorApplicationRejectedEvent = z.infer<typeof VendorApplicationRejectedEventSchema>;
 
+export const VENDOR_INVITATION_AGGREGATE_TYPE = 'vendor-invitation';
+
+/**
+ * `vendor.invitation.created` (aggregateId = invitationId). UNLIKE every other payload this one
+ * carries a secret: the raw invitation `token` (only its sha256 is stored in
+ * `vendor_invitations`), needed for the `ADMIN_ORIGIN/invite?token=` email link. The worker must
+ * scrub `token` from the row's payload once the email is sent (or the event is dead-lettered)
+ * and must never log it.
+ */
+export const VendorInvitationCreatedEventSchema = z.object({
+  invitationId: VendorInvitationIdSchema,
+  vendorId: VendorIdSchema,
+  email: z.string(),
+  token: z.string(),
+});
+export type VendorInvitationCreatedEvent = z.infer<typeof VendorInvitationCreatedEventSchema>;
+
 /** Event type → payload schema, for the dispatcher's handler table. */
 export const OUTBOX_EVENT_SCHEMAS = {
   'order.created': OrderCreatedEventSchema,
@@ -71,5 +89,6 @@ export const OUTBOX_EVENT_SCHEMAS = {
   'order.cancelled': OrderCancelledEventSchema,
   'vendor.application.approved': VendorApplicationApprovedEventSchema,
   'vendor.application.rejected': VendorApplicationRejectedEventSchema,
+  'vendor.invitation.created': VendorInvitationCreatedEventSchema,
 } as const;
 export type OutboxEventType = keyof typeof OUTBOX_EVENT_SCHEMAS;
