@@ -23,7 +23,7 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 - `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
 - `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
 - `packages/sdk` — OpenAPI pipeline + `createApiClient` (openapi-fetch; Bearer, auto Idempotency-Key, single-flight 401 refresh); `pnpm sdk:generate` (see `packages/sdk/CLAUDE.md`).
-- `packages/payments` — placeholder (empty `src/index.ts`, scripts print `echo 'TODO: ...'`).
+- `packages/payments` — `PaymentProvider` interface + VNPay (v2.1.0 HMAC-SHA512 pay URL, IPN/return verify, merchant-webapi refund) and Stripe (Checkout Session, `constructEvent` webhook verify, refunds) adapters; config via factory params, injectable `fetch` / Stripe client; ESLint + Vitest (see `packages/payments/CLAUDE.md`).
 
 Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
 
