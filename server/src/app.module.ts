@@ -4,6 +4,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthModule } from './auth/auth.module';
 import { DomainErrorFilter } from './common/domain-error.filter';
+import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -26,6 +27,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     RedisModule,
     HealthModule,
     AuthModule,
+    IdempotencyModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

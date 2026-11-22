@@ -6,6 +6,7 @@ import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import { AppModule } from './app.module';
+import { registerRateLimit } from './common/rate-limit';
 import { ENV } from './config/config.module';
 import type { Env } from './config/env';
 
@@ -26,6 +27,7 @@ async function bootstrap() {
     origin: [env.WEB_ORIGIN, env.ADMIN_ORIGIN],
     credentials: true,
   });
+  await registerRateLimit(app);
 
   await app.listen({ port: env.PORT, host: '0.0.0.0' });
 }

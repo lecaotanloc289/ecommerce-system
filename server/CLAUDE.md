@@ -10,7 +10,7 @@ Future async workers (outbox dispatcher, payout cron, email sender) live **OUTSI
 - NestJS 11 + Fastify adapter, prefix `/v1`
 - `nestjs-zod` pipe (validation from schemas in `@repo/core`; global `ZodValidationPipe`, failures → 422)
 - Auth: `@nestjs/passport` 11 + `passport-google-oauth20` + `passport-facebook` + `@nestjs/jwt` 11 (v12 of both is ESM-only / Nest 12 — stay on 11 while the server is CJS on Nest 11)
-- Redis: `ioredis` 5 (`RedisModule`, token `REDIS`) — refresh-token sessions; BullMQ later
+- Redis: `ioredis` 5 (`RedisModule`, token `REDIS`) — refresh-token sessions, idempotency records, rate-limit counters; BullMQ later
 - Errors: global `DomainErrorFilter` — every error leaves as `{ errorCode, params }` (`@repo/core` `DomainError` / `ERROR_CODES`)
 - Logger: `nestjs-pino`
 - Security: `@fastify/helmet`, `@fastify/cors` (credentials true), `@fastify/cookie`
@@ -19,14 +19,42 @@ Future async workers (outbox dispatcher, payout cron, email sender) live **OUTSI
 
 ## Request pipeline
 
-Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) → `JwtAuthGuard` → `RolesGuard @Roles(...)` → `ZodValidationPipe` → controller → service. Business logic lives in services/domain. See root `CLAUDE.md` §4 (Data flow) for the worked checkout example.
+Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) → `JwtAuthGuard` → `RolesGuard @Roles(...)` → interceptors (`@Idempotent()`) → `ZodValidationPipe` → controller → service. Business logic lives in services/domain. See root `CLAUDE.md` §4 (Data flow) for the worked checkout example.
 
-## State (as of 2026-11-19)
+## State (as of 2026-11-23)
 
-- Bootstrap: NestJS 11 + Fastify, helmet + cors + cookie + pino, `GET /v1/health`, `GET /v1/health/ready` (DB probe via `PrismaService`).
+- Bootstrap: NestJS 11 + Fastify, helmet + cors + cookie + pino + rate limit, `GET /v1/health`, `GET /v1/health/ready` (DB probe via `PrismaService`).
 - Config: `src/config/env.ts` — Zod schema parsed at boot (`ConfigModule`, inject `@Inject(ENV) env: Env`); missing/invalid keys abort startup with a list. Env is injected by Doppler (`doppler run -- pnpm --filter @server/api dev`) or your shell — the server does **not** read `.env` itself.
 - Auth module (`src/auth/`) — see below.
-- Not started: catalog, cart, checkout, orders, payments, payouts, idempotency, outbox.
+- Platform infra (`src/common/`): idempotency, rate limit, cursor pagination — see below. Integration test harness in `test/support/`.
+- Not started: catalog, cart, checkout, orders, payments, payouts, outbox.
+
+## Idempotency (Golden Rule #3, roadmap D9)
+
+`@Idempotent()` (`src/common/idempotency/idempotent.decorator.ts`) on a mutation handler behind `JwtAuthGuard` — mandatory on `/orders/checkout` and `/payments/*`. `IdempotencyModule` is global (registered in `AppModule`), so feature modules need no import.
+
+- Header `Idempotency-Key` = client ULID (`IdempotencyKeySchema`). Missing or malformed → 400 `idempotency.error.key-required`. No `request.user` → 401 (fails closed; keys are per user).
+- Redis key `idem:{userId}:{key}`; fingerprint = sha256(method + concrete URL incl. params/query + canonical JSON body with sorted keys). The body hashed is the JSON-parsed body (interceptors run before pipes).
+- First request: `SET NX PX 60s` lock `{state:'processing'}` → handler → on 2xx store `{state:'completed', status, body}` for 24h (Lua compare-and-swap on the lock).
+- Same key + same fingerprint while running → 409 `idempotency.error.in-progress`; after success → replay stored status + body with header `idempotent-replayed: true` (handler not called). Different fingerprint → 422 `idempotency.error.key-reused`.
+- **Errors are not cached:** any thrown error (4xx `DomainError` included) or non-2xx status releases the lock, so the client can retry the same key.
+- **Lock TTL is 60s, not renewed.** A handler running longer loses the lock; a concurrent retry may then execute again, and the late completion is logged (`idempotency lock expired…`) without overwriting. Same if writing the completed record fails (response still returned, logged). So money-moving writes (checkout, payments) **must also** have a DB unique constraint on the key (e.g. `Order.idempotencyKey`) — Redis alone is not the guarantee.
+- An unreadable record (corrupt / older format) answers 422 key-reused rather than re-executing.
+- Replay restores status + body only (no handler-set headers); handlers must return JSON-serializable values.
+
+## Rate limit
+
+`@fastify/rate-limit` registered by `registerRateLimit(app)` (`src/common/rate-limit.ts`, called in `main.ts` before `listen`), Redis store (keys `rl:*`), per client IP.
+
+- **Client IP:** `clientIp()` takes the address `TRUSTED_PROXY_HOPS` (default 1 = Fly edge) entries into `request.ips` (socket peer first, then X-Forwarded-For from nearest). Entries further left are client-supplied and ignored, so spoofing XFF cannot reset a bucket. Do **not** key on `request.ip`: `trustProxy: true` makes it the leftmost, spoofable XFF entry. Set `0` when nothing proxies the API.
+- **Buckets:** every route shares one bucket of `RATE_LIMIT_MAX` (default 100) per `RATE_LIMIT_WINDOW` (default `1m`). Sensitive handlers add `@RateLimit('strict')` (method-level; wraps Fastify `RouteConfig`): `RATE_LIMIT_STRICT_MAX` (default 20) in a bucket per method + route — currently all OAuth start/callback routes, `/auth/refresh`, `/auth/logout`; checkout and payments must add it. `@SkipRateLimit()` exempts a handler (only `/health`, `/health/ready`).
+- Over the limit → 429 `common.error.rate-limited` + `retry-after` (the hook throws a `DomainError`, which Nest's Fastify error handler routes through `DomainErrorFilter`).
+- **Redis down:** the default bucket fails open (availability); strict routes fail closed (500) — they must not lose brute-force protection.
+- **Known limit:** a server-side caller (storefront SSR on Workers) shares its egress IP's bucket across all its users. When SSR starts calling the API, give it an allow-list / trusted-client key instead of raising the global limit.
+
+## Pagination
+
+List endpoints take `PageQuerySchema` (`?cursor=<ulid>&limit=1..100`, default 20) and return `PageSchema(item)` = `{ items, nextCursor }` — both in `@repo/core`. `src/common/pagination.ts`: `cursorPageArgs(query, 'desc' | 'asc')` → `{ take: limit + 1, where: { id: { lt | gt: cursor } }, orderBy: { id } }` (spread `where` into your filter), then `toPage(rows, query)` trims the look-ahead row and sets `nextCursor` (null on the last page). Relies on ULID ids sorting by creation time.
 
 ## Auth (Golden Rule #5)
 
@@ -59,4 +87,33 @@ pnpm --filter @server/api lint                  # ESLint (type-checked @repo/con
 
 ESLint: `eslint.config.mjs` extends `@repo/config/eslint`; the project service lints `src/` with `tsconfig.json` and `test/` with `test/tsconfig.json` (extends `tsconfig.spec.json`). Under `test/**` only the `no-unsafe-*` and `unbound-method` rules are off (Jest mocks are `any`, `expect(obj.method)` is idiomatic). `tsconfig.json` extends `../packages/config/...` by relative path — typescript-eslint does not realpath the `@repo/config` symlink, so the package-name form breaks the `extends` chain.
 
-Tests live in `server/test/` (excluded from the build): `auth/` unit (guards, decorators, strategies, OAuth user resolution, rotation/reuse/logout), `http/` in-process Fastify `inject` flow, `integration/` real Redis via Testcontainers (needs Docker; CI runners have it). Planned integration coverage (Postgres): transaction rollback, idempotency replay, outbox publishing, ownership.
+Tests live in `server/test/` (excluded from the build). `jest.config.js` has two projects: **unit** (everything except `test/integration/` — `auth/`, `common/`, `config/`, `http/` in-process Fastify `inject` with mocked Prisma; no Docker) and **integration** (`test/integration/`, needs Docker; CI runners have it). `pnpm --filter @server/api test -- --selectProjects unit` skips Docker; selecting only unit files does too.
+
+### Integration harness (`test/support/`)
+
+- **Containers:** `global-setup.ts` starts ONE Postgres 16 + ONE Redis 7 per `jest` run (only if an integration spec is selected), runs `prisma migrate deploy` (packages/db/prisma) into a template DB, and clones `worker_N` per Jest worker; each worker also gets Redis logical DB N. `integration-env.ts` points `DATABASE_URL`/`REDIS_URL` at the worker's pair. Chosen over a container set per file: start-up + migrations cost ~5s once instead of per file (whole integration suite ≈ 8s wall). Never touches the shared local Postgres/Redis.
+- **`createTestApp({ env?, imports? })`** → `TestApp { app, db, redis, env, authHeader(user), signAccessToken(user, roles, vendorId?), reset(), close() }`: the real `AppModule` on Fastify with the same plugins as `main.ts` (keep in sync), pino silenced, rate limits raised to 100000 (override via `env`). It starts from an empty DB (`reset()` = TRUNCATE all tables + FLUSHDB; it refuses to run on a non-`worker_N` database). Call `t.reset()` in `beforeEach` when tests must not see each other's rows. Test-only controllers go in a module passed via `imports` (that module imports `AuthModule` to use `JwtAuthGuard`).
+- **Auth:** `await t.authHeader(user)` → `{ authorization: 'Bearer …' }` signed by the real `TokenService` from the user's DB roles (vendor roles only while the vendor is ACTIVE). `t.signAccessToken(user, roles, vendorId?)` crafts arbitrary claims (stale vendorId, revoked role).
+- **Factories** (`factories.ts`, re-exported from `test/support`): `makeUser(db, { roles?, vendorId?, email?, … })`, `makeVendor(db, { status?, ownerId?, currency?, commissionBpsOverride? })` → `{ vendor, owner, wallet }` (owner gets `VENDOR_OWNER`), `makeCategory`, `makeProduct(db, { vendorId, status?, currency?, price?, variants?: [{ price?, stockOnHand?, stockReserved?, sku? }], categoryIds? })` (vi/en translations, variants, image), `makeShippingMethod(db, { vendorId, price?, … })`, `makeAddress(db, { userId, isDefault? })`, `makePlatformSettings(db, overrides)`. Amounts are integer minor units; ids are monotonic ULIDs (creation order = id order).
+
+```ts
+import { createTestApp, makeUser, makeVendor, type TestApp } from '../support';
+
+let t: TestApp;
+beforeAll(async () => {
+  t = await createTestApp();
+});
+afterAll(() => t.close());
+beforeEach(() => t.reset());
+
+it('…', async () => {
+  const { owner } = await makeVendor(t.db);
+  const res = await t.app.inject({
+    method: 'GET',
+    url: '/v1/auth/me',
+    headers: await t.authHeader(owner),
+  });
+});
+```
+
+Samples: `test/integration/harness.spec.ts`, `idempotency.spec.ts` (test controller + `@Idempotent()`), `rate-limit.spec.ts`, `refresh-token.store.spec.ts`.

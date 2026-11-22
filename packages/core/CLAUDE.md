@@ -33,6 +33,8 @@ whichever path it was imported from). Consumers need `@repo/core` built first (t
   fixed canonical ULIDs for this reason).
 - **Errors:** codes are i18n keys, `<domain>.error.<kebab>`. New code → add to `ERROR_CODES` and
   `ERROR_HTTP_STATUS` (the compiler enforces the second). No user-facing text in this package.
+- **Pagination:** list endpoints use `PageQuerySchema` (`cursor?: ULID`, `limit` 1..100 default 20, coerced
+  from query strings) and return `PageSchema(item)` = `{ items, nextCursor: ULID | null }` (`schemas/common.ts`).
 - **Schemas:** read shapes mirror DB nullability (`null`, not optional). Request schemas never carry
   `price`, `vendorId`, `userId` or `role` — the server re-reads them.
 

@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { DomainError } from '@repo/core';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { RateLimit } from '../common/rate-limit';
 import { ENV } from '../config/config.module';
 import type { Env } from '../config/env';
 import {
@@ -44,12 +45,14 @@ export class AuthController {
   ) {}
 
   @Get('google')
+  @RateLimit('strict')
   @UseGuards(OAuthStartGuard('google'))
   googleStart(): void {
     // OAuthStartGuard redirects to Google; never reached.
   }
 
   @Get('google/callback')
+  @RateLimit('strict')
   @UseGuards(OAuthCallbackGuard('google'))
   @UseFilters(OAuthCallbackFilter)
   googleCallback(
@@ -61,12 +64,14 @@ export class AuthController {
   }
 
   @Get('facebook')
+  @RateLimit('strict')
   @UseGuards(OAuthStartGuard('facebook'))
   facebookStart(): void {
     // OAuthStartGuard redirects to Facebook; never reached.
   }
 
   @Get('facebook/callback')
+  @RateLimit('strict')
   @UseGuards(OAuthCallbackGuard('facebook'))
   @UseFilters(OAuthCallbackFilter)
   facebookCallback(
@@ -79,6 +84,7 @@ export class AuthController {
 
   /** Rotates the refresh cookie and returns a fresh access token. */
   @Post('refresh')
+  @RateLimit('strict')
   @HttpCode(200)
   async refresh(
     @Req() request: FastifyRequest,
@@ -99,6 +105,7 @@ export class AuthController {
 
   /** Revokes the session (token family) and clears the cookie. Idempotent. */
   @Post('logout')
+  @RateLimit('strict')
   @HttpCode(204)
   async logout(
     @Req() request: FastifyRequest,

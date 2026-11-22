@@ -18,7 +18,7 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 
 - `packages/db` — done: full Prisma schema, migrations, seed, tests (see `packages/db/CLAUDE.md`).
 - `apps/client` — storefront UI for all `SCREENS.md` screens, on mock data (see `apps/client/CLAUDE.md`).
-- `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), Zod-validated env, Jest (see `server/CLAUDE.md`).
+- `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), `@Idempotent()` interceptor, Redis-backed rate limit (`@RateLimit('strict')`), cursor pagination helper, Zod-validated env, ESLint, Jest with a Testcontainers integration harness + factories (see `server/CLAUDE.md`).
 - `apps/admin` — scaffold only.
 - `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
 - `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
