@@ -25,7 +25,7 @@ Read shapes use Money, ISO-datetime strings and branded ids. Input shapes never 
 
 - `money`, `common`: `Money`, `NonNegativeMoney`; `Slug`, `HttpUrl`. `datetime`: `IsoDateTime` (UTC ISO string on the wire).
 - `address`: `AddressInput`, `Address`, `CountryCode`, `Phone`. `category`, `product`: `Category`, `CategoryTranslation`, `Product`, `ProductVariant`, `ProductImage`, `VariantAttributes`.
-- `cart`, `checkout`: `CartLineInput`, `CartLine`, `Checkout`, `CouponCode`.
+- `cart`, `checkout`: `CartLineInput`, `CartLine` (+ `lineTotal`, `unavailable`), `Cart` (grouped by vendor via `CartVendorGroup`), `CartQuery`, `CartItemSet`, `CartMergeInput`, `CartMergeResult` / `CartMergeAdjustment`, `CartShippingOptions`, `Checkout`, `CouponCode`.
 - `me`: `TokenResponse`, `MeResponse` (moved from the server), `ProfileUpdate`.
 - `upload`: `UploadPurpose`, `UploadKey`, `PresignRequest`, `PresignResponse`. Clients send upload **keys**, never URLs (D13).
 - `vendor`: `VendorPublic`, `VendorApplicationCreate`, `VendorApplication`, `VendorReject`.
