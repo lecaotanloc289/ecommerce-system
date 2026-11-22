@@ -17,7 +17,9 @@ import {
   RatingSummarySchema,
   RefundCreateSchema,
   RefundSchema,
+  ReviewCreateBodySchema,
   ReviewCreateSchema,
+  ReviewPageSchema,
   ReviewSchema,
   ShippingMethodInputSchema,
   ShippingMethodSchema,
@@ -359,6 +361,24 @@ describe('review', () => {
       ReviewCreateSchema.safeParse({ subOrderId: ulid(1), productId: ulid(2), rating: 4.5 })
         .success,
     ).toBe(false);
+  });
+
+  it('create body: trims, caps length, rejects out-of-range rating', () => {
+    const ok = ReviewCreateBodySchema.parse({ subOrderId: ulid(1), rating: 3, body: '  good  ' });
+    expect(ok.body).toBe('good');
+    expect(ReviewCreateBodySchema.safeParse({ subOrderId: ulid(1), rating: 0 }).success).toBe(
+      false,
+    );
+    expect(
+      ReviewCreateBodySchema.safeParse({ subOrderId: ulid(1), rating: 5, body: 'x'.repeat(2001) })
+        .success,
+    ).toBe(false);
+  });
+
+  it('page: items + nextCursor + summary', () => {
+    const summary = { average: null, count: 0, distribution: [0, 0, 0, 0, 0] };
+    expect(ReviewPageSchema.safeParse({ items: [], nextCursor: null, summary }).success).toBe(true);
+    expect(ReviewPageSchema.safeParse({ items: [], nextCursor: null }).success).toBe(false);
   });
 
   it('read + summary', () => {

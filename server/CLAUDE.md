@@ -34,6 +34,7 @@ Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) 
 - Vendor catalog module (`src/vendor/`) — vendor products, variant stock, shipping methods; see "Vendor catalog" below.
 - Storage module (`src/storage/`): presigned uploads to S3-compatible storage — see "Storage / uploads" below.
 - Vendor applications module (`src/vendor-applications/`) — KYC apply + platform approval, see "Vendor applications" below.
+- Reviews module (`src/reviews/`) — product reviews, see "Reviews" below.
 - Not started: payment webhooks, vendor fulfilment, payouts, outbox dispatcher (worker).
 
 ## Idempotency (Golden Rule #3, roadmap D9)
@@ -79,7 +80,18 @@ All routes are unauthenticated, take `?locale=vi|en` (default vi; a missing en t
 
 - **Pagination:** the cursor is always the last item's product id. Every sort (newest = constant key, so `id DESC`) is a keyset on `(sort_key, id DESC)` where the key is derived in SQL from the cursor product (`ProductsRepository.listVisibleIds`). The cursor product's key is read without the visibility filter, so paging survives it being hidden. Price filters/sorts without `currency` use `PlatformSettings.defaultCurrency`. Known perf limit (no migrations this wave): each page scans all visible products; add indexes / a newest fast path later. `rating` sorts by average (2 dp), unrated last.
 - **Search** (`ProductsRepository.searchVisibleIds`, raw SQL via `$queryRaw` bound parameters): a product matches when any translation satisfies `search_vector @@ websearch_to_tsquery('simple', q)` (accent-sensitive; `simple` config, no stemming), OR `q <% name` (pg_trgm word similarity, typo tolerant), OR the accent-folded query is a substring of the ASCII slug (this gives unaccented Vietnamese matching; there is no `unaccent` extension and no migrations were added). Rank = ts_rank + word_similarity (+0.5 slug hit), keyset-paginated. Limits: unaccented queries only match slug text (keep slugs transliterated from the name); word order must match for the slug path.
-- Rating summary comes from `reviews` (`average` null when none).
+- Rating summary comes from `reviews` (`average` null when none), computed by `computeRatingSummary(prisma, productId)` in `src/common/rating-summary.ts` (shared by product detail and the reviews list).
+
+## Reviews (`src/reviews/`, T3.6)
+
+Shapes in `@repo/core/schemas/review`. The author is always the JWT user; no email is ever exposed (`authorName` = `User.name`).
+
+| Endpoint                                                         | Behaviour                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/products/:id/reviews {subOrderId, rating 1..5, body?}` | `CUSTOMER`, `@Idempotent()` → 201 `Review`. One query checks the sub-order belongs to the caller (`order.customerId`), is DELIVERED or COMPLETED and has an item whose variant belongs to `:id`, else 422 `review.error.not-eligible`. An existing review for (author, sub-order, product), or a P2002 race → 409 `review.error.already-exists`. `body` trimmed, max 2000, blank → null. Not restricted to visible products (a delisted product can still be reviewed). |
+| `GET /v1/products/:id/reviews?cursor&limit`                      | Public; `{ items, nextCursor, summary: RatingSummary }`, newest first (ULID cursor pagination). `:id` is the product **id** (not the slug); unknown / not ACTIVE / vendor not ACTIVE → 404 `product.error.not-found`.                                                                                                                                                                                                                                                   |
+
+Tests: `test/integration/reviews.spec.ts`.
 
 ## Auth (Golden Rule #5)
 
