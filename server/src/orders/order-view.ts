@@ -4,6 +4,8 @@ import {
   type OrderSummary,
   OrderSummarySchema,
   type PaymentSession,
+  type SubOrder,
+  SubOrderSchema,
   PaymentSessionSchema,
   ShippingAddressSnapshotSchema,
   VariantAttributesSchema,
@@ -13,19 +15,23 @@ import { type Prisma, toMoney } from '@repo/db';
 // Read side of orders: Prisma include shapes + mapping to the `@repo/core` response schemas.
 // Every mapper ends with `Schema.parse`, so ids are branded and a drifted row fails loudly.
 
+/** One sub-order with what `toSubOrder` needs (customer order detail + vendor fulfilment). */
+export const SUB_ORDER_DETAIL_ARGS = {
+  include: {
+    vendor: { select: { displayName: true } },
+    shippingMethod: { select: { name: true } },
+    items: {
+      orderBy: { id: 'asc' },
+      include: { variant: { select: { productId: true } } },
+    },
+  },
+} satisfies Prisma.SubOrderDefaultArgs;
+
+export type SubOrderDetailRow = Prisma.SubOrderGetPayload<typeof SUB_ORDER_DETAIL_ARGS>;
+
 export const ORDER_DETAIL_ARGS = {
   include: {
-    subOrders: {
-      orderBy: { id: 'asc' },
-      include: {
-        vendor: { select: { displayName: true } },
-        shippingMethod: { select: { name: true } },
-        items: {
-          orderBy: { id: 'asc' },
-          include: { variant: { select: { productId: true } } },
-        },
-      },
-    },
+    subOrders: { orderBy: { id: 'asc' }, ...SUB_ORDER_DETAIL_ARGS },
   },
 } satisfies Prisma.OrderDefaultArgs;
 
@@ -48,47 +54,50 @@ export function toOrder(row: OrderDetailRow): Order {
     grandTotal: money(row.grandTotalAmount),
     paymentDeadlineAt: row.paymentDeadlineAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
-    subOrders: row.subOrders.map((so) => {
-      const subtotal = toMoney(so.subtotalAmount, so.currency);
-      const shipping = toMoney(so.shippingAmount, so.currency);
-      const vendorDiscount = toMoney(so.discountAmount, so.currency);
-      const platformDiscount = toMoney(so.platformDiscountAmount, so.currency);
-      return {
-        id: so.id,
-        orderId: so.orderId,
-        vendorId: so.vendorId,
-        vendorName: so.vendor.displayName,
-        status: so.status,
-        subtotal,
-        shipping,
-        vendorDiscount,
-        platformDiscount,
-        // paid_i (D7) = subtotal + shipping − vendorDiscount − platformDiscount
-        total: toMoney(
-          so.subtotalAmount + so.shippingAmount - so.discountAmount - so.platformDiscountAmount,
-          so.currency,
-        ),
-        shippingMethodName: so.shippingMethod?.name ?? null,
-        shippingAddress: ShippingAddressSnapshotSchema.parse(so.shippingAddress),
-        carrier: so.carrier,
-        trackingNumber: so.trackingNumber,
-        shippedAt: so.shippedAt?.toISOString() ?? null,
-        deliveredAt: so.deliveredAt?.toISOString() ?? null,
-        completedAt: so.completedAt?.toISOString() ?? null,
-        cancelledAt: so.cancelledAt?.toISOString() ?? null,
-        createdAt: so.createdAt.toISOString(),
-        items: so.items.map((item) => ({
-          id: item.id,
-          variantId: item.variantId,
-          productId: item.variant.productId,
-          productTitle: item.productTitleSnapshot,
-          attributes: parseAttributes(item.variantAttributesSnapshot),
-          unitPrice: toMoney(item.unitPriceAmount, item.currency),
-          quantity: item.quantity,
-          lineTotal: toMoney(item.lineTotalAmount, item.currency),
-        })),
-      };
-    }),
+    subOrders: row.subOrders.map(toSubOrder),
+  });
+}
+
+/** Customer view of one sub-order (no commission); `paid_i` as `total`. */
+export function toSubOrder(so: SubOrderDetailRow): SubOrder {
+  const subtotal = toMoney(so.subtotalAmount, so.currency);
+  const shipping = toMoney(so.shippingAmount, so.currency);
+  const vendorDiscount = toMoney(so.discountAmount, so.currency);
+  const platformDiscount = toMoney(so.platformDiscountAmount, so.currency);
+  return SubOrderSchema.parse({
+    id: so.id,
+    orderId: so.orderId,
+    vendorId: so.vendorId,
+    vendorName: so.vendor.displayName,
+    status: so.status,
+    subtotal,
+    shipping,
+    vendorDiscount,
+    platformDiscount,
+    // paid_i (D7) = subtotal + shipping − vendorDiscount − platformDiscount
+    total: toMoney(
+      so.subtotalAmount + so.shippingAmount - so.discountAmount - so.platformDiscountAmount,
+      so.currency,
+    ),
+    shippingMethodName: so.shippingMethod?.name ?? null,
+    shippingAddress: ShippingAddressSnapshotSchema.parse(so.shippingAddress),
+    carrier: so.carrier,
+    trackingNumber: so.trackingNumber,
+    shippedAt: so.shippedAt?.toISOString() ?? null,
+    deliveredAt: so.deliveredAt?.toISOString() ?? null,
+    completedAt: so.completedAt?.toISOString() ?? null,
+    cancelledAt: so.cancelledAt?.toISOString() ?? null,
+    createdAt: so.createdAt.toISOString(),
+    items: so.items.map((item) => ({
+      id: item.id,
+      variantId: item.variantId,
+      productId: item.variant.productId,
+      productTitle: item.productTitleSnapshot,
+      attributes: parseAttributes(item.variantAttributesSnapshot),
+      unitPrice: toMoney(item.unitPriceAmount, item.currency),
+      quantity: item.quantity,
+      lineTotal: toMoney(item.lineTotalAmount, item.currency),
+    })),
   });
 }
 

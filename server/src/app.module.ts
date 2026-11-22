@@ -20,6 +20,7 @@ import { StorageModule } from './storage/storage.module';
 import { VendorApplicationsModule } from './vendor-applications/vendor-applications.module';
 import { VendorStaffModule } from './vendor-staff/vendor-staff.module';
 import { VendorModule } from './vendor/vendor.module';
+import { VendorOrdersModule } from './vendor-orders/vendor-orders.module';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -50,6 +51,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     VendorModule,
     VendorStaffModule,
     RefundsModule,
+    VendorOrdersModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
