@@ -18,7 +18,7 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 
 - `packages/db` — done: full Prisma schema, migrations, seed, tests (see `packages/db/CLAUDE.md`).
 - `apps/client` — storefront UI for all `SCREENS.md` screens, on mock data (see `apps/client/CLAUDE.md`).
-- `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), `@Idempotent()` interceptor, Redis-backed rate limit (`@RateLimit('strict')`), cursor pagination helper, Zod-validated env, ESLint, Jest with a Testcontainers integration harness + factories (see `server/CLAUDE.md`).
+- `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), `@Idempotent()` interceptor, Redis-backed rate limit (`@RateLimit('strict')`), cursor pagination helper, Zod-validated env, ESLint, Jest with a Testcontainers integration harness + factories; me/addresses, cart, public catalog, checkout + customer orders (see `server/CLAUDE.md`).
 - `apps/admin` — scaffold only.
 - `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
 - `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
@@ -128,21 +128,24 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
    │  4. JwtAuthGuard → verifies access token → req.user = { id, roles, vendorId? }
    │  5. RolesGuard @Roles('CUSTOMER') → allow
    │  6. ZodValidationPipe → parses body against CheckoutSchema; reject 422 on failure.
-   │  7. OrdersController.checkout → OrdersService.checkoutCart(userId, dto, idemKey)
+   │  7. OrdersController.checkout → CheckoutService.checkout(userId, dto, idemKey)
    ▼
-[OrdersService — orchestration]
-   │  8. Idempotency check via Redis (idemKey → existing orderId if already processed).
+[CheckoutService — orchestration]
+   │  8. Idempotency check via Redis (idemKey → stored response if already processed);
+   │     Order.idempotencyKey (unique) is the DB backstop.
    │  9. Open a Prisma $transaction:
-   │       a. Lock + reserve inventory (UPDATE ... WHERE stock >= qty)
-   │       b. Group items by vendorId
-   │       c. INSERT Order (parent) + N SubOrder (one per vendor) + OrderItems
-   │       d. INSERT LedgerEntry (escrow IN from customer)
+   │       a. Group items by vendorId; lock coupons (FOR UPDATE) and price the order (core priceOrder)
+   │       b. Reserve inventory (UPDATE ... WHERE stock_on_hand - stock_reserved >= qty)
+   │       c. INSERT Order (parent) + N SubOrder (one per vendor) + OrderItems + CouponRedemptions
+   │       d. INSERT Payment (PENDING, attempt 1) — NO ledger yet: escrow IN is written when the
+   │          payment is confirmed (step 14, roadmap D3)
    │       e. INSERT OutboxEvent rows (order.created, payment.requested)
    │  10. Commit. Return Order DTO (parsed through a Zod response schema).
    ▼
 [Worker (BullMQ)]
-   │  11. Consume outbox: send a payment request via the VNPay/Stripe adapter (packages/payments).
-   │  12. Gateway returns a redirect URL → API → web → browser redirects user.
+   │  11. Consume outbox: create a payment session via the VNPay/Stripe adapter (packages/payments).
+   │  12. Worker stores Payment.redirectUrl; web polls GET /v1/orders/:id/payment (202 → 200)
+   │      and redirects the browser.
    ▼
 [Payment gateway]
    │  13. User pays → gateway POSTs to /v1/payments/webhook/:provider.

@@ -233,6 +233,53 @@ export interface MakePlatformSettingsOptions {
   maxCouponStack?: number;
 }
 
+export interface MakeCouponOptions {
+  /** VENDOR coupons need `vendorId`; default PLATFORM. */
+  scope?: 'PLATFORM' | 'VENDOR';
+  vendorId?: string;
+  code?: string;
+  /** FIXED: minor units of `currency`; PERCENT: basis points (1000 = 10%). Default PERCENT 1000. */
+  discountType?: 'PERCENT' | 'FIXED';
+  discountValue?: number;
+  /** Default VND; null = currency-agnostic PERCENT coupon. */
+  currency?: Currency | null;
+  minSpend?: number | null;
+  maxRedemptions?: number | null;
+  perUserLimit?: number | null;
+  isActive?: boolean;
+  startsAt?: Date;
+  endsAt?: Date;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Coupon valid from yesterday for a year by default (PLATFORM, PERCENT 10%, unlimited). */
+export async function makeCoupon(db: Db, options: MakeCouponOptions = {}) {
+  const scope = options.scope ?? 'PLATFORM';
+  if (scope === 'VENDOR' && !options.vendorId) {
+    throw new Error('makeCoupon: VENDOR coupons need a vendorId');
+  }
+  const currency = options.currency === undefined ? 'VND' : options.currency;
+  const minSpend = options.minSpend ?? null;
+  return db.coupon.create({
+    data: {
+      id: ulid(),
+      scope,
+      vendorId: scope === 'VENDOR' ? (options.vendorId ?? null) : null,
+      code: options.code ?? `CODE-${unique().toUpperCase()}`,
+      discountType: options.discountType ?? 'PERCENT',
+      discountValue: BigInt(options.discountValue ?? 1000),
+      currency,
+      minSpendAmount: minSpend === null ? null : BigInt(minSpend),
+      maxRedemptions: options.maxRedemptions ?? null,
+      perUserLimit: options.perUserLimit ?? null,
+      isActive: options.isActive ?? true,
+      startsAt: options.startsAt ?? new Date(Date.now() - DAY_MS),
+      endsAt: options.endsAt ?? new Date(Date.now() + 365 * DAY_MS),
+    },
+  });
+}
+
 /** The PlatformSettings singleton (created once; later calls update the given fields). */
 export async function makePlatformSettings(db: Db, options: MakePlatformSettingsOptions = {}) {
   const existing = await db.platformSettings.findFirst();

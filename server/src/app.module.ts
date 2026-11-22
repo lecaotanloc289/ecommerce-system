@@ -10,6 +10,7 @@ import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
 import { MeModule } from './me/me.module';
+import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 
@@ -34,6 +35,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     MeModule,
     CartModule,
     CatalogModule,
+    OrdersModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
