@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Facebook, Github, Instagram, Linkedin, Twitter } from 'lucide-react';
 import { Container } from './container';
-import { useT } from '../../i18n/locale-provider';
-import type { MessageKey } from '../../i18n/locale-provider';
+import { useT } from '../../i18n/use-locale';
+import type { MessageKey } from '../../i18n/use-locale';
 
 /** Links without `href` have no page yet — rendered as plain text, not dead links. */
 const columns: { title: MessageKey; links: { label: MessageKey; href?: string }[] }[] = [
@@ -88,7 +88,7 @@ export function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border-faint pt-6 sm:flex-row">
-          {/* Year is computed at build time (static export) and again in the browser. */}
+          {/* Year is computed at prerender/SSR time and again in the browser. */}
           <p className="text-body-s text-text-muted" suppressHydrationWarning>
             {t('footer.rights', { year: new Date().getFullYear() })}
           </p>

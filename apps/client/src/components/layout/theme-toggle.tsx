@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Moon, Sun } from 'lucide-react';
-import { useT } from '../../i18n/locale-provider';
+import { useT } from '../../i18n/use-locale';
 import { cn } from '../../lib/utils';
 
 /** Toggles `.dark` on <html> and persists to localStorage (DESIGN.md §2/§9). */

@@ -2,7 +2,7 @@
 
 import { Facebook } from 'lucide-react';
 import { Button } from '@repo/ui';
-import { useT } from '../../i18n/locale-provider';
+import { useT } from '../../i18n/use-locale';
 
 /** OAuth sign-in buttons — the only auth path (Golden Rule #5: Google + Facebook,
  * no email/password). Handlers are no-ops until wired through `@repo/sdk`. */

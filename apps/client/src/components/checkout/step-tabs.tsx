@@ -1,8 +1,8 @@
 'use client';
 
 import { Check } from 'lucide-react';
-import { useT } from '../../i18n/locale-provider';
-import type { MessageKey } from '../../i18n/locale-provider';
+import { useT } from '../../i18n/use-locale';
+import type { MessageKey } from '../../i18n/use-locale';
 import { cn } from '../../lib/utils';
 
 export type CheckoutStep = 'cart' | 'info' | 'shipping' | 'review';
