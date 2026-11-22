@@ -35,3 +35,28 @@ html[lang='vi'] {
     @apply bg-background text-foreground;
   }
 }
+
+/* Live shopping floating hearts (components/live/reaction-button.tsx). */
+@keyframes liveFloat {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--live-drift, 0), -180px, 0) scale(1.2);
+  }
+}
+
+.live-heart {
+  animation: liveFloat 2.2s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-heart {
+    display: none;
+  }
+}

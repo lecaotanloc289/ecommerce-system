@@ -27,6 +27,7 @@ const menuLinks: { key: MessageKey; href?: string }[] = [
   { key: 'nav.home', href: '/' },
   { key: 'nav.categories', href: '/categories' },
   { key: 'nav.shop', href: '/search' },
+  { key: 'live.nav', href: '/live' },
   { key: 'nav.blog' },
   { key: 'nav.pages' },
 ];

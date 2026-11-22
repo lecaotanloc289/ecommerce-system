@@ -27,6 +27,8 @@ Tất cả màn hình: **desktop 1440px**. Mobile không có trong kit → tự 
 | 011 | Register Alt                  | 1440×1688  | 5        |
 | 012 | Sign In                       | 1440×1298  | 5        |
 | 011 | Sign In Alt                   | 1440×1578  | 5        |
+| 013 | Live list (`/live`)           | ngoài kit  | 3        |
+| 014 | Live watch (`/live/[id]`)     | ngoài kit  | 5        |
 
 ---
 
@@ -192,6 +194,22 @@ Component chính: Navbar/Link/16/normal ×7 · Navbar/Link/16/dropdown ×2 · Fo
 5. **Base Element/Footer/001** (500px) — `Navbar/Link/16/normal ×4` · `Base Element/Footer/001` — _"Elma" / "Home"_
 
 Component chính: Navbar/Link/16/normal ×7 · Parts/Sign In & Register/Benefit Item/002 ×4 · Navbar/Link/16/dropdown ×2 · Forms/Input/Normal/Large/Filled ×2 · Base Element/Navbar/003 · Label/Notif · Base Element/Footer/001 · Elements/Brand Logo/Full width/6 Brand with text
+
+### 013 Live list (`/live`) — ngoài kit
+
+1. **Base Element/Navbar/003** — shared navbar
+2. **Live tabs + cards** — tabs _Live now_ / _Upcoming_ / _Replays_; card: thumbnail, LIVE badge + viewer count (LIVE), scheduled time (SCHEDULED), replay duration (ENDED)
+3. **Base Element/Footer/001** — shared footer
+
+### 014 Live watch (`/live/[id]`) — ngoài kit
+
+1. **Base Element/Navbar/003** — shared navbar
+2. **Player** — Cloudflare Stream iframe; LIVE badge + viewer count; states: LIVE · SCHEDULED (not started) · ENDED with replay · ENDED replay processing
+3. **Pinned product card** — add-to-cart; **Products drawer** lists the session's products
+4. **Chat** — message list + composer; sign-in prompt replaces composer when signed out; heart reactions
+5. **Base Element/Footer/001** — shared footer
+
+Layout: mobile — video full width, chat list overlaid on the video, composer below the video; desktop — video + 360px side panel (chat, pinned product).
 
 ## Ghi chú khi code
 
