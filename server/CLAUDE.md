@@ -34,6 +34,7 @@ Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) 
 - Vendor catalog module (`src/vendor/`) — vendor products, variant stock, shipping methods; see "Vendor catalog" below.
 - Storage module (`src/storage/`): presigned uploads to S3-compatible storage — see "Storage / uploads" below.
 - Vendor applications module (`src/vendor-applications/`) — KYC apply + platform approval, see "Vendor applications" below.
+- Refunds module (`src/refunds/`) — admin refund of a whole sub-order + console list, see "Refunds" below.
 - Not started: payment webhooks, vendor fulfilment, payouts, outbox dispatcher (worker).
 
 ## Idempotency (Golden Rule #3, roadmap D9)
@@ -54,7 +55,7 @@ Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) 
 `@fastify/rate-limit` registered by `registerRateLimit(app)` (`src/common/rate-limit.ts`, called in `main.ts` before `listen`), Redis store (keys `rl:*`), per client IP.
 
 - **Client IP:** `clientIp()` takes the address `TRUSTED_PROXY_HOPS` (default 0 = socket peer; `fly.toml` sets 1 for the Fly edge) entries into `request.ips` (socket peer first, then X-Forwarded-For from nearest). Entries further left are client-supplied and ignored, so spoofing XFF cannot reset a bucket. Do **not** key on `request.ip`: `trustProxy: true` makes it the leftmost, spoofable XFF entry. Default `0` so a run without a proxy (local, direct internal address) never trusts a client-supplied XFF; only set it to the exact number of proxies that always sit in front of the API.
-- **Buckets:** every route shares one bucket of `RATE_LIMIT_MAX` (default 100) per `RATE_LIMIT_WINDOW` (default `1m`). Sensitive handlers add `@RateLimit('strict')` (method-level; wraps Fastify `RouteConfig`): `RATE_LIMIT_STRICT_MAX` (default 20) in a bucket per method + route — currently all OAuth start/callback routes, `/auth/refresh`, `/auth/logout`, `POST /orders/checkout`, `POST /orders/:id/payments`; future payment routes must add it. `@SkipRateLimit()` exempts a handler (only `/health`, `/health/ready`).
+- **Buckets:** every route shares one bucket of `RATE_LIMIT_MAX` (default 100) per `RATE_LIMIT_WINDOW` (default `1m`). Sensitive handlers add `@RateLimit('strict')` (method-level; wraps Fastify `RouteConfig`): `RATE_LIMIT_STRICT_MAX` (default 20) in a bucket per method + route — currently all OAuth start/callback routes, `/auth/refresh`, `/auth/logout`, `POST /orders/checkout`, `POST /orders/:id/payments`, `POST /platform/sub-orders/:id/refund`; future payment routes must add it. `@SkipRateLimit()` exempts a handler (only `/health`, `/health/ready`).
 - Over the limit → 429 `common.error.rate-limited` + `retry-after` (the hook throws a `DomainError`, which Nest's Fastify error handler routes through `DomainErrorFilter`).
 - **Redis down:** the default bucket fails open (availability); strict routes fail closed (500) — they must not lose brute-force protection.
 - **Known limit:** a server-side caller (storefront SSR on Workers) shares its egress IP's bucket across all its users. When SSR starts calling the API, give it an allow-list / trusted-client key instead of raising the global limit.
@@ -212,6 +213,33 @@ One module, two controllers. The applicant is always `req.user.id`; no client `u
 **Self-review:** approve/reject by the applicant themself (staff are also customers) → 403 `common.error.forbidden`. Masking shows at most half of a short value (min(4, len/2) trailing chars). No DB constraint yet backs "one PENDING per user" / "one vendor per owner" (service locks only; a partial unique index needs a migration).
 
 **Approval transaction:** `SELECT … FROM vendor_applications WHERE id = $1 FOR UPDATE` → not found 404 `common.error.not-found`, not PENDING 409 `vendor.error.application-not-pending` (so approving twice / concurrently yields exactly one vendor) → slug taken or applicant already owns a vendor → 409 `common.error.conflict` (P2002 on the slug index maps to the same) → create Vendor ACTIVE + Wallet (`PlatformSettings.defaultCurrency`, balance 0) + `UserRole VENDOR_OWNER` (with vendorId) → application APPROVED + `reviewedById` + `reviewedAt` → outbox `vendor.application.approved` {applicationId, vendorId, userId} (`aggregateType` `vendor-application`). The applicant sees `VENDOR_OWNER` + `vendorId` from their next access-token refresh (roles re-read then; the current access token stays stale for ≤ 15m). Tests: `test/integration/vendor-applications.spec.ts`.
+
+## Refunds (`src/refunds/`, T3.5, roadmap D12)
+
+Admin-initiated, always the **whole** sub-order (`paid_i`, D7; no partial refunds — D15). `PlatformRefundsController` (`/v1/platform/...`), shapes in `@repo/core/schemas/refund`, money math in `@repo/core` `refundAmount` / `refundPostings`.
+
+| Endpoint                                           | Behaviour                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/platform/sub-orders/:id/refund {reason}` | `PLATFORM_ADMIN` only, `@Idempotent()` + `@RateLimit('strict')` → 201 `Refund`. Unknown sub-order → 404 `sub-order.error.not-found`; the admin is the order's customer → 403 `common.error.forbidden`; otherwise not refundable → 409 `refund.error.not-refundable {subOrderId, reason: 'status' \| 'payout-released' \| 'no-confirmed-payment' \| 'refund-exists'}`. |
+| `GET /v1/platform/refunds?status=&cursor=&limit=`  | `PLATFORM_STAFF \| PLATFORM_ADMIN`; newest first, `RefundPage` of `RefundListItem` (= `Refund` + `orderId` + `vendorId`).                                                                                                                                                                                                                                             |
+
+**Refund transaction** (`RefundsService`, one `$transaction`, 15s timeout):
+
+1. Lock the **order row first** (`SELECT … FROM orders JOIN sub_orders … FOR UPDATE OF o` — same first lock as cancel and payment confirmation), then the sub-order row (`FOR UPDATE`), so concurrent refunds and fulfilment transitions serialise.
+2. Refundable iff status ∈ {PAID, PROCESSING, SHIPPED, DELIVERED} **and** `payoutReleasedAt IS NULL` **and** the order has a CONFIRMED payment (latest `attemptNo`) **and** no PENDING/SUCCEEDED refund exists. COMPLETED is not refundable (payout window).
+3. Amount = `refundAmount` = `subtotal + shipping − discountAmount − platformDiscountAmount`; Σ non-FAILED refunds of the payment must stay ≤ `Payment.amount` (else 500, data corruption).
+4. Insert `Refund {PENDING, paymentId = the CONFIRMED payment, requestedById = admin}`. P2002 on the partial unique index `refunds_sub_order_id_active_key` → 409 not-refundable (backstop; the order lock already prevents it).
+5. Sub-order → REFUNDED (`updateMany … WHERE status = <current>`; count ≠ 1 → 409).
+6. Stock: only when the sub-order was PAID / PROCESSING (goods still with the vendor), `stock_on_hand += qty` per variant in variant-id order. From SHIPPED on the goods may never come back, so stock is **not** returned (the vendor corrects it via `PATCH /vendor/variants/:id/stock` if they do).
+7. Ledger, own `txnGroupId`, `entryType = REFUND`, `orderId` + `subOrderId` set, `vendorId` null (neither row is a vendor account): `PLATFORM_ESCROW −paid_i`, `CUSTOMER +paid_i`; `assertZeroSum`. Written now, not when the provider confirms — the escrow no longer owes this money to the vendor.
+8. `orders.status` = `deriveOrderStatus(...)` (PARTIALLY_REFUNDED / REFUNDED).
+9. Outbox `refund.requested {refundId, orderId, subOrderId}` (`aggregateType 'order'`).
+
+**`paid_i = 0`** (free shipping + 100% coupons): the Refund is created **SUCCEEDED** directly, no ledger rows (nothing moved), no `refund.requested` (no provider call); status/stock/order status still change.
+
+**Contract for the worker (T3.2 `refund.requested` handler):** skip unless the Refund is PENDING; call `provider.refund` for `Refund.amount` against the payment's `providerTxnId`; on success set SUCCEEDED + `providerRefundId` (`WHERE status = 'PENDING'`). On FAILED: keep the ledger and the sub-order REFUNDED (the customer is owed the money; the escrow already moved it to `CUSTOMER`), set the Refund FAILED, alert ops — a retry is a **new** PENDING Refund row for the same sub-order (the partial unique index allows it after FAILED) + a new `refund.requested`, not another call of this endpoint (the sub-order is already REFUNDED). Do not mark `Payment` REFUNDED while another sub-order of the order is still refundable — this endpoint requires a CONFIRMED payment. The payout job must skip sub-orders that are REFUNDED or have a PENDING/SUCCEEDED refund.
+
+Tests: `test/integration/refunds.spec.ts` (1 of 2 → PARTIALLY_REFUNDED, both → REFUNDED, ledger zero-sum + escrow balance, stock only before SHIPPED, payout released / COMPLETED blocked, sequential + concurrent double refund, idempotent replay, AWAITING_PAYMENT / CANCELLED / no confirmed payment, 0 amount, STAFF 403 / self-refund 403 / unknown 404, list filter + cursor).
 
 ## OpenAPI / SDK
 
