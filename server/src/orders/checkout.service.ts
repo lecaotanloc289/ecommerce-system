@@ -67,14 +67,22 @@ interface VendorGroup {
 export class CheckoutService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Returns the id of the created order, or of the order this key already created. */
-  async checkout(userId: string, input: Checkout, idempotencyKey: string): Promise<string> {
+  /**
+   * Returns the id of the created order, or of the order this key already created. `clientIp` is
+   * the caller IP (`clientIp()`), stored on the Payment for VNPay `vnp_IpAddr`.
+   */
+  async checkout(
+    userId: string,
+    input: Checkout,
+    idempotencyKey: string,
+    clientIp: string,
+  ): Promise<string> {
     // The Redis record (D9) normally answers replays; this covers an expired record or lost lock.
     const existing = await this.findByIdempotencyKey(userId, idempotencyKey, input);
     if (existing) return existing;
     try {
       return await this.prisma.client.$transaction(
-        (tx) => this.checkoutInTx(tx, userId, input, idempotencyKey),
+        (tx) => this.checkoutInTx(tx, userId, input, idempotencyKey, clientIp),
         { timeout: CHECKOUT_TX_TIMEOUT_MS },
       );
     } catch (error) {
@@ -133,6 +141,7 @@ export class CheckoutService {
     userId: string,
     input: Checkout,
     idempotencyKey: string,
+    clientIp: string,
   ): Promise<string> {
     const now = new Date();
 
@@ -338,6 +347,7 @@ export class CheckoutService {
         attemptNo: 1,
         amount: toDbAmount(priced.grandTotal),
         currency,
+        clientIp,
       },
     });
 

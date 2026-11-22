@@ -4,9 +4,11 @@ import {
   Get,
   Headers,
   HttpCode,
+  Inject,
   Param,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -17,7 +19,7 @@ import {
   type OrderSummaryPage,
   type PaymentSession,
 } from '@repo/core';
-import type { FastifyReply } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ZodResponse } from 'nestjs-zod';
 import type { AuthUser } from '../auth/auth.schemas';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -26,7 +28,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { IDEMPOTENCY_KEY_HEADER } from '../common/idempotency/idempotency.interceptor';
 import { Idempotent } from '../common/idempotency/idempotent.decorator';
-import { RateLimit } from '../common/rate-limit';
+import { clientIp, RateLimit } from '../common/rate-limit';
+import { ENV } from '../config/config.module';
+import type { Env } from '../config/env';
 import { BEARER_AUTH } from '../openapi/openapi';
 import { CheckoutService } from './checkout.service';
 import {
@@ -57,6 +61,7 @@ export class OrdersController {
   constructor(
     private readonly checkoutService: CheckoutService,
     private readonly orders: OrdersService,
+    @Inject(ENV) private readonly env: Env,
   ) {}
 
   @ApiOperation({
@@ -75,10 +80,12 @@ export class OrdersController {
     @CurrentUser() user: AuthUser,
     @Body() body: CheckoutDto,
     @Headers(IDEMPOTENCY_KEY_HEADER) idempotencyKey: string,
+    @Req() request: FastifyRequest,
   ): Promise<Order> {
     // Already validated by @Idempotent(); parsed again for the type.
     const key = IdempotencyKeySchema.parse(idempotencyKey);
-    const orderId = await this.checkoutService.checkout(user.id, body, key);
+    const ip = clientIp(request, this.env.TRUSTED_PROXY_HOPS);
+    const orderId = await this.checkoutService.checkout(user.id, body, key, ip);
     return this.orders.get(user.id, orderId);
   }
 
@@ -145,8 +152,10 @@ export class OrdersController {
     @CurrentUser() user: AuthUser,
     @Param() params: OrderParamsDto,
     @Body() body: PaymentRetryDto,
+    @Req() request: FastifyRequest,
   ): Promise<PaymentSession> {
-    return this.orders.retryPayment(user.id, params.id, body);
+    const ip = clientIp(request, this.env.TRUSTED_PROXY_HOPS);
+    return this.orders.retryPayment(user.id, params.id, body, ip);
   }
 
   @ApiOperation({
