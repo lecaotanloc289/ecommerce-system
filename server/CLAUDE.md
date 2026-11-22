@@ -32,9 +32,10 @@ Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) 
 - Catalog module (`src/catalog/`) — public read API, see below.
 - Orders module (`src/orders/`) — checkout + customer orders, see "Orders" below. Writes outbox rows; nothing dispatches them yet (worker = T2.2).
 - Vendor catalog module (`src/vendor/`) — vendor products, variant stock, shipping methods; see "Vendor catalog" below.
+- Vendor fulfilment + wallet module (`src/vendor-orders/`) — sub-order accept / ship / deliver, customer confirm-received, wallet + ledger; see "Fulfilment + wallet" below.
 - Storage module (`src/storage/`): presigned uploads to S3-compatible storage — see "Storage / uploads" below.
 - Vendor applications module (`src/vendor-applications/`) — KYC apply + platform approval, see "Vendor applications" below.
-- Not started: payment webhooks, vendor fulfilment, payouts, outbox dispatcher (worker).
+- Not started: payment webhooks, payouts, outbox dispatcher (worker).
 
 ## Idempotency (Golden Rule #3, roadmap D9)
 
@@ -141,6 +142,8 @@ All routes `@Roles('CUSTOMER')`, scoped to `req.user.id`; another user's order i
 | `POST /v1/orders/:id/cancel`   | `@Idempotent()`, → 200 `Order` (CANCELLED). Only while every sub-order is AWAITING_PAYMENT, else 409 `order.error.invalid-status-transition`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `POST /v1/orders/:id/payments` | `@Idempotent()` + strict, body `PaymentRetry {provider?}` → 201 `PaymentSession` (new attempt, PENDING, no session yet — poll as above). Order AWAITING_PAYMENT (else 409 invalid-status-transition), `paymentDeadlineAt` not passed and latest attempt FAILED, PENDING past `expiresAt`, or PENDING still without `redirectUrl` 2 min (`SESSION_CREATION_TIMEOUT_MS`) after creation (else 409 `payment.error.retry-not-allowed` `{reason: 'deadline-passed' \| 'payment-pending'}`). The provider must support the order currency (else 422 `payment.error.provider-currency-unsupported`). The expired/stuck PENDING attempt becomes FAILED; `attemptNo + 1`, amount = order grand total, provider defaults to the previous one; outbox `payment.requested`. |
 
+`POST /v1/orders/:orderId/sub-orders/:id/confirm-received` (customer confirms receipt) is documented under "Fulfilment + wallet" below.
+
 **Checkout transaction** (`CheckoutService`, one interactive `$transaction`, READ COMMITTED + row locks, 15s timeout; any error rolls back everything):
 
 1. `PlatformSettings` (missing → 500) and the buyer (`primaryLocale`).
@@ -155,7 +158,7 @@ All routes `@Roles('CUSTOMER')`, scoped to `req.user.id`; another user's order i
 
 - **Idempotency backstop:** before the transaction, and again after **any** failure of it (a concurrent same-key winner shows up as P2002 on `orders.idempotency_key`, or as out-of-stock on the unit it just reserved), the order with that key is looked up: same user + same items/shipping methods/provider → that order is returned (201); another user or a different body → 422 `idempotency.error.key-reused` (address and coupon codes are not compared). Known limit: the key is unique globally, not per user (fixing it needs a migration to `(customer_id, idempotency_key)`); random ULID keys make collisions impractical.
 - **Grand total 0** (free shipping + 100% coupons) is allowed and still creates a PENDING payment of 0 + `payment.requested`: the worker (T2.2) must not open a provider session for 0 and should confirm it through the same path as a webhook (T3.1), so stock commit and ledger stay in one place.
-- **Outbox** (`aggregateType = 'order'`, `aggregateId = orderId`; payload schemas in `@repo/core/schemas/outbox`, ids only): `order.created {orderId, customerId}`, `payment.requested {orderId, paymentId, provider, attemptNo}`, `order.cancelled {orderId, customerId, reason: 'CUSTOMER' | 'PAYMENT_EXPIRED'}`.
+- **Outbox** (`aggregateType = 'order'`, `aggregateId = orderId`; payload schemas in `@repo/core/schemas/outbox`, ids only): `order.created {orderId, customerId}`, `payment.requested {orderId, paymentId, provider, attemptNo}`, `order.cancelled {orderId, customerId, reason: 'CUSTOMER' | 'PAYMENT_EXPIRED'}`; fulfilment adds `sub-order.shipped` / `sub-order.delivered {orderId, subOrderId, customerId}` and `sub-order.completed {orderId, subOrderId, vendorId}`.
 
 **Cancellation contract** — `cancelOrder(tx, orderId, reason)` in `order-cancellation.ts`, shared with the payment-expiry job (T3.2 mirrors it; returns `'cancelled' | 'not-found' | 'not-cancellable'` without writing in the last two cases): lock the order row (`SELECT … FOR UPDATE` — the payment confirmation must take the same lock first); require every sub-order AWAITING_PAYMENT; sub-orders → CANCELLED + `cancelledAt` with `WHERE status = 'AWAITING_PAYMENT'` (count mismatch throws → rollback); release `stock_reserved` per variant in id order, clamped at 0; delete the order's CouponRedemptions; PENDING payments → FAILED; `orders.status` = `deriveOrderStatus(...)`; outbox `order.cancelled`. Ownership is checked by the caller; it does not look at `paymentDeadlineAt` — the expiry job selects overdue orders itself and passes `PAYMENT_EXPIRED`. The clamp at 0 is only a safety net (the status guard prevents a double release).
 
@@ -185,6 +188,38 @@ All routes `@Roles('VENDOR_OWNER','VENDOR_STAFF')`; the vendor comes ONLY from `
 - **Images:** array order = display order (`sortOrder` = index); `{ key }` is checked with `StorageService.assertOwnedKey(key, { type: 'vendor', vendorId })` and stored as `publicUrl(key)` in `ProductImage.url` (what public catalog reads return); `{ id }` keeps an own image (foreign id -> 404 `common.error.not-found`); images not listed are deleted (DB rows only, objects stay in S3). `Product.primaryImageUrl` = the first image (lowest `sortOrder`) or null.
 - **Search:** `product_translations.search_vector` is a _generated_ column (no trigger, nothing to maintain in the app); a published product is searchable immediately and a rename is picked up on PUT.
 - Tests: `test/integration/vendor-catalog.spec.ts`.
+
+## Fulfilment + wallet (`src/vendor-orders/`, T3.3)
+
+Vendor routes reuse the vendor-catalog scope: `@Roles('VENDOR_OWNER','VENDOR_STAFF')` + `VendorMembershipGuard`, vendor ONLY from `req.user.vendorId` (`requireVendorId`), writes re-check `vendors.status` (`assertVendorActive`, SUSPENDED → 403 `vendor.error.suspended`), mutations `@Idempotent()`. Vendors only see **paid** sub-orders (`VendorSubOrderStatus` = PAID..COMPLETED + REFUNDED): AWAITING_PAYMENT and CANCELLED ones — and another vendor's — are 404 `sub-order.error.not-found` / absent from lists. Shapes: `@repo/core/schemas/order` (`VendorSubOrder`, `VendorSubOrderPage`, `VendorSubOrderQuery`, `SubOrderShip`) + `wallet` (`VendorWallet`, `LedgerEntryPage`).
+
+| Endpoint                                                        | Behaviour                                                                                                                                                                                                                                                   |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/vendor/sub-orders?status&cursor&limit`                 | Own paid sub-orders newest first (`VendorSubOrderPage`); `status` must be a `VendorSubOrderStatus` (else 422)                                                                                                                                               |
+| `GET /v1/vendor/sub-orders/:id`                                 | `VendorSubOrder`: items, shipping address snapshot (customer contact = `shippingAddress.recipientName` / `phone`, never the user profile/email), `total` (paid_i), `commission`, `net` = subtotal + shipping − vendorDiscount − commission (D7)             |
+| `POST /v1/vendor/sub-orders/:id/accept`                         | PAID → PROCESSING (no outbox event)                                                                                                                                                                                                                         |
+| `POST /v1/vendor/sub-orders/:id/ship {carrier, trackingNumber}` | PROCESSING → SHIPPED, sets `carrier`, `trackingNumber`, `shippedAt`; outbox `sub-order.shipped`                                                                                                                                                             |
+| `POST /v1/vendor/sub-orders/:id/deliver`                        | SHIPPED → DELIVERED, sets `deliveredAt`; outbox `sub-order.delivered`                                                                                                                                                                                       |
+| `POST /v1/orders/:orderId/sub-orders/:id/confirm-received`      | Customer (`OrdersController`): SHIPPED \| DELIVERED → COMPLETED, sets `completedAt` (+ `deliveredAt` if still null); outbox `sub-order.completed`; returns the `Order`                                                                                      |
+| `GET /v1/vendor/wallet`                                         | `VENDOR_OWNER` only. `{ id, vendorId, balance, pending[] }`: `balance` = `Wallet.balance` (released payouts); `pending` = Σ net of own sub-orders in PAID..COMPLETED with `payoutReleasedAt IS NULL`, one Money per currency (alphabetical; `[]` when none) |
+| `GET /v1/vendor/ledger?cursor&limit`                            | `VENDOR_OWNER` only. Own `LedgerEntry` rows with `account = VENDOR_WALLET AND vendor_id = me`, newest first; escrow / revenue lines never leave                                                                                                             |
+
+**State machine** — `@repo/core` `SUB_ORDER_TRANSITIONS` / `canTransition(from, to, actor)` / `assertTransition` (`packages/core/src/orders/sub-order-state.ts`), the one table every writer of `SubOrder.status` must respect:
+
+| From                                    | To         | Actor                                  |
+| --------------------------------------- | ---------- | -------------------------------------- |
+| AWAITING_PAYMENT                        | PAID       | SYSTEM (payment confirmation, T3.1)    |
+| AWAITING_PAYMENT                        | CANCELLED  | CUSTOMER, SYSTEM (expiry)              |
+| PAID                                    | PROCESSING | VENDOR                                 |
+| PROCESSING                              | SHIPPED    | VENDOR                                 |
+| SHIPPED                                 | DELIVERED  | VENDOR                                 |
+| SHIPPED                                 | COMPLETED  | CUSTOMER                               |
+| DELIVERED                               | COMPLETED  | CUSTOMER, SYSTEM (auto-complete, T3.2) |
+| PAID / PROCESSING / SHIPPED / DELIVERED | REFUNDED   | PLATFORM (T3.5)                        |
+
+COMPLETED, REFUNDED and CANCELLED are terminal. Anything else → 409 `order.error.invalid-status-transition {from, to}`.
+
+**Transition contract** — `transitionSubOrder(tx, ref, target)` (`src/orders/sub-order-transition.ts`; used by the vendor service and `OrdersService.confirmReceived`; the T3.2 auto-complete job lives in `workers/` and cannot import it, so it mirrors these steps with `assertTransition('DELIVERED', 'COMPLETED', 'SYSTEM')`). One `$transaction` per request; the caller first resolves the sub-order **scoped** to the vendor / customer, then: lock the ORDER row (`SELECT … FOR UPDATE`, same lock order as checkout / cancel / payment confirmation) → VENDOR moves `assertVendorActive` → re-read the status under the lock and `assertTransition` → `UPDATE … WHERE id = ? AND status = <from>` (0 rows → 409) + timestamps → `orders.status = deriveOrderStatus(all sub-orders)` → outbox (`aggregateType = 'order'`, `aggregateId = orderId`). Two concurrent accepts serialise on the order lock: one 200, the other 409. Wallet / ledger reads re-check in the DB that the caller holds `VENDOR_OWNER` on `vendorId` (a user can own one vendor and be staff of another). Tests: `test/integration/vendor-fulfilment.spec.ts`.
 
 ## Storage / uploads (roadmap D13)
 
