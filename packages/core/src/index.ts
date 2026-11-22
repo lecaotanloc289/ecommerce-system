@@ -10,6 +10,7 @@ export * from './errors';
 export * from './schemas';
 export * from './pricing';
 export * from './orders';
+export * from './crm';
 
 // Money helpers are namespaced (`Money.of`, `Money.add`, `Money.allocate`, …) so generic
 // names like `add` / `sum` / `zero` don't pollute consumers' scope. Value + type share the

@@ -88,6 +88,18 @@ export const ERROR_CODES = [
   'product.error.not-publishable',
   'product.error.variant-in-use',
   'product.error.stock-below-reserved',
+  // vendor CRM + notifications
+  'crm.error.not-a-customer',
+  'crm.error.note-not-found',
+  'crm.error.campaign-not-found',
+  'crm.error.campaign-not-editable',
+  'crm.error.campaign-limit-reached',
+  'crm.error.coupon-invalid',
+  'crm.error.links-not-allowed',
+  'crm.error.unknown-placeholder',
+  'crm.error.empty-audience',
+  'crm.error.unsubscribe-invalid',
+  'notification.error.not-found',
 ] as const;
 
 export const ErrorCodeSchema = z.enum(ERROR_CODES);
@@ -160,6 +172,17 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'product.error.not-publishable': 422,
   'product.error.variant-in-use': 409,
   'product.error.stock-below-reserved': 409,
+  'crm.error.not-a-customer': 404,
+  'crm.error.note-not-found': 404,
+  'crm.error.campaign-not-found': 404,
+  'crm.error.campaign-not-editable': 409,
+  'crm.error.campaign-limit-reached': 429,
+  'crm.error.coupon-invalid': 422,
+  'crm.error.links-not-allowed': 422,
+  'crm.error.unknown-placeholder': 422,
+  'crm.error.empty-audience': 422,
+  'crm.error.unsubscribe-invalid': 404,
+  'notification.error.not-found': 404,
 };
 
 /** Interpolation values for the translated message (e.g. `{ sku, available }`). */

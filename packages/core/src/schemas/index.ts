@@ -21,3 +21,5 @@ export * from './vendor-invitation';
 export * from './product-admin';
 export * from './catalog';
 export * from './platform-admin';
+export * from './crm';
+export * from './notification';
