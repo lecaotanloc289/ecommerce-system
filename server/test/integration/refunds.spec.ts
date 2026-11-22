@@ -152,8 +152,8 @@ describe('platform refunds API (Testcontainers)', () => {
         const txnGroupId = ulid();
         await t.db.ledgerEntry.createMany({
           data: [
-            { account: 'CUSTOMER', amount: BigInt(-b.paid) },
-            { account: 'PLATFORM_ESCROW', amount: BigInt(b.paid) },
+            { account: 'CUSTOMER' as const, amount: BigInt(-b.paid) },
+            { account: 'PLATFORM_ESCROW' as const, amount: BigInt(b.paid) },
           ].map((e) => ({
             ...e,
             id: ulid(),
