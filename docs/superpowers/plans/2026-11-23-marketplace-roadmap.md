@@ -243,6 +243,7 @@
 ### T5.1 — Storefront: giỏ hàng + checkout + đơn hàng · **sonnet**
 
 - Cart page: guest dùng localStorage như cũ; đăng nhập → gọi `POST /v1/cart/merge` một lần rồi dùng server cart. Checkout info (chọn/thêm địa chỉ), shipping (chọn phương thức **theo từng vendor**), payment (VNPay/Stripe), review (nhập coupon, tổng do server tính — dùng preview hoặc hiển thị theo `priceOrder` client-side chỉ để xem, số cuối cùng là của server), Place order: gửi `Idempotency-Key` cố định cho lần bấm đó, poll `GET /orders/:id/payment`, redirect. Order success + track order đọc API (timeline từ status + timestamps + tracking). Trang `/account/orders`, `/account/orders/[id]` (nút "Đã nhận hàng", huỷ, thanh toán lại).
+- Checkout gửi `zaloOptIn` từ `useCheckout().zaloOptIn` (checkbox ở bước Review đã có, mặc định tắt — D16).
 - **Test:** Playwright: guest thêm giỏ → đăng nhập (mock) → giỏ gộp → checkout 2 vendor → trang chờ thanh toán (provider sandbox mock) → success.
 
 ### T5.2 — Storefront: tài khoản, đăng ký bán hàng, review · **sonnet**
@@ -253,6 +254,7 @@
 ### T5.3 — Admin: vendor portal · **sonnet**
 
 - `/vendor/products` (list, tạo/sửa với translations vi/en, variants, upload ảnh, publish/archive, chỉnh tồn kho), `/vendor/orders` (list theo trạng thái, chi tiết, accept/ship/deliver), `/vendor/shipping`, `/vendor/wallet` (số dư, pending, ledger), `/vendor/staff` (mời, thu hồi), `/invite` accept.
+- `/vendor/zalo` (D16, API `server/CLAUDE.md` "Zalo notifications"): thẻ tài khoản (trạng thái ACTIVE/EXPIRED/DISCONNECTED, tên + avatar, lastSeenAt; EXPIRED → nhắc quét lại), nút **Kết nối / Quét lại** (chỉ owner) → `POST /v1/vendor/zalo/login-requests` rồi poll `GET …/login-requests/:loginId` mỗi 1s: hiện `qrImage`, SCANNED → "xác nhận trên điện thoại", SUCCESS/EXPIRED/DECLINED/FAILED (`already-linked` → báo số Zalo đã gắn shop khác), dừng poll khi rời trang; nút ngắt kết nối (owner, confirm); form mẫu tin cho từng `ZaloMessageEvent` (bật/tắt, textarea với chèn nhanh các `placeholders`, preview bằng `renderZaloTemplate` với dữ liệu mẫu, `delayMinutes` chỉ cho AFTER_DELIVERY, lỗi 422 `zalo.error.unknown-placeholder`); bảng nhật ký `GET /v1/vendor/zalo/messages` (lọc status, `skipReason` dịch qua i18n). Staff chỉ xem + sửa mẫu tin.
 - **Test:** Vitest component các form chính; Playwright smoke: vendor tạo sản phẩm → publish.
 
 ### T5.4 — Admin: platform console · **sonnet**
