@@ -1,6 +1,1068 @@
 {
   "components": {
     "schemas": {
+      "AddressDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "pattern": "^[A-Z]{2}$",
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "line1": {
+            "type": "string"
+          },
+          "line2": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": "string"
+          },
+          "recipientName": {
+            "type": "string"
+          },
+          "ward": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "recipientName",
+          "phone",
+          "line1",
+          "line2",
+          "ward",
+          "district",
+          "city",
+          "country",
+          "isDefault"
+        ],
+        "type": "object"
+      },
+      "AddressInputDto": {
+        "properties": {
+          "city": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "country": {
+            "default": "VN",
+            "pattern": "^[A-Z]{2}$",
+            "type": "string"
+          },
+          "district": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "isDefault": {
+            "default": false,
+            "type": "boolean"
+          },
+          "line1": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "line2": {
+            "maxLength": 200,
+            "type": "string"
+          },
+          "phone": {
+            "pattern": "^\\+?[0-9][0-9 ()-]{6,22}$",
+            "type": "string"
+          },
+          "recipientName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "ward": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipientName",
+          "phone",
+          "line1",
+          "ward",
+          "district",
+          "city"
+        ],
+        "type": "object"
+      },
+      "AddressListDto_Output": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "city": {
+              "type": "string"
+            },
+            "country": {
+              "pattern": "^[A-Z]{2}$",
+              "type": "string"
+            },
+            "district": {
+              "type": "string"
+            },
+            "id": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            },
+            "isDefault": {
+              "type": "boolean"
+            },
+            "line1": {
+              "type": "string"
+            },
+            "line2": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "phone": {
+              "type": "string"
+            },
+            "recipientName": {
+              "type": "string"
+            },
+            "ward": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "recipientName",
+            "phone",
+            "line1",
+            "line2",
+            "ward",
+            "district",
+            "city",
+            "country",
+            "isDefault"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "AddressUpdateDto": {
+        "properties": {
+          "city": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "country": {
+            "pattern": "^[A-Z]{2}$",
+            "type": "string"
+          },
+          "district": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "line1": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "line2": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "pattern": "^\\+?[0-9][0-9 ()-]{6,22}$",
+            "type": "string"
+          },
+          "recipientName": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "ward": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CartDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "currencies": {
+            "items": {
+              "enum": [
+                "VND",
+                "USD"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "lines": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "propertyNames": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "imageUrl": {
+                        "anyOf": [
+                          {
+                            "format": "uri",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "lineTotal": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amount": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "currency": {
+                            "enum": [
+                              "VND",
+                              "USD"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "type": "object"
+                      },
+                      "productId": {
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                        "type": "string"
+                      },
+                      "productName": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "productSlug": {
+                        "maxLength": 160,
+                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "maximum": 999,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "stockAvailable": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "unavailable": {
+                        "type": "boolean"
+                      },
+                      "unitPrice": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amount": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "currency": {
+                            "enum": [
+                              "VND",
+                              "USD"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "type": "object"
+                      },
+                      "variantId": {
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                        "type": "string"
+                      },
+                      "vendorId": {
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "variantId",
+                      "productId",
+                      "vendorId",
+                      "productName",
+                      "productSlug",
+                      "attributes",
+                      "imageUrl",
+                      "unitPrice",
+                      "quantity",
+                      "lineTotal",
+                      "stockAvailable",
+                      "unavailable"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "subtotals": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "amount": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "currency": {
+                        "enum": [
+                          "VND",
+                          "USD"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "amount",
+                      "currency"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "vendorId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "vendorName": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "vendorSlug": {
+                  "maxLength": 160,
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "vendorId",
+                "vendorSlug",
+                "vendorName",
+                "lines",
+                "subtotals"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "hasMixedCurrency": {
+            "type": "boolean"
+          },
+          "itemCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "groups",
+          "itemCount",
+          "hasMixedCurrency",
+          "currencies"
+        ],
+        "type": "object"
+      },
+      "CartItemSetDto": {
+        "properties": {
+          "quantity": {
+            "maximum": 999,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "CartMergeInputDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "properties": {
+                "quantity": {
+                  "maximum": 999,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "variantId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "variantId",
+                "quantity"
+              ],
+              "type": "object"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "CartMergeResultDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "adjustments": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "appliedQuantity": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "reason": {
+                  "enum": [
+                    "UNAVAILABLE",
+                    "CLAMPED"
+                  ],
+                  "type": "string"
+                },
+                "requestedQuantity": {
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991,
+                  "type": "integer"
+                },
+                "variantId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "variantId",
+                "reason",
+                "requestedQuantity",
+                "appliedQuantity"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "cart": {
+            "additionalProperties": false,
+            "properties": {
+              "currencies": {
+                "items": {
+                  "enum": [
+                    "VND",
+                    "USD"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "groups": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "lines": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "attributes": {
+                            "additionalProperties": {
+                              "type": "string"
+                            },
+                            "propertyNames": {
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "type": "object"
+                          },
+                          "imageUrl": {
+                            "anyOf": [
+                              {
+                                "format": "uri",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "lineTotal": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "amount": {
+                                "maximum": 9007199254740991,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "currency": {
+                                "enum": [
+                                  "VND",
+                                  "USD"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "amount",
+                              "currency"
+                            ],
+                            "type": "object"
+                          },
+                          "productId": {
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                            "type": "string"
+                          },
+                          "productName": {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "productSlug": {
+                            "maxLength": 160,
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "maximum": 999,
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "stockAvailable": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "unavailable": {
+                            "type": "boolean"
+                          },
+                          "unitPrice": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "amount": {
+                                "maximum": 9007199254740991,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "currency": {
+                                "enum": [
+                                  "VND",
+                                  "USD"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "amount",
+                              "currency"
+                            ],
+                            "type": "object"
+                          },
+                          "variantId": {
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                            "type": "string"
+                          },
+                          "vendorId": {
+                            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "variantId",
+                          "productId",
+                          "vendorId",
+                          "productName",
+                          "productSlug",
+                          "attributes",
+                          "imageUrl",
+                          "unitPrice",
+                          "quantity",
+                          "lineTotal",
+                          "stockAvailable",
+                          "unavailable"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "subtotals": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amount": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "currency": {
+                            "enum": [
+                              "VND",
+                              "USD"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "vendorId": {
+                      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                      "type": "string"
+                    },
+                    "vendorName": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "vendorSlug": {
+                      "maxLength": 160,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "vendorId",
+                    "vendorSlug",
+                    "vendorName",
+                    "lines",
+                    "subtotals"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "hasMixedCurrency": {
+                "type": "boolean"
+              },
+              "itemCount": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "groups",
+              "itemCount",
+              "hasMixedCurrency",
+              "currencies"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "cart",
+          "adjustments"
+        ],
+        "type": "object"
+      },
+      "CartShippingOptionsDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "groups": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "methods": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "estDays": {
+                        "maximum": 60,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "id": {
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                        "type": "string"
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      },
+                      "name": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "price": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amount": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "currency": {
+                            "enum": [
+                              "VND",
+                              "USD"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "type": "object"
+                      },
+                      "vendorId": {
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "vendorId",
+                      "name",
+                      "price",
+                      "estDays",
+                      "isActive"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "vendorId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "vendorId",
+                "methods"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "type": "object"
+      },
+      "CategoryDetailDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "breadcrumb": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "parentId": {
+                  "anyOf": [
+                    {
+                      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "slug": {
+                  "maxLength": 160,
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                  "type": "string"
+                },
+                "sortOrder": {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "parentId",
+                "sortOrder",
+                "name",
+                "slug"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "children": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "parentId": {
+                  "anyOf": [
+                    {
+                      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "slug": {
+                  "maxLength": 160,
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                  "type": "string"
+                },
+                "sortOrder": {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "parentId",
+                "sortOrder",
+                "name",
+                "slug"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "id": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "slug": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "sortOrder": {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "parentId",
+          "sortOrder",
+          "name",
+          "slug",
+          "breadcrumb",
+          "children"
+        ],
+        "type": "object"
+      },
+      "CategoryTreeDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryTreeDto_Output__schema0_Output"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "CategoryTreeDto_Output__schema0_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryTreeDto_Output__schema0_Output"
+            },
+            "type": "array"
+          },
+          "id": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "slug": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "sortOrder": {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "parentId",
+          "sortOrder",
+          "name",
+          "slug",
+          "children"
+        ],
+        "type": "object"
+      },
+      "CheckoutDto": {
+        "properties": {
+          "addressId": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "couponCodes": {
+            "default": [],
+            "items": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "properties": {
+                "quantity": {
+                  "maximum": 999,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "variantId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "variantId",
+                "quantity"
+              ],
+              "type": "object"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          },
+          "provider": {
+            "enum": [
+              "VNPAY",
+              "STRIPE"
+            ],
+            "type": "string"
+          },
+          "shippingMethodIds": {
+            "items": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "addressId",
+          "shippingMethodIds",
+          "provider"
+        ],
+        "type": "object"
+      },
       "HealthReadyResponseDto_Output": {
         "additionalProperties": false,
         "properties": {
@@ -108,6 +1170,1236 @@
         ],
         "type": "object"
       },
+      "OrderDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "type": "string"
+          },
+          "discountTotal": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "currency": {
+                "enum": [
+                  "VND",
+                  "USD"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ],
+            "type": "object"
+          },
+          "grandTotal": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "currency": {
+                "enum": [
+                  "VND",
+                  "USD"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ],
+            "type": "object"
+          },
+          "id": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "itemsTotal": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "currency": {
+                "enum": [
+                  "VND",
+                  "USD"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ],
+            "type": "object"
+          },
+          "paymentDeadlineAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shippingTotal": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "currency": {
+                "enum": [
+                  "VND",
+                  "USD"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ],
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "AWAITING_PAYMENT",
+              "PAID",
+              "PARTIALLY_REFUNDED",
+              "REFUNDED",
+              "CANCELLED",
+              "COMPLETED"
+            ],
+            "type": "string"
+          },
+          "subOrders": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "cancelledAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "carrier": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "completedAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "createdAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "deliveredAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "items": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "propertyNames": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "type": "object"
+                      },
+                      "id": {
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                        "type": "string"
+                      },
+                      "lineTotal": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amount": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "currency": {
+                            "enum": [
+                              "VND",
+                              "USD"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "type": "object"
+                      },
+                      "productId": {
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                        "type": "string"
+                      },
+                      "productTitle": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "quantity": {
+                        "maximum": 9007199254740991,
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "unitPrice": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amount": {
+                            "maximum": 9007199254740991,
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "currency": {
+                            "enum": [
+                              "VND",
+                              "USD"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "type": "object"
+                      },
+                      "variantId": {
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "variantId",
+                      "productId",
+                      "productTitle",
+                      "attributes",
+                      "unitPrice",
+                      "quantity",
+                      "lineTotal"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "orderId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "platformDiscount": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "enum": [
+                        "VND",
+                        "USD"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "type": "object"
+                },
+                "shippedAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "shipping": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "enum": [
+                        "VND",
+                        "USD"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "type": "object"
+                },
+                "shippingAddress": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "city": {
+                      "type": "string"
+                    },
+                    "country": {
+                      "pattern": "^[A-Z]{2}$",
+                      "type": "string"
+                    },
+                    "district": {
+                      "type": "string"
+                    },
+                    "line1": {
+                      "type": "string"
+                    },
+                    "line2": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "phone": {
+                      "type": "string"
+                    },
+                    "recipientName": {
+                      "type": "string"
+                    },
+                    "ward": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "recipientName",
+                    "phone",
+                    "line1",
+                    "line2",
+                    "ward",
+                    "district",
+                    "city",
+                    "country"
+                  ],
+                  "type": "object"
+                },
+                "shippingMethodName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "AWAITING_PAYMENT",
+                    "PAID",
+                    "PROCESSING",
+                    "SHIPPED",
+                    "DELIVERED",
+                    "COMPLETED",
+                    "REFUNDED",
+                    "CANCELLED"
+                  ],
+                  "type": "string"
+                },
+                "subtotal": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "enum": [
+                        "VND",
+                        "USD"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "type": "object"
+                },
+                "total": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "enum": [
+                        "VND",
+                        "USD"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "type": "object"
+                },
+                "trackingNumber": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "vendorDiscount": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "enum": [
+                        "VND",
+                        "USD"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "type": "object"
+                },
+                "vendorId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "vendorName": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "orderId",
+                "vendorId",
+                "vendorName",
+                "status",
+                "items",
+                "subtotal",
+                "shipping",
+                "vendorDiscount",
+                "platformDiscount",
+                "total",
+                "shippingMethodName",
+                "shippingAddress",
+                "carrier",
+                "trackingNumber",
+                "shippedAt",
+                "deliveredAt",
+                "completedAt",
+                "cancelledAt",
+                "createdAt"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "itemsTotal",
+          "shippingTotal",
+          "discountTotal",
+          "grandTotal",
+          "paymentDeadlineAt",
+          "subOrders",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "OrderSummaryPageDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "createdAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "grandTotal": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "enum": [
+                        "VND",
+                        "USD"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "type": "object"
+                },
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "itemCount": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "status": {
+                  "enum": [
+                    "AWAITING_PAYMENT",
+                    "PAID",
+                    "PARTIALLY_REFUNDED",
+                    "REFUNDED",
+                    "CANCELLED",
+                    "COMPLETED"
+                  ],
+                  "type": "string"
+                },
+                "subOrderCount": {
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "status",
+                "grandTotal",
+                "itemCount",
+                "subOrderCount",
+                "createdAt"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "PaymentRetryDto": {
+        "properties": {
+          "provider": {
+            "enum": [
+              "VNPAY",
+              "STRIPE"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PaymentSessionDto": {
+        "properties": {
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "redirectUrl": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "FAILED",
+              "REFUNDED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "redirectUrl",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "PaymentSessionDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "redirectUrl": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "FAILED",
+              "REFUNDED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "redirectUrl",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "PlatformSettingsPublicDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "defaultCurrency": {
+            "enum": [
+              "VND",
+              "USD"
+            ],
+            "type": "string"
+          },
+          "maxCouponStack": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "supportedCurrencies": {
+            "items": {
+              "enum": [
+                "VND",
+                "USD"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "supportedCurrencies",
+          "defaultCurrency",
+          "maxCouponStack"
+        ],
+        "type": "object"
+      },
+      "PresignRequestDto": {
+        "properties": {
+          "contentType": {
+            "pattern": "^[a-z]+\\/[a-z0-9.+-]+$",
+            "type": "string"
+          },
+          "purpose": {
+            "enum": [
+              "kyc",
+              "product-image",
+              "vendor-logo"
+            ],
+            "type": "string"
+          },
+          "size": {
+            "exclusiveMinimum": 0,
+            "maximum": 20971520,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "purpose",
+          "contentType",
+          "size"
+        ],
+        "type": "object"
+      },
+      "PresignResponseDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "expiresAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "type": "string"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "key": {
+            "maxLength": 512,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._-]*(?:\\/[A-Za-z0-9_-][A-Za-z0-9._-]*)*$",
+            "type": "string"
+          },
+          "url": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "key",
+          "headers",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "ProductDetailDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "basePrice": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "currency": {
+                "enum": [
+                  "VND",
+                  "USD"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "amount",
+              "currency"
+            ],
+            "type": "object"
+          },
+          "categoryIds": {
+            "items": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "images": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "alt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "sortOrder": {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "url",
+                "alt",
+                "sortOrder"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "primaryImageUrl": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rating": {
+            "additionalProperties": false,
+            "properties": {
+              "average": {
+                "anyOf": [
+                  {
+                    "maximum": 5,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "count": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "distribution": {
+                "items": false,
+                "maxItems": 5,
+                "minItems": 5,
+                "prefixItems": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              }
+            },
+            "required": [
+              "average",
+              "count",
+              "distribution"
+            ],
+            "type": "object"
+          },
+          "slug": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "ARCHIVED",
+              "BLOCKED"
+            ],
+            "type": "string"
+          },
+          "variants": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "attributes": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "propertyNames": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "price": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "enum": [
+                        "VND",
+                        "USD"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "type": "object"
+                },
+                "productId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "sku": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "stockAvailable": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "productId",
+                "sku",
+                "attributes",
+                "price",
+                "stockAvailable"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "vendor": {
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "displayName": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "id": {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              "logoUrl": {
+                "anyOf": [
+                  {
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "slug": {
+                "maxLength": 160,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "slug",
+              "displayName",
+              "logoUrl",
+              "description"
+            ],
+            "type": "object"
+          },
+          "vendorId": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "vendorId",
+          "status",
+          "name",
+          "slug",
+          "description",
+          "basePrice",
+          "primaryImageUrl",
+          "images",
+          "categoryIds",
+          "variants",
+          "vendor",
+          "rating"
+        ],
+        "type": "object"
+      },
+      "ProductSummaryPageDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "basePrice": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "enum": [
+                        "VND",
+                        "USD"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "type": "object"
+                },
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "primaryImageUrl": {
+                  "anyOf": [
+                    {
+                      "format": "uri",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rating": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "average": {
+                      "anyOf": [
+                        {
+                          "maximum": 5,
+                          "minimum": 0,
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "count": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "average",
+                    "count"
+                  ],
+                  "type": "object"
+                },
+                "slug": {
+                  "maxLength": 160,
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                  "type": "string"
+                },
+                "vendorId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "vendorId",
+                "name",
+                "slug",
+                "basePrice",
+                "primaryImageUrl",
+                "rating"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "ProfileUpdateDto": {
+        "properties": {
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "primaryLocale": {
+            "enum": [
+              "VI",
+              "EN"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "TokenResponseDto_Output": {
         "additionalProperties": false,
         "properties": {
@@ -129,6 +2421,166 @@
           "accessToken",
           "tokenType",
           "expiresIn"
+        ],
+        "type": "object"
+      },
+      "VendorDetailDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "displayName": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "logoUrl": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "products": {
+            "additionalProperties": false,
+            "properties": {
+              "items": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "basePrice": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "amount": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "currency": {
+                          "enum": [
+                            "VND",
+                            "USD"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency"
+                      ],
+                      "type": "object"
+                    },
+                    "id": {
+                      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                      "type": "string"
+                    },
+                    "name": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "primaryImageUrl": {
+                      "anyOf": [
+                        {
+                          "format": "uri",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rating": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "average": {
+                          "anyOf": [
+                            {
+                              "maximum": 5,
+                              "minimum": 0,
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "count": {
+                          "maximum": 9007199254740991,
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "average",
+                        "count"
+                      ],
+                      "type": "object"
+                    },
+                    "slug": {
+                      "maxLength": 160,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "type": "string"
+                    },
+                    "vendorId": {
+                      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "vendorId",
+                    "name",
+                    "slug",
+                    "basePrice",
+                    "primaryImageUrl",
+                    "rating"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "nextCursor": {
+                "anyOf": [
+                  {
+                    "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "items",
+              "nextCursor"
+            ],
+            "type": "object"
+          },
+          "slug": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "displayName",
+          "logoUrl",
+          "description",
+          "products"
         ],
         "type": "object"
       }
@@ -314,6 +2766,341 @@
         ]
       }
     },
+    "/v1/cart": {
+      "get": {
+        "operationId": "CartController_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartDto_Output"
+                }
+              }
+            },
+            "description": "The cart"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Current cart, lines grouped by vendor",
+        "tags": [
+          "cart"
+        ]
+      }
+    },
+    "/v1/cart/items/{variantId}": {
+      "delete": {
+        "operationId": "CartController_removeItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "variantId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartDto_Output"
+                }
+              }
+            },
+            "description": "The updated cart"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a line (no-op when absent)",
+        "tags": [
+          "cart"
+        ]
+      },
+      "put": {
+        "operationId": "CartController_setItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "variantId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CartItemSetDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartDto_Output"
+                }
+              }
+            },
+            "description": "The updated cart"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set a line quantity (0 removes it)",
+        "tags": [
+          "cart"
+        ]
+      }
+    },
+    "/v1/cart/merge": {
+      "post": {
+        "description": "Adds the guest quantities to the existing lines, clamped to stock; unknown or unsellable variants are dropped. Returns the cart plus the adjustments to show the customer. Call it ONCE after login and then clear the guest cart: the same Idempotency-Key replays the first result, a new key adds the quantities again.",
+        "operationId": "CartController_merge",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CartMergeInputDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartMergeResultDto_Output"
+                }
+              }
+            },
+            "description": "Cart and adjustments"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Merge the guest cart after sign-in",
+        "tags": [
+          "cart"
+        ]
+      }
+    },
+    "/v1/cart/shipping-options": {
+      "get": {
+        "operationId": "CartController_shippingOptions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartShippingOptionsDto_Output"
+                }
+              }
+            },
+            "description": "Shipping options"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Active shipping methods of every vendor in the cart",
+        "tags": [
+          "cart"
+        ]
+      }
+    },
+    "/v1/categories": {
+      "get": {
+        "operationId": "CategoriesController_tree",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryTreeDto_Output"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Category tree (public)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/v1/categories/{slug}": {
+      "get": {
+        "operationId": "CategoriesController_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryDetailDto_Output"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Category by slug with breadcrumb and children (public)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/v1/health": {
       "get": {
         "operationId": "HealthController_check",
@@ -355,6 +3142,923 @@
         "summary": "Readiness probe (checks the database)",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/v1/me": {
+      "patch": {
+        "operationId": "MeController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponseDto_Output"
+                }
+              }
+            },
+            "description": "Updated profile"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update own profile (name, primaryLocale)",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/addresses": {
+      "get": {
+        "operationId": "MeController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressListDto_Output"
+                }
+              }
+            },
+            "description": "Addresses"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List own addresses (default first, then newest)",
+        "tags": [
+          "me"
+        ]
+      },
+      "post": {
+        "operationId": "MeController_create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressInputDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressDto_Output"
+                }
+              }
+            },
+            "description": "Created address"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add an address (the first one becomes the default)",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/addresses/{id}": {
+      "delete": {
+        "operationId": "MeController_remove",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an own address (deleting the default promotes the newest)",
+        "tags": [
+          "me"
+        ]
+      },
+      "patch": {
+        "operationId": "MeController_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressUpdateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressDto_Output"
+                }
+              }
+            },
+            "description": "Updated address"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Partially update an own address",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/me/addresses/{id}/default": {
+      "post": {
+        "operationId": "MeController_setDefault",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressDto_Output"
+                }
+              }
+            },
+            "description": "The new default address"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Make an own address the default",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/v1/orders": {
+      "get": {
+        "operationId": "OrdersController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderSummaryPageDto_Output"
+                }
+              }
+            },
+            "description": "One page of orders"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Order history, newest first (cursor pagination)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/v1/orders/checkout": {
+      "post": {
+        "description": "Prices, vendors, shipping fees and commission come from the DB. Returns the order with a PENDING payment whose provider session is created asynchronously: poll `GET /v1/orders/{id}/payment` for the redirect URL.",
+        "operationId": "OrdersController_checkout",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDto_Output"
+                }
+              }
+            },
+            "description": "The created order"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check out: split into one sub-order per vendor, reserve stock, request payment",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/v1/orders/{id}": {
+      "get": {
+        "operationId": "OrdersController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDto_Output"
+                }
+              }
+            },
+            "description": "The order"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "One own order with its sub-orders and items",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/v1/orders/{id}/cancel": {
+      "post": {
+        "operationId": "OrdersController_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDto_Output"
+                }
+              }
+            },
+            "description": "The cancelled order"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel an unpaid order (every sub-order still AWAITING_PAYMENT)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/v1/orders/{id}/payment": {
+      "get": {
+        "description": "202 while the latest attempt is PENDING and its provider session is not created yet (`redirectUrl: null`) — poll again (1s, up to 30s). 200 once there is a `redirectUrl`, or when the attempt is no longer PENDING (CONFIRMED / FAILED: check `status`). A PENDING session past `expiresAt` needs `POST /v1/orders/{id}/payments`.",
+        "operationId": "OrdersController_payment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentSessionDto_Output"
+                }
+              }
+            },
+            "description": "Session ready"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentSessionDto"
+                }
+              }
+            },
+            "description": "Session not ready yet"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Payment session of the latest attempt (poll after checkout)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/v1/orders/{id}/payments": {
+      "post": {
+        "description": "Optional `provider` switches the gateway. The new attempt is PENDING without a session; poll `GET /v1/orders/{id}/payment` as after checkout.",
+        "operationId": "OrdersController_retryPayment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentRetryDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentSessionDto_Output"
+                }
+              }
+            },
+            "description": "The new attempt"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a new payment attempt after the previous one failed or expired",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/v1/platform-settings/public": {
+      "get": {
+        "operationId": "PlatformSettingsPublicController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSettingsPublicDto_Output"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Currencies and limits the storefront needs (public)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/v1/products": {
+      "get": {
+        "operationId": "ProductsController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "categorySlug",
+            "required": false,
+            "schema": {
+              "maxLength": 160,
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vendorSlug",
+            "required": false,
+            "schema": {
+              "maxLength": 160,
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currency",
+            "required": false,
+            "schema": {
+              "enum": [
+                "VND",
+                "USD"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minPrice",
+            "required": false,
+            "schema": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maxPrice",
+            "required": false,
+            "schema": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "newest",
+              "enum": [
+                "newest",
+                "price_asc",
+                "price_desc",
+                "rating"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSummaryPageDto_Output"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "List visible products with filters, sort and cursor pagination",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/v1/products/{slug}": {
+      "get": {
+        "operationId": "ProductsController_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDetailDto_Output"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Product detail by slug (variants, images, vendor, rating summary)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/v1/search": {
+      "get": {
+        "operationId": "ProductsController_search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSummaryPageDto_Output"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Full-text + trigram product search",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/v1/uploads/presign": {
+      "post": {
+        "description": "`kyc` requires CUSTOMER; `product-image` / `vendor-logo` require VENDOR_OWNER or VENDOR_STAFF (vendor taken from the access token). The PUT body must be exactly `size` bytes.",
+        "operationId": "UploadsController_presign",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresignRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignResponseDto_Output"
+                }
+              }
+            },
+            "description": "Presigned PUT target"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Presign an upload (PUT to the returned URL with the returned headers)",
+        "tags": [
+          "uploads"
+        ]
+      }
+    },
+    "/v1/vendors/{slug}": {
+      "get": {
+        "operationId": "VendorsPublicController_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "default": "vi",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "categorySlug",
+            "required": false,
+            "schema": {
+              "maxLength": 160,
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currency",
+            "required": false,
+            "schema": {
+              "enum": [
+                "VND",
+                "USD"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minPrice",
+            "required": false,
+            "schema": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maxPrice",
+            "required": false,
+            "schema": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "newest",
+              "enum": [
+                "newest",
+                "price_asc",
+                "price_desc",
+                "rating"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorDetailDto_Output"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "summary": "Public shop page: vendor header + its products",
+        "tags": [
+          "catalog"
         ]
       }
     }

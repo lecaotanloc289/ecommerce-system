@@ -123,6 +123,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current cart, lines grouped by vendor */
+        get: operations["CartController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cart/items/{variantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set a line quantity (0 removes it) */
+        put: operations["CartController_setItem"];
+        post?: never;
+        /** Remove a line (no-op when absent) */
+        delete: operations["CartController_removeItem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cart/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge the guest cart after sign-in
+         * @description Adds the guest quantities to the existing lines, clamped to stock; unknown or unsellable variants are dropped. Returns the cart plus the adjustments to show the customer. Call it ONCE after login and then clear the guest cart: the same Idempotency-Key replays the first result, a new key adds the quantities again.
+         */
+        post: operations["CartController_merge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cart/shipping-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active shipping methods of every vendor in the cart */
+        get: operations["CartController_shippingOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Category tree (public) */
+        get: operations["CategoriesController_tree"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/categories/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Category by slug with breadcrumb and children (public) */
+        get: operations["CategoriesController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/health": {
         parameters: {
             query?: never;
@@ -157,10 +263,500 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update own profile (name, primaryLocale) */
+        patch: operations["MeController_updateProfile"];
+        trace?: never;
+    };
+    "/v1/me/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List own addresses (default first, then newest) */
+        get: operations["MeController_list"];
+        put?: never;
+        /** Add an address (the first one becomes the default) */
+        post: operations["MeController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/addresses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an own address (deleting the default promotes the newest) */
+        delete: operations["MeController_remove"];
+        options?: never;
+        head?: never;
+        /** Partially update an own address */
+        patch: operations["MeController_update"];
+        trace?: never;
+    };
+    "/v1/me/addresses/{id}/default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make an own address the default */
+        post: operations["MeController_setDefault"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Order history, newest first (cursor pagination) */
+        get: operations["OrdersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check out: split into one sub-order per vendor, reserve stock, request payment
+         * @description Prices, vendors, shipping fees and commission come from the DB. Returns the order with a PENDING payment whose provider session is created asynchronously: poll `GET /v1/orders/{id}/payment` for the redirect URL.
+         */
+        post: operations["OrdersController_checkout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One own order with its sub-orders and items */
+        get: operations["OrdersController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel an unpaid order (every sub-order still AWAITING_PAYMENT) */
+        post: operations["OrdersController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/{id}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Payment session of the latest attempt (poll after checkout)
+         * @description 202 while the latest attempt is PENDING and its provider session is not created yet (`redirectUrl: null`) — poll again (1s, up to 30s). 200 once there is a `redirectUrl`, or when the attempt is no longer PENDING (CONFIRMED / FAILED: check `status`). A PENDING session past `expiresAt` needs `POST /v1/orders/{id}/payments`.
+         */
+        get: operations["OrdersController_payment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/{id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a new payment attempt after the previous one failed or expired
+         * @description Optional `provider` switches the gateway. The new attempt is PENDING without a session; poll `GET /v1/orders/{id}/payment` as after checkout.
+         */
+        post: operations["OrdersController_retryPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-settings/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Currencies and limits the storefront needs (public) */
+        get: operations["PlatformSettingsPublicController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List visible products with filters, sort and cursor pagination */
+        get: operations["ProductsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/products/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Product detail by slug (variants, images, vendor, rating summary) */
+        get: operations["ProductsController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Full-text + trigram product search */
+        get: operations["ProductsController_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/uploads/presign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Presign an upload (PUT to the returned URL with the returned headers)
+         * @description `kyc` requires CUSTOMER; `product-image` / `vendor-logo` require VENDOR_OWNER or VENDOR_STAFF (vendor taken from the access token). The PUT body must be exactly `size` bytes.
+         */
+        post: operations["UploadsController_presign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendors/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public shop page: vendor header + its products */
+        get: operations["VendorsPublicController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddressDto_Output: {
+            city: string;
+            country: string;
+            district: string;
+            id: string;
+            isDefault: boolean;
+            line1: string;
+            line2: string | null;
+            phone: string;
+            recipientName: string;
+            ward: string;
+        };
+        AddressInputDto: {
+            city: string;
+            /** @default VN */
+            country: string;
+            district: string;
+            /** @default false */
+            isDefault: boolean;
+            line1: string;
+            line2?: string;
+            phone: string;
+            recipientName: string;
+            ward: string;
+        };
+        AddressListDto_Output: {
+            city: string;
+            country: string;
+            district: string;
+            id: string;
+            isDefault: boolean;
+            line1: string;
+            line2: string | null;
+            phone: string;
+            recipientName: string;
+            ward: string;
+        }[];
+        AddressUpdateDto: {
+            city?: string;
+            country?: string;
+            district?: string;
+            line1?: string;
+            line2?: string | null;
+            phone?: string;
+            recipientName?: string;
+            ward?: string;
+        };
+        CartDto_Output: {
+            currencies: ("VND" | "USD")[];
+            groups: {
+                lines: {
+                    attributes: {
+                        [key: string]: string;
+                    };
+                    imageUrl: string | null;
+                    lineTotal: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    };
+                    productId: string;
+                    productName: string;
+                    productSlug: string;
+                    quantity: number;
+                    stockAvailable: number;
+                    unavailable: boolean;
+                    unitPrice: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    };
+                    variantId: string;
+                    vendorId: string;
+                }[];
+                subtotals: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                }[];
+                vendorId: string;
+                vendorName: string;
+                vendorSlug: string;
+            }[];
+            hasMixedCurrency: boolean;
+            itemCount: number;
+        };
+        CartItemSetDto: {
+            quantity: number;
+        };
+        CartMergeInputDto: {
+            items: {
+                quantity: number;
+                variantId: string;
+            }[];
+        };
+        CartMergeResultDto_Output: {
+            adjustments: {
+                appliedQuantity: number;
+                /** @enum {string} */
+                reason: "UNAVAILABLE" | "CLAMPED";
+                requestedQuantity: number;
+                variantId: string;
+            }[];
+            cart: {
+                currencies: ("VND" | "USD")[];
+                groups: {
+                    lines: {
+                        attributes: {
+                            [key: string]: string;
+                        };
+                        imageUrl: string | null;
+                        lineTotal: {
+                            amount: number;
+                            /** @enum {string} */
+                            currency: "VND" | "USD";
+                        };
+                        productId: string;
+                        productName: string;
+                        productSlug: string;
+                        quantity: number;
+                        stockAvailable: number;
+                        unavailable: boolean;
+                        unitPrice: {
+                            amount: number;
+                            /** @enum {string} */
+                            currency: "VND" | "USD";
+                        };
+                        variantId: string;
+                        vendorId: string;
+                    }[];
+                    subtotals: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    }[];
+                    vendorId: string;
+                    vendorName: string;
+                    vendorSlug: string;
+                }[];
+                hasMixedCurrency: boolean;
+                itemCount: number;
+            };
+        };
+        CartShippingOptionsDto_Output: {
+            groups: {
+                methods: {
+                    estDays: number;
+                    id: string;
+                    isActive: boolean;
+                    name: string;
+                    price: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    };
+                    vendorId: string;
+                }[];
+                vendorId: string;
+            }[];
+        };
+        CategoryDetailDto_Output: {
+            breadcrumb: {
+                id: string;
+                name: string;
+                parentId: string | null;
+                slug: string;
+                sortOrder: number;
+            }[];
+            children: {
+                id: string;
+                name: string;
+                parentId: string | null;
+                slug: string;
+                sortOrder: number;
+            }[];
+            id: string;
+            name: string;
+            parentId: string | null;
+            slug: string;
+            sortOrder: number;
+        };
+        CategoryTreeDto_Output: {
+            items: components["schemas"]["CategoryTreeDto_Output__schema0_Output"][];
+        };
+        CategoryTreeDto_Output__schema0_Output: {
+            children: components["schemas"]["CategoryTreeDto_Output__schema0_Output"][];
+            id: string;
+            name: string;
+            parentId: string | null;
+            slug: string;
+            sortOrder: number;
+        };
+        CheckoutDto: {
+            addressId: string;
+            /** @default [] */
+            couponCodes: string[];
+            items: {
+                quantity: number;
+                variantId: string;
+            }[];
+            /** @enum {string} */
+            provider: "VNPAY" | "STRIPE";
+            shippingMethodIds: string[];
+        };
         HealthReadyResponseDto_Output: {
             /** @constant */
             db: "up";
@@ -184,11 +780,271 @@ export interface components {
             roles: ("GUEST" | "CUSTOMER" | "VENDOR_OWNER" | "VENDOR_STAFF" | "PLATFORM_STAFF" | "PLATFORM_ADMIN")[];
             vendorId: string | null;
         };
+        OrderDto_Output: {
+            /** Format: date-time */
+            createdAt: string;
+            discountTotal: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            grandTotal: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            id: string;
+            itemsTotal: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            paymentDeadlineAt: string | null;
+            shippingTotal: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            /** @enum {string} */
+            status: "AWAITING_PAYMENT" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED" | "CANCELLED" | "COMPLETED";
+            subOrders: {
+                cancelledAt: string | null;
+                carrier: string | null;
+                completedAt: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                deliveredAt: string | null;
+                id: string;
+                items: {
+                    attributes: {
+                        [key: string]: string;
+                    };
+                    id: string;
+                    lineTotal: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    };
+                    productId: string;
+                    productTitle: string;
+                    quantity: number;
+                    unitPrice: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    };
+                    variantId: string;
+                }[];
+                orderId: string;
+                platformDiscount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                shippedAt: string | null;
+                shipping: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                shippingAddress: {
+                    city: string;
+                    country: string;
+                    district: string;
+                    line1: string;
+                    line2: string | null;
+                    phone: string;
+                    recipientName: string;
+                    ward: string;
+                };
+                shippingMethodName: string | null;
+                /** @enum {string} */
+                status: "AWAITING_PAYMENT" | "PAID" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "COMPLETED" | "REFUNDED" | "CANCELLED";
+                subtotal: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                total: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                trackingNumber: string | null;
+                vendorDiscount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                vendorId: string;
+                vendorName: string;
+            }[];
+        };
+        OrderSummaryPageDto_Output: {
+            items: {
+                /** Format: date-time */
+                createdAt: string;
+                grandTotal: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                id: string;
+                itemCount: number;
+                /** @enum {string} */
+                status: "AWAITING_PAYMENT" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED" | "CANCELLED" | "COMPLETED";
+                subOrderCount: number;
+            }[];
+            nextCursor: string | null;
+        };
+        PaymentRetryDto: {
+            /** @enum {string} */
+            provider?: "VNPAY" | "STRIPE";
+        };
+        PaymentSessionDto: {
+            expiresAt: string | null;
+            redirectUrl: string | null;
+            /** @enum {string} */
+            status: "PENDING" | "CONFIRMED" | "FAILED" | "REFUNDED";
+        };
+        PaymentSessionDto_Output: {
+            expiresAt: string | null;
+            redirectUrl: string | null;
+            /** @enum {string} */
+            status: "PENDING" | "CONFIRMED" | "FAILED" | "REFUNDED";
+        };
+        PlatformSettingsPublicDto_Output: {
+            /** @enum {string} */
+            defaultCurrency: "VND" | "USD";
+            maxCouponStack: number;
+            supportedCurrencies: ("VND" | "USD")[];
+        };
+        PresignRequestDto: {
+            contentType: string;
+            /** @enum {string} */
+            purpose: "kyc" | "product-image" | "vendor-logo";
+            size: number;
+        };
+        PresignResponseDto_Output: {
+            /** Format: date-time */
+            expiresAt: string;
+            headers: {
+                [key: string]: string;
+            };
+            key: string;
+            /** Format: uri */
+            url: string;
+        };
+        ProductDetailDto_Output: {
+            basePrice: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            categoryIds: string[];
+            description: string | null;
+            id: string;
+            images: {
+                alt: string | null;
+                id: string;
+                sortOrder: number;
+                /** Format: uri */
+                url: string;
+            }[];
+            name: string;
+            primaryImageUrl: string | null;
+            rating: {
+                average: number | null;
+                count: number;
+                distribution: [
+                    number,
+                    number,
+                    number,
+                    number,
+                    number
+                ];
+            };
+            slug: string;
+            /** @enum {string} */
+            status: "DRAFT" | "ACTIVE" | "ARCHIVED" | "BLOCKED";
+            variants: {
+                attributes: {
+                    [key: string]: string;
+                };
+                id: string;
+                price: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                productId: string;
+                sku: string;
+                stockAvailable: number;
+            }[];
+            vendor: {
+                description: string | null;
+                displayName: string;
+                id: string;
+                logoUrl: string | null;
+                slug: string;
+            };
+            vendorId: string;
+        };
+        ProductSummaryPageDto_Output: {
+            items: {
+                basePrice: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                id: string;
+                name: string;
+                primaryImageUrl: string | null;
+                rating: {
+                    average: number | null;
+                    count: number;
+                };
+                slug: string;
+                vendorId: string;
+            }[];
+            nextCursor: string | null;
+        };
+        ProfileUpdateDto: {
+            name?: string;
+            /** @enum {string} */
+            primaryLocale?: "VI" | "EN";
+        };
         TokenResponseDto_Output: {
             accessToken: string;
             expiresIn: number;
             /** @constant */
             tokenType: "Bearer";
+        };
+        VendorDetailDto_Output: {
+            description: string | null;
+            displayName: string;
+            id: string;
+            logoUrl: string | null;
+            products: {
+                items: {
+                    basePrice: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    };
+                    id: string;
+                    name: string;
+                    primaryImageUrl: string | null;
+                    rating: {
+                        average: number | null;
+                        count: number;
+                    };
+                    slug: string;
+                    vendorId: string;
+                }[];
+                nextCursor: string | null;
+            };
+            slug: string;
         };
     };
     responses: never;
@@ -333,6 +1189,179 @@ export interface operations {
             };
         };
     };
+    CartController_get: {
+        parameters: {
+            query?: {
+                locale?: "vi" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cart */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CartDto_Output"];
+                };
+            };
+        };
+    };
+    CartController_setItem: {
+        parameters: {
+            query?: {
+                locale?: "vi" | "en";
+            };
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CartItemSetDto"];
+            };
+        };
+        responses: {
+            /** @description The updated cart */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CartDto_Output"];
+                };
+            };
+        };
+    };
+    CartController_removeItem: {
+        parameters: {
+            query?: {
+                locale?: "vi" | "en";
+            };
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The updated cart */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CartDto_Output"];
+                };
+            };
+        };
+    };
+    CartController_merge: {
+        parameters: {
+            query?: {
+                locale?: "vi" | "en";
+            };
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CartMergeInputDto"];
+            };
+        };
+        responses: {
+            /** @description Cart and adjustments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CartMergeResultDto_Output"];
+                };
+            };
+        };
+    };
+    CartController_shippingOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Shipping options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CartShippingOptionsDto_Output"];
+                };
+            };
+        };
+    };
+    CategoriesController_tree: {
+        parameters: {
+            query?: {
+                locale?: "vi" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryTreeDto_Output"];
+                };
+            };
+        };
+    };
+    CategoriesController_detail: {
+        parameters: {
+            query?: {
+                locale?: "vi" | "en";
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryDetailDto_Output"];
+                };
+            };
+        };
+    };
     HealthController_check: {
         parameters: {
             query?: never;
@@ -369,6 +1398,449 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthReadyResponseDto_Output"];
+                };
+            };
+        };
+    };
+    MeController_updateProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileUpdateDto"];
+            };
+        };
+        responses: {
+            /** @description Updated profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponseDto_Output"];
+                };
+            };
+        };
+    };
+    MeController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Addresses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressListDto_Output"];
+                };
+            };
+        };
+    };
+    MeController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddressInputDto"];
+            };
+        };
+        responses: {
+            /** @description Created address */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressDto_Output"];
+                };
+            };
+        };
+    };
+    MeController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MeController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddressUpdateDto"];
+            };
+        };
+        responses: {
+            /** @description Updated address */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressDto_Output"];
+                };
+            };
+        };
+    };
+    MeController_setDefault: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new default address */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressDto_Output"];
+                };
+            };
+        };
+    };
+    OrdersController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of orders */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderSummaryPageDto_Output"];
+                };
+            };
+        };
+    };
+    OrdersController_checkout: {
+        parameters: {
+            query?: never;
+            header: {
+                "idempotency-key": string;
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutDto"];
+            };
+        };
+        responses: {
+            /** @description The created order */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDto_Output"];
+                };
+            };
+        };
+    };
+    OrdersController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDto_Output"];
+                };
+            };
+        };
+    };
+    OrdersController_cancel: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cancelled order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDto_Output"];
+                };
+            };
+        };
+    };
+    OrdersController_payment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session ready */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentSessionDto_Output"];
+                };
+            };
+            /** @description Session not ready yet */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentSessionDto"];
+                };
+            };
+        };
+    };
+    OrdersController_retryPayment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentRetryDto"];
+            };
+        };
+        responses: {
+            /** @description The new attempt */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentSessionDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformSettingsPublicController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformSettingsPublicDto_Output"];
+                };
+            };
+        };
+    };
+    ProductsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                locale?: "vi" | "en";
+                categorySlug?: string;
+                vendorSlug?: string;
+                currency?: "VND" | "USD";
+                minPrice?: number;
+                maxPrice?: number;
+                sort?: "newest" | "price_asc" | "price_desc" | "rating";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductSummaryPageDto_Output"];
+                };
+            };
+        };
+    };
+    ProductsController_detail: {
+        parameters: {
+            query?: {
+                locale?: "vi" | "en";
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDetailDto_Output"];
+                };
+            };
+        };
+    };
+    ProductsController_search: {
+        parameters: {
+            query: {
+                cursor?: string;
+                limit?: number;
+                locale?: "vi" | "en";
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductSummaryPageDto_Output"];
+                };
+            };
+        };
+    };
+    UploadsController_presign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Presigned PUT target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresignResponseDto_Output"];
+                };
+            };
+        };
+    };
+    VendorsPublicController_detail: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                locale?: "vi" | "en";
+                categorySlug?: string;
+                currency?: "VND" | "USD";
+                minPrice?: number;
+                maxPrice?: number;
+                sort?: "newest" | "price_asc" | "price_desc" | "rating";
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorDetailDto_Output"];
                 };
             };
         };
