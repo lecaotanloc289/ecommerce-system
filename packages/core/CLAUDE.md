@@ -5,15 +5,15 @@ Pure TypeScript + `zod` — runs in browser and Node. Never imports `@repo/db`, 
 
 ## Layout
 
-| Path            | Subpath export         | What                                                                                                                                        |
-| --------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/money/`    | `@repo/core/money`     | `of`, `zero`, `add`, `subtract`, `sum`, `multiply`, `applyBps`, `allocate`, `compare`, `equals`, …                                          |
-| `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`                                                  |
-| `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum                                               |
-| `src/pricing/`  | `@repo/core/pricing`   | `priceOrder`, `evaluateCoupon`, `couponDiscount`, `resolveCommissionBps`, `computePayoutPostings` — pure checkout/payout money math (D5-D8) |
-| `src/orders/`   | `@repo/core/orders`    | `deriveOrderStatus(subOrderStatuses)` — Order status from its sub-orders (D11); shared by checkout, webhook, fulfilment, refunds            |
-| `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                                                                    |
-| `src/schemas/*` | `@repo/core/schemas/*` | one file per area — see "Schemas" below                                                                                                     |
+| Path            | Subpath export         | What                                                                                                                                                                                      |
+| --------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/money/`    | `@repo/core/money`     | `of`, `zero`, `add`, `subtract`, `sum`, `multiply`, `applyBps`, `allocate`, `compare`, `equals`, …                                                                                        |
+| `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`                                                                                                |
+| `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum                                                                                             |
+| `src/pricing/`  | `@repo/core/pricing`   | `priceOrder`, `evaluateCoupon`, `couponDiscount`, `resolveCommissionBps`, `computePayoutPostings`, `refundAmount`, `refundPostings` — pure checkout/payout/refund money math (D5-D8, D12) |
+| `src/orders/`   | `@repo/core/orders`    | `deriveOrderStatus(subOrderStatuses)` — Order status from its sub-orders (D11); shared by checkout, webhook, fulfilment, refunds                                                          |
+| `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                                                                                                                  |
+| `src/schemas/*` | `@repo/core/schemas/*` | one file per area — see "Schemas" below                                                                                                                                                   |
 
 The root export (`@repo/core`) re-exports everything; Money helpers are namespaced there:
 `const m: Money = Money.of(150_000, 'VND')`. Every export (root and subpaths) resolves to `dist/`, built
@@ -32,13 +32,13 @@ Read shapes use Money, ISO-datetime strings and branded ids. Input shapes never 
 - `upload`: `UploadPurpose`, `UploadKey`, `PresignRequest`, `PresignResponse`. Clients send upload **keys**, never URLs (D13).
 - `vendor`: `VendorPublic`, `VendorApplicationCreate`, `VendorApplication`, `VendorReject`, `VendorApprove {slug, displayName}`, `VendorApplicationMe {latest, history}`, `VendorApplicationListQuery` (+ `status`), `VendorApplicationListItem` / `ListPage` (KYC numbers masked: `taxIdMasked`, …), `VendorApplicationDetail` (full + presigned document URLs), `VendorApplicationReviewResult` (list item + `vendorId`). Document keys map to DB `businessLicenseUrl` / `nationalIdUrl`.
 - `order`: `Order`, `SubOrder`, `VendorSubOrder` (adds commission + net), `OrderItem`, `OrderSummary` + `OrderSummaryPage`, `ShippingAddressSnapshot`, `PaymentSession` (`redirectUrl` null until the worker creates the session), `PaymentRetry` (`{ provider? }` body of a new payment attempt), `SubOrderShip`.
-- `outbox`: payload schemas of `outbox_events` rows (ids only; `aggregateType` = `ORDER_AGGREGATE_TYPE` `'order'`, `aggregateId` = orderId) — `OrderCreatedEvent {orderId, customerId}`, `PaymentRequestedEvent {orderId, paymentId, provider, attemptNo}`, `OrderCancelledEvent {orderId, customerId, reason: OrderCancelReason}` (`CUSTOMER` / `PAYMENT_EXPIRED`), `VendorApplicationApprovedEvent {applicationId, vendorId, userId}`, `VendorApplicationRejectedEvent {applicationId, userId}` (`aggregateType` = `VENDOR_APPLICATION_AGGREGATE_TYPE` `'vendor-application'`, `aggregateId` = applicationId); `OUTBOX_EVENT_SCHEMAS` maps event type → schema for the worker. Add new event types here.
+- `outbox`: payload schemas of `outbox_events` rows (ids only; `aggregateType` = `ORDER_AGGREGATE_TYPE` `'order'`, `aggregateId` = orderId) — `OrderCreatedEvent {orderId, customerId}`, `PaymentRequestedEvent {orderId, paymentId, provider, attemptNo}`, `OrderCancelledEvent {orderId, customerId, reason: OrderCancelReason}` (`CUSTOMER` / `PAYMENT_EXPIRED`), `RefundRequestedEvent {refundId, orderId, subOrderId}` (worker calls the provider refund; skip unless the Refund is PENDING), `VendorApplicationApprovedEvent {applicationId, vendorId, userId}`, `VendorApplicationRejectedEvent {applicationId, userId}` (`aggregateType` = `VENDOR_APPLICATION_AGGREGATE_TYPE` `'vendor-application'`, `aggregateId` = applicationId); `OUTBOX_EVENT_SCHEMAS` maps event type → schema for the worker. Add new event types here.
 - `shipping-method`: `ShippingMethod`, `ShippingMethodInput`.
 - `coupon`: `CouponInput`, `Coupon` — a union on `discountType`: FIXED carries `discount: Money`, PERCENT carries `discountBps` (basis points, 1..10000). Scope comes from the endpoint, not the body.
 - `review`: `ReviewCreateBody` (`{subOrderId, rating, body?}`, body of `POST /v1/products/:id/reviews`), `ReviewCreate` (+ `productId`), `Review`, `RatingSummary` (`average` is null when there are no reviews), `ReviewPage` (`PageSchema(Review)` + `summary`), `REVIEW_BODY_MAX_LENGTH`.
 - `catalog`: public catalog queries/reads — `CatalogLocale` (`vi|en`), `LocaleQuery`, `ProductListQuery`, `SearchQuery`, `VendorProductsQuery`, `CategoryTree`/`CategoryNode` (recursive), `CategoryDetail`, `ProductSummary`(+`Page`), `ProductDetail`, `VendorDetail`.
 - `platform-settings`: `PlatformSettingsPublic`, `PlatformSettings`, `PlatformSettingsUpdate` (partial, non-empty).
-- `wallet`: `Wallet`, `LedgerEntry` (signed `amount`). `refund`: `RefundCreate` (whole sub-order, reason only), `Refund`.
+- `wallet`: `Wallet`, `LedgerEntry` (signed `amount`). `refund`: `RefundCreate` (whole sub-order, reason only), `Refund`, `RefundListQuery` (page + `status`), `RefundListItem` (`Refund` + `orderId` + `vendorId`) + `RefundPage`.
 - `vendor-invitation`: `VendorInvitationCreate` (email lowercased), `VendorInvitation` (+ derived `status`: `VendorInvitationStatus`), `VendorInvitationPage`, `VendorInvitationAccept`, `VendorInvitationAcceptResult {vendorId}`, `VendorStaffMember`. Outbox `VendorInvitationCreatedEvent {invitationId, vendorId, email, token}` (`VENDOR_INVITATION_AGGREGATE_TYPE`) carries the raw token — the worker must scrub it after sending.
 - `product-admin`: `ProductUpsert` (both locales, variants, images by id-or-key, `categoryIds`), `VendorProductStatus` (no `BLOCKED`); vendor-side reads `VendorProduct` (raw vi + en translations, variants with `stockOnHand` / `stockReserved`, `status`, `blockedReason`), `VendorProductSummary` + `VendorProductPage`, `VendorProductQuery` (page + `status`), `VendorProductVariant`, `VariantStockUpdate` (absolute `stockOnHand`). `basePrice` in an upsert only carries the currency: the server stores MIN(variant price).
 
@@ -56,6 +56,10 @@ across sub-orders by `Money.allocate` over (subtotal − vendorDiscount); vendor
 `evaluateCoupon` returns `{ ok } | { ok:false, code }`. Usage counts are inputs (caller loads them, locking the
 coupon row). Invariants asserted: `paid = subtotal + shipping − vendorDiscount − platformDiscount ≥ 0`,
 `net = subtotal + shipping − vendorDiscount − commission`, payout postings sum to 0.
+
+**Refunds (D12, `src/pricing/refund.ts`):** `refundAmount({subtotal, shipping, vendorDiscount, platformDiscount})` =
+`paid_i` of a sub-order (≥ 0, may be 0; negative or mixed currency throws). `refundPostings(paid)` →
+`[PLATFORM_ESCROW −paid, CUSTOMER +paid]` (one txn group, mirror of the escrow-IN group; sums to 0; negative throws).
 
 **Pricing result → DB columns** (server checkout): `SubOrder.subtotalAmount` = `subtotal`, `shippingAmount` =
 `shipping`, `discountAmount` = `vendorDiscount`, `platformDiscountAmount` = `platformDiscount`,

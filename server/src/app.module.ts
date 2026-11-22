@@ -14,6 +14,7 @@ import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { RefundsModule } from './refunds/refunds.module';
 import { StorageModule } from './storage/storage.module';
 import { VendorApplicationsModule } from './vendor-applications/vendor-applications.module';
 import { VendorStaffModule } from './vendor-staff/vendor-staff.module';
@@ -46,6 +47,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     VendorApplicationsModule,
     VendorModule,
     VendorStaffModule,
+    RefundsModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

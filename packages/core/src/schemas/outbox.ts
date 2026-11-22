@@ -3,6 +3,8 @@ import { PaymentProviderSchema } from '../enums';
 import {
   OrderIdSchema,
   PaymentIdSchema,
+  RefundIdSchema,
+  SubOrderIdSchema,
   UserIdSchema,
   VendorApplicationIdSchema,
   VendorIdSchema,
@@ -48,6 +50,19 @@ export const OrderCancelledEventSchema = z.object({
 });
 export type OrderCancelledEvent = z.infer<typeof OrderCancelledEventSchema>;
 
+/**
+ * `refund.requested` — a Refund row is PENDING (admin refund of a whole sub-order, T3.5, or a
+ * payment that arrived for a cancelled order, T3.1); the worker calls `PaymentProvider.refund`
+ * and moves the Refund to SUCCEEDED / FAILED. Skip it when the refund is no longer PENDING.
+ * The ledger (escrow → customer) is already written by the API transaction.
+ */
+export const RefundRequestedEventSchema = z.object({
+  refundId: RefundIdSchema,
+  orderId: OrderIdSchema,
+  subOrderId: SubOrderIdSchema,
+});
+export type RefundRequestedEvent = z.infer<typeof RefundRequestedEventSchema>;
+
 export const VENDOR_APPLICATION_AGGREGATE_TYPE = 'vendor-application';
 
 /** `vendor.application.approved` — vendor + wallet + VENDOR_OWNER role created (aggregateId = applicationId). */
@@ -87,6 +102,7 @@ export const OUTBOX_EVENT_SCHEMAS = {
   'order.created': OrderCreatedEventSchema,
   'payment.requested': PaymentRequestedEventSchema,
   'order.cancelled': OrderCancelledEventSchema,
+  'refund.requested': RefundRequestedEventSchema,
   'vendor.application.approved': VendorApplicationApprovedEventSchema,
   'vendor.application.rejected': VendorApplicationRejectedEventSchema,
   'vendor.invitation.created': VendorInvitationCreatedEventSchema,
