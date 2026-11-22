@@ -1,7 +1,13 @@
 import { createHash } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
-import { DomainError, Role, VendorStatus } from '@repo/core';
+import {
+  DomainError,
+  Role,
+  type TokenResponse,
+  TokenResponseSchema,
+  VendorStatus,
+} from '@repo/core';
 import { ulid } from 'ulid';
 import { ENV } from '../config/config.module';
 import type { Env } from '../config/env';
@@ -13,8 +19,6 @@ import {
   RefreshTokenClaimsSchema,
   type RefreshTokenClaims,
   type RefreshTokenClaimsInput,
-  type TokenResponse,
-  TokenResponseSchema,
 } from './auth.schemas';
 import { RefreshTokenStore } from './refresh-token.store';
 

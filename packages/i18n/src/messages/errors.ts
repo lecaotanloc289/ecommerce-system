@@ -54,6 +54,22 @@ export const errorsEn: ErrorMessages = {
   'payment.error.signature-invalid': 'The payment could not be verified.',
   'payment.error.amount-mismatch': 'The paid amount does not match the order total.',
   'payment.error.already-confirmed': 'This payment has already been confirmed.',
+  'address.error.not-found': 'We couldn’t find this address.',
+  'vendor.error.suspended': 'This shop is suspended.',
+  'vendor.error.not-found': 'We couldn’t find this shop.',
+  'product.error.blocked': 'This product has been blocked by the platform.',
+  'sub-order.error.not-found': 'We couldn’t find this shop order.',
+  'review.error.not-eligible': 'You can only review a product after it has been delivered.',
+  'review.error.already-exists': 'You have already reviewed this product.',
+  'upload.error.invalid-key': 'The uploaded file reference is invalid.',
+  'upload.error.content-type-not-allowed': 'This file type is not supported.',
+  'upload.error.too-large': 'The file is too large.',
+  'invitation.error.invalid': 'This invitation is invalid or has already been used.',
+  'invitation.error.expired': 'This invitation has expired.',
+  'invitation.error.email-mismatch':
+    'This invitation was sent to a different email than your account.',
+  'refund.error.not-refundable': 'This order can’t be refunded.',
+  'payment.error.session-not-ready': 'The payment session isn’t ready yet. Please wait a moment.',
 };
 
 export const errorsVi: ErrorMessages = {
@@ -104,4 +120,20 @@ export const errorsVi: ErrorMessages = {
   'payment.error.signature-invalid': 'Không thể xác thực giao dịch thanh toán.',
   'payment.error.amount-mismatch': 'Số tiền thanh toán không khớp với tổng đơn hàng.',
   'payment.error.already-confirmed': 'Giao dịch thanh toán này đã được xác nhận.',
+  'address.error.not-found': 'Không tìm thấy địa chỉ này.',
+  'vendor.error.suspended': 'Cửa hàng này đang bị tạm khóa.',
+  'vendor.error.not-found': 'Không tìm thấy cửa hàng này.',
+  'product.error.blocked': 'Sản phẩm này đã bị nền tảng chặn.',
+  'sub-order.error.not-found': 'Không tìm thấy đơn hàng con này.',
+  'review.error.not-eligible': 'Bạn chỉ có thể đánh giá sản phẩm sau khi đã nhận hàng.',
+  'review.error.already-exists': 'Bạn đã đánh giá sản phẩm này rồi.',
+  'upload.error.invalid-key': 'Tệp tải lên không hợp lệ.',
+  'upload.error.content-type-not-allowed': 'Định dạng tệp này không được hỗ trợ.',
+  'upload.error.too-large': 'Tệp quá lớn.',
+  'invitation.error.invalid': 'Lời mời không hợp lệ hoặc đã được sử dụng.',
+  'invitation.error.expired': 'Lời mời đã hết hạn.',
+  'invitation.error.email-mismatch':
+    'Lời mời này được gửi cho một email khác với tài khoản của bạn.',
+  'refund.error.not-refundable': 'Đơn hàng này không thể hoàn tiền.',
+  'payment.error.session-not-ready': 'Phiên thanh toán chưa sẵn sàng. Vui lòng đợi trong giây lát.',
 };

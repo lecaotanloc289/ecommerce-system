@@ -11,12 +11,35 @@ Pure TypeScript + `zod` — runs in browser and Node. Never imports `@repo/db`, 
 | `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`         |
 | `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum      |
 | `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                           |
-| `src/schemas/*` | `@repo/core/schemas/*` | `money`, `common`, `address`, `category`, `product`, `cart`, `checkout`                            |
+| `src/schemas/*` | `@repo/core/schemas/*` | one file per area — see "Schemas" below                                                            |
 
 The root export (`@repo/core`) re-exports everything; Money helpers are namespaced there:
 `const m: Money = Money.of(150_000, 'VND')`. Every export (root and subpaths) resolves to `dist/`, built
 by tsup with `splitting` so all entries share one copy of each module (`instanceof DomainError` works
 whichever path it was imported from). Consumers need `@repo/core` built first (turbo `^build`).
+
+## Schemas
+
+Read shapes use Money, ISO-datetime strings and branded ids. Input shapes never carry `price`,
+`vendorId`, `userId` or `role`. Each entry is `XxxSchema` + `Xxx` type.
+
+- `money`, `common`: `Money`, `NonNegativeMoney`; `Slug`, `HttpUrl`. `datetime`: `IsoDateTime` (UTC ISO string on the wire).
+- `address`: `AddressInput`, `Address`, `CountryCode`, `Phone`. `category`, `product`: `Category`, `CategoryTranslation`, `Product`, `ProductVariant`, `ProductImage`, `VariantAttributes`.
+- `cart`, `checkout`: `CartLineInput`, `CartLine`, `Checkout`, `CouponCode`.
+- `me`: `TokenResponse`, `MeResponse` (moved from the server), `ProfileUpdate`.
+- `upload`: `UploadPurpose`, `UploadKey`, `PresignRequest`, `PresignResponse`. Clients send upload **keys**, never URLs (D13).
+- `vendor`: `VendorPublic`, `VendorApplicationCreate`, `VendorApplication`, `VendorReject`.
+- `order`: `Order`, `SubOrder`, `VendorSubOrder` (adds commission + net), `OrderItem`, `OrderSummary`, `ShippingAddressSnapshot`, `PaymentSession` (`redirectUrl` null until the worker creates the session), `SubOrderShip`.
+- `shipping-method`: `ShippingMethod`, `ShippingMethodInput`.
+- `coupon`: `CouponInput`, `Coupon` — a union on `discountType`: FIXED carries `discount: Money`, PERCENT carries `discountBps` (basis points, 1..10000). Scope comes from the endpoint, not the body.
+- `review`: `ReviewCreate`, `Review`, `RatingSummary`.
+- `platform-settings`: `PlatformSettingsPublic`, `PlatformSettings`, `PlatformSettingsUpdate` (partial, non-empty).
+- `wallet`: `Wallet`, `LedgerEntry` (signed `amount`). `refund`: `RefundCreate` (whole sub-order, reason only), `Refund`.
+- `vendor-invitation`: `VendorInvitationCreate` (email lowercased), `VendorInvitation`, `VendorInvitationAccept`.
+- `product-admin`: `ProductUpsert` (both locales, variants, images by id-or-key, `categoryIds`), `VendorProductStatus` (no `BLOCKED`).
+
+Known gaps: `VendorApplicationCreate` has no shop `displayName`/`slug` (the application table has no column
+for them); there is no vendor-side read shape for raw translations/stock yet.
 
 ## Rules specific to this package
 

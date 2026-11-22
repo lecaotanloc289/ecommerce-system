@@ -39,7 +39,7 @@ export const ApplicationStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED'
 export type ApplicationStatus = z.infer<typeof ApplicationStatusSchema>;
 export const ApplicationStatus = ApplicationStatusSchema.enum;
 
-export const ProductStatusSchema = z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']);
+export const ProductStatusSchema = z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED', 'BLOCKED']);
 export type ProductStatus = z.infer<typeof ProductStatusSchema>;
 export const ProductStatus = ProductStatusSchema.enum;
 
@@ -101,3 +101,7 @@ export const CouponScope = CouponScopeSchema.enum;
 export const DiscountTypeSchema = z.enum(['PERCENT', 'FIXED']);
 export type DiscountType = z.infer<typeof DiscountTypeSchema>;
 export const DiscountType = DiscountTypeSchema.enum;
+
+export const RefundStatusSchema = z.enum(['PENDING', 'SUCCEEDED', 'FAILED']);
+export type RefundStatus = z.infer<typeof RefundStatusSchema>;
+export const RefundStatus = RefundStatusSchema.enum;
