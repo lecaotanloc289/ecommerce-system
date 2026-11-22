@@ -11,7 +11,7 @@ import {
   SelectValue,
   Textarea,
 } from '@repo/ui';
-import { useLocale } from '../../i18n/locale-provider';
+import { useLocale } from '../../i18n/use-locale';
 import { cn } from '../../lib/utils';
 
 /** ISO 3166-1 alpha-2; display names come from Intl so they follow the locale. */

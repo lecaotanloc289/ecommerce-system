@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { CreditCard, Landmark, Wallet } from 'lucide-react';
 import { Input, Label, RadioGroup, RadioGroupItem } from '@repo/ui';
-import { useT } from '../../i18n/locale-provider';
-import type { MessageKey } from '../../i18n/locale-provider';
+import { useT } from '../../i18n/use-locale';
+import type { MessageKey } from '../../i18n/use-locale';
 import type { PaymentProviderId } from '../../types';
 import { cn } from '../../lib/utils';
 

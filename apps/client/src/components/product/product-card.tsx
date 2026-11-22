@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { Badge, Button } from '@repo/ui';
 import { StarRating } from './star-rating';
-import { useLocale } from '../../i18n/locale-provider';
+import { useLocale } from '../../i18n/use-locale';
 import { formatMoney } from '@repo/i18n';
 import { cn } from '../../lib/utils';
 import { useCart } from '../../store/cart-store';

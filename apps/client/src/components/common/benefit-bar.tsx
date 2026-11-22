@@ -2,8 +2,8 @@
 
 import { ShieldCheck, Headphones, Truck, CreditCard } from 'lucide-react';
 import { Container } from '../layout/container';
-import { useLocale } from '../../i18n/locale-provider';
-import type { MessageKey } from '../../i18n/locale-provider';
+import { useLocale } from '../../i18n/use-locale';
+import type { MessageKey } from '../../i18n/use-locale';
 import { formatMoney } from '@repo/i18n';
 import { platformSettings } from '../../mocks/platform-settings';
 

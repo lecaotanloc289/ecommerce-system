@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import type { ComponentProps } from 'react';
 import { buttonVariants } from '@repo/ui';
 import { cn } from '../../lib/utils';
@@ -14,7 +14,7 @@ type ButtonVariant =
 type ButtonSize = 'sm' | 'md' | 'lg' | 'xl' | 'icon';
 
 /**
- * next/link styled as a button. Preferred over `<Button asChild>` for navigation:
+ * Locale-aware Link (`@/i18n/navigation`) styled as a button. Preferred over `<Button asChild>` for navigation:
  * the shared Button renders icon slots, so Radix Slot's single-child rule breaks.
  */
 export function ButtonLink({

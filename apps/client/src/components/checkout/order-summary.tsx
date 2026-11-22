@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { Card } from '@repo/ui';
-import { useLocale } from '../../i18n/locale-provider';
+import { useLocale } from '../../i18n/use-locale';
 import type { OrderTotals } from '../../lib/cart';
 import { lineTotal } from '../../lib/cart';
 import { formatMoney } from '@repo/i18n';

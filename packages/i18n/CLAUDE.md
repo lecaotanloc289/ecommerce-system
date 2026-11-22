@@ -1,7 +1,7 @@
 # @repo/i18n
 
 UI text and formatting for web + admin (Golden Rule #7). Framework-agnostic TypeScript: no React,
-no next-intl. React glue (provider, `useT`) lives in each app — see `apps/client/src/i18n/locale-provider.tsx`.
+no next-intl. React glue (`useT` / `useLocale`) lives in each app — see `apps/client/src/i18n/use-locale.ts`.
 Depends on `@repo/core` (Money, Locale, ErrorCode types); never on apps or server.
 
 ## Layout

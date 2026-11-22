@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { useT } from '../../i18n/locale-provider';
+import { Link } from '@/i18n/navigation';
+import { useT } from '../../i18n/use-locale';
 import { cn } from '../../lib/utils';
 import type { Category } from '../../types';
 

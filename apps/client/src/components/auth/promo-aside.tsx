@@ -1,7 +1,7 @@
 'use client';
 
-import { useT } from '../../i18n/locale-provider';
-import type { MessageKey } from '../../i18n/locale-provider';
+import { useT } from '../../i18n/use-locale';
+import type { MessageKey } from '../../i18n/use-locale';
 
 /** Marketing panel beside the auth form (Parts/Sign In & Register/350px/Info). */
 export function PromoAside({

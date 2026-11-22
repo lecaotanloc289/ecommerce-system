@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { X } from 'lucide-react';
 import { Button, Card, Input } from '@repo/ui';
-import { useLocale } from '../../i18n/locale-provider';
+import { useLocale } from '../../i18n/use-locale';
 import { formatMoney } from '@repo/i18n';
 import { meetsMinSpend } from '../../lib/cart';
 import { cn } from '../../lib/utils';

@@ -1,8 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import {
   Facebook,
   Heart,
@@ -17,7 +16,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import { Container } from './container';
 import { LocaleToggle } from './locale-toggle';
 import { ThemeToggle } from './theme-toggle';
-import { useT, type MessageKey } from '../../i18n/locale-provider';
+import { useT, type MessageKey } from '../../i18n/use-locale';
 import { categories } from '../../mocks/categories';
 import { useCart } from '../../store/cart-store';
 import { cn } from '../../lib/utils';

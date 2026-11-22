@@ -1,8 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { Check, Heart, ShoppingCart, ThumbsDown, ThumbsUp } from 'lucide-react';
 import {
   Button,
@@ -22,7 +21,7 @@ import { SectionHeading } from '../common/section-heading';
 import { ProductCard } from './product-card';
 import { StarRating } from './star-rating';
 import { QuantityStepper } from '../checkout/quantity-stepper';
-import { useLocale, type MessageKey } from '../../i18n/locale-provider';
+import { useLocale, type MessageKey } from '../../i18n/use-locale';
 import { MAX_LINE_QTY } from '../../lib/cart';
 import { formatCompact, formatMoney, formatDate } from '@repo/i18n';
 import { cn } from '../../lib/utils';
