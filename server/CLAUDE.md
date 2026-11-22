@@ -14,7 +14,7 @@ Future async workers (outbox dispatcher, payout cron, email sender) live **OUTSI
 - Errors: global `DomainErrorFilter` — every error leaves as `{ errorCode, params }` (`@repo/core` `DomainError` / `ERROR_CODES`)
 - Logger: `nestjs-pino`
 - Security: `@fastify/helmet`, `@fastify/cors` (credentials true), `@fastify/cookie`
-- OpenAPI: `@nestjs/swagger` → generates the client used by `@repo/sdk`
+- OpenAPI: `@nestjs/swagger` + `nestjs-zod` (`createZodDto`, `@ZodResponse`, `cleanupOpenApiDoc`) → `packages/sdk/openapi.json` → `@repo/sdk` (see "OpenAPI / SDK" below)
 - Queue: BullMQ (Redis) for the outbox worker, payout scheduler, email sender
 
 ## Request pipeline
@@ -46,6 +46,13 @@ Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) 
 - **Protecting routes:** import `AuthModule`, then `@UseGuards(JwtAuthGuard, RolesGuard) @Roles('VENDOR_OWNER')`; read the caller with `@CurrentUser() user: AuthUser` (`{ id, roles, vendorId? }`). `RolesGuard` fails closed — a guarded route without `@Roles` is 403; use `@Roles(...ALL_ROLES)` for "any signed-in user".
 - **Known limits:** access tokens stay valid until expiry (≤ 15m) after logout, family revocation, vendor suspension or role removal (no denylist / per-user session index yet) — services must re-check vendor status/ownership in the DB before destructive vendor or payout actions rather than trusting `req.user.vendorId` alone. The refresh cookie is always `Secure` (Golden Rule #5): Chrome/Firefox accept it on `http://localhost`, Safari may not — use Chrome for local login. SameSite=Lax means the API must be same-site with the web/admin origins in prod (e.g. `api.example.com` + `example.com`), otherwise the refresh cookie isn't sent. Request/response schemas live in `src/auth/auth.schemas.ts` until moved to `@repo/core/schemas` (TODO there).
 
+## OpenAPI / SDK
+
+- `src/openapi/openapi.ts` — `buildOpenApiDocument(app)` (DocumentBuilder + `cleanupOpenApiDoc`; exports `BEARER_AUTH`, `REFRESH_COOKIE_AUTH` scheme names). Only with `NODE_ENV=development`, `main.ts` serves Swagger UI at `/docs` and the raw spec at `/v1/openapi.json`.
+- `pnpm --filter @server/api openapi:export` (`scripts/export-openapi.ts`, run via ts-node with `tsconfig.scripts.json`) builds the real `AppModule` with stubbed `PrismaService` + `REDIS` and a fixed dummy env — no Postgres/Redis needed — and writes `packages/sdk/openapi.json` with sorted keys (deterministic). Root `pnpm sdk:generate` = export + `openapi-typescript` + SDK build; CI fails on drift.
+- **Every new route must declare its schemas so it reaches the SDK:** DTO classes via `createZodDto(Schema)`, DTO-typed `@Body/@Query/@Param`, `@ZodResponse({ status, type })` for the response (a global `ZodSerializerInterceptor` parses it), `@ApiTags/@ApiOperation`, `@ApiBearerAuth(BEARER_AUTH)` on guarded routes; then run `pnpm sdk:generate` and commit. Details: `packages/sdk/CLAUDE.md`. Auth DTOs: `src/auth/auth.dto.ts`; health: `src/health/health.dto.ts`.
+- A new module that needs a live resource at construction (queue, S3 client, …) must also be stubbed in `scripts/export-openapi.ts`, or the export will try to connect.
+
 ## Run
 
 ```bash
@@ -53,7 +60,8 @@ doppler run -- pnpm --filter @server/api dev   # → http://localhost:3001  (pre
 pnpm --filter @server/api test                  # Jest (unit + HTTP + Testcontainers integration)
 pnpm --filter @server/api test -- token.service.spec.ts   # one test file
 pnpm --filter @server/api test -- --watch
-pnpm --filter @server/api typecheck             # src + test (tsconfig.spec.json)
+pnpm --filter @server/api typecheck             # src + test + scripts (tsconfig.spec.json)
+pnpm --filter @server/api openapi:export        # write packages/sdk/openapi.json (no DB/Redis)
 ```
 
 Tests live in `server/test/` (excluded from the build): `auth/` unit (guards, decorators, strategies, OAuth user resolution, rotation/reuse/logout), `http/` in-process Fastify `inject` flow, `integration/` real Redis via Testcontainers (needs Docker; CI runners have it). Planned integration coverage (Postgres): transaction rollback, idempotency replay, outbox publishing, ownership.

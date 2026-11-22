@@ -8,3 +8,5 @@ out
 coverage
 pnpm-lock.yaml
 packages/db/prisma/migrations
+packages/sdk/openapi.json
+packages/sdk/src/schema.d.ts

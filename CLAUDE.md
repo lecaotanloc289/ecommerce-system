@@ -22,7 +22,8 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 - `apps/admin` — scaffold only.
 - `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
 - `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
-- `packages/{sdk,payments}` — placeholders (empty `src/index.ts`, scripts print `echo 'TODO: ...'`).
+- `packages/sdk` — OpenAPI pipeline + `createApiClient` (openapi-fetch; Bearer, auto Idempotency-Key, single-flight 401 refresh); `pnpm sdk:generate` (see `packages/sdk/CLAUDE.md`).
+- `packages/payments` — placeholder (empty `src/index.ts`, scripts print `echo 'TODO: ...'`).
 
 Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
 
@@ -83,7 +84,7 @@ ecommerce-system/
 │   │                              Pure components: no API calls, no awareness of auth.
 │   ├── db/                        Prisma schema (DB source of truth), client singleton, seed,
 │   │                              migrations. Repository layer lives here or in server/src/*.repository.ts
-│   ├── sdk/                       Typed API client (generated from OpenAPI via openapi-typescript / orval).
+│   ├── sdk/                       Typed API client (generated from OpenAPI via openapi-typescript + openapi-fetch).
 │   │                              Re-exports Zod response schemas so web/admin can parse responses.
 │   ├── payments/                  PaymentProvider interface + VNPay / Stripe adapters.
 │   │                              Pure logic, no DB access; injected into `server/` services.
@@ -482,6 +483,12 @@ pnpm db:generate                    # regenerate Prisma Client
 pnpm db:migrate                     # migrate dev — creates a new migration
 pnpm db:reset                       # drop + reapply + seed   — LOCAL ONLY
 pnpm db:seed                        # idempotent seed (PlatformSettings, demo data)
+```
+
+### SDK (OpenAPI → `@repo/sdk`)
+
+```bash
+pnpm sdk:generate                   # export spec (no DB/Redis needed) → openapi-typescript → build; commit the diff (CI drift check)
 ```
 
 ### Local services (docker compose)

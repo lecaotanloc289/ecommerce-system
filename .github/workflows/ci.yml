@@ -37,6 +37,12 @@ jobs:
             turbo-${{ runner.os }}-${{ github.ref_name }}-
             turbo-${{ runner.os }}-
 
+      - name: SDK drift check (OpenAPI spec + generated types)
+        run: |
+          pnpm db:generate
+          pnpm sdk:generate
+          test -z "$(git status --porcelain -- packages/sdk/openapi.json packages/sdk/src/schema.d.ts)"
+
       - name: Format check
         run: pnpm format:check
 

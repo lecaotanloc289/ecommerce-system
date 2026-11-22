@@ -15,14 +15,24 @@
   },
   "scripts": {
     "build": "tsup",
-    "generate": "echo 'TODO: openapi-typescript / orval from apps/api OpenAPI spec'",
+    "generate": "openapi-typescript openapi.json -o src/schema.d.ts",
     "lint": "echo 'TODO: eslint'",
     "typecheck": "tsc --noEmit",
-    "test": "echo 'TODO: vitest'"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.8"
+  },
+  "dependencies": {
     "@repo/core": "workspace:*",
-    "typescript": "^5.7.0"
-  }
+    "openapi-fetch": "^0.17.0",
+    "ulid": "^3.0.2"
+  },
+  "files": [
+    "dist",
+    "openapi.json"
+  ]
 }
