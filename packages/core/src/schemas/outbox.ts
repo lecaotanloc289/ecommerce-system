@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { PaymentProviderSchema } from '../enums';
-import { OrderIdSchema, PaymentIdSchema, UserIdSchema } from '../ids';
+import {
+  OrderIdSchema,
+  PaymentIdSchema,
+  UserIdSchema,
+  VendorApplicationIdSchema,
+  VendorIdSchema,
+} from '../ids';
 
 // Payloads of `outbox_events` rows (Golden Rule #9). Written by the API inside the business
 // transaction, consumed by the worker (`@workers/jobs`). Payloads carry ids only (+ the provider):
@@ -41,10 +47,29 @@ export const OrderCancelledEventSchema = z.object({
 });
 export type OrderCancelledEvent = z.infer<typeof OrderCancelledEventSchema>;
 
+export const VENDOR_APPLICATION_AGGREGATE_TYPE = 'vendor-application';
+
+/** `vendor.application.approved` — vendor + wallet + VENDOR_OWNER role created (aggregateId = applicationId). */
+export const VendorApplicationApprovedEventSchema = z.object({
+  applicationId: VendorApplicationIdSchema,
+  vendorId: VendorIdSchema,
+  userId: UserIdSchema,
+});
+export type VendorApplicationApprovedEvent = z.infer<typeof VendorApplicationApprovedEventSchema>;
+
+/** `vendor.application.rejected` (aggregateId = applicationId). */
+export const VendorApplicationRejectedEventSchema = z.object({
+  applicationId: VendorApplicationIdSchema,
+  userId: UserIdSchema,
+});
+export type VendorApplicationRejectedEvent = z.infer<typeof VendorApplicationRejectedEventSchema>;
+
 /** Event type → payload schema, for the dispatcher's handler table. */
 export const OUTBOX_EVENT_SCHEMAS = {
   'order.created': OrderCreatedEventSchema,
   'payment.requested': PaymentRequestedEventSchema,
   'order.cancelled': OrderCancelledEventSchema,
+  'vendor.application.approved': VendorApplicationApprovedEventSchema,
+  'vendor.application.rejected': VendorApplicationRejectedEventSchema,
 } as const;
 export type OutboxEventType = keyof typeof OUTBOX_EVENT_SCHEMAS;

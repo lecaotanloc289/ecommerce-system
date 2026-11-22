@@ -27,6 +27,9 @@ import {
   UploadKeySchema,
   VendorApplicationCreateSchema,
   VendorApplicationSchema,
+  VendorApproveSchema,
+  VendorApplicationListQuerySchema,
+  VendorApplicationApprovedEventSchema,
   VendorInvitationAcceptSchema,
   VendorInvitationCreateSchema,
   VendorInvitationSchema,
@@ -142,6 +145,28 @@ describe('vendor', () => {
     expect(VendorPublicSchema.safeParse({ ...pub, slug: 'Shop A' }).success).toBe(false);
     expect(VendorRejectSchema.safeParse({ reason: 'Blurry ID' }).success).toBe(true);
     expect(VendorRejectSchema.safeParse({ reason: '' }).success).toBe(false);
+  });
+
+  it('approve body, review list query, approved event', () => {
+    expect(VendorApproveSchema.safeParse({ slug: 'my-shop', displayName: 'My Shop' }).success).toBe(
+      true,
+    );
+    expect(VendorApproveSchema.safeParse({ slug: 'My Shop', displayName: 'x' }).success).toBe(
+      false,
+    );
+    expect(VendorApproveSchema.safeParse({ slug: '', displayName: 'x' }).success).toBe(false);
+    expect(VendorApplicationListQuerySchema.safeParse({ status: 'PENDING' }).success).toBe(true);
+    expect(VendorApplicationListQuerySchema.safeParse({ status: 'NOPE' }).success).toBe(false);
+    expect(
+      VendorApplicationApprovedEventSchema.safeParse({
+        applicationId: ulid(1),
+        vendorId: ulid(2),
+        userId: ulid(3),
+      }).success,
+    ).toBe(true);
+    expect(VendorApplicationApprovedEventSchema.safeParse({ applicationId: ulid(1) }).success).toBe(
+      false,
+    );
   });
 });
 

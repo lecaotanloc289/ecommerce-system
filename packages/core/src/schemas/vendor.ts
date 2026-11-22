@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ApplicationStatusSchema } from '../enums';
 import { UserIdSchema, VendorApplicationIdSchema, VendorIdSchema } from '../ids';
-import { HttpUrlSchema, SlugSchema } from './common';
+import { HttpUrlSchema, PageQuerySchema, PageSchema, SlugSchema } from './common';
 import { IsoDateTimeSchema } from './datetime';
 import { UploadKeySchema } from './upload';
 
@@ -58,8 +58,67 @@ export const VendorApplicationSchema = z.object({
 });
 export type VendorApplication = z.infer<typeof VendorApplicationSchema>;
 
-/** Body of `POST /v1/vendor-applications/:id/reject`. */
+/** Body of `POST /v1/platform/vendor-applications/:id/reject`. */
 export const VendorRejectSchema = z.object({
   reason: requiredText(500),
 });
 export type VendorReject = z.infer<typeof VendorRejectSchema>;
+
+/** `GET /v1/vendor-applications/me`: the applicant's own applications, newest first (`latest` = `history[0]`). */
+export const VendorApplicationMeSchema = z.object({
+  latest: VendorApplicationSchema.nullable(),
+  history: z.array(VendorApplicationSchema),
+});
+export type VendorApplicationMe = z.infer<typeof VendorApplicationMeSchema>;
+
+/** Query of `GET /v1/platform/vendor-applications`. */
+export const VendorApplicationListQuerySchema = PageQuerySchema.extend({
+  status: ApplicationStatusSchema.optional(),
+});
+export type VendorApplicationListQuery = z.infer<typeof VendorApplicationListQuerySchema>;
+
+/**
+ * Staff list row. KYC numbers are masked (all but the last 4 characters replaced by `*`); the
+ * documents and full numbers are only in the detail view.
+ */
+export const VendorApplicationListItemSchema = z.object({
+  id: VendorApplicationIdSchema,
+  applicantId: UserIdSchema,
+  applicantName: z.string(),
+  status: ApplicationStatusSchema,
+  taxIdMasked: z.string(),
+  nationalIdNumberMasked: z.string(),
+  bankName: z.string(),
+  bankAccountNumberMasked: z.string(),
+  accountHolder: z.string(),
+  reviewedAt: IsoDateTimeSchema.nullable(),
+  createdAt: IsoDateTimeSchema,
+});
+export type VendorApplicationListItem = z.infer<typeof VendorApplicationListItemSchema>;
+export const VendorApplicationListPageSchema = PageSchema(VendorApplicationListItemSchema);
+export type VendorApplicationListPage = z.infer<typeof VendorApplicationListPageSchema>;
+
+/**
+ * Staff detail (`GET /v1/platform/vendor-applications/:id`): the full application plus
+ * short-lived presigned GET URLs for the KYC documents (never persist or share them).
+ */
+export const VendorApplicationDetailSchema = VendorApplicationSchema.extend({
+  applicantName: z.string(),
+  reviewedById: UserIdSchema.nullable(),
+  businessLicenseUrl: HttpUrlSchema,
+  nationalIdUrl: HttpUrlSchema,
+});
+export type VendorApplicationDetail = z.infer<typeof VendorApplicationDetailSchema>;
+
+/** Body of `POST /v1/platform/vendor-applications/:id/approve`. */
+export const VendorApproveSchema = z.object({
+  slug: SlugSchema.min(1),
+  displayName: requiredText(120),
+});
+export type VendorApprove = z.infer<typeof VendorApproveSchema>;
+
+/** Result of approve / reject: the masked row after review; `vendorId` only when approved. */
+export const VendorApplicationReviewResultSchema = VendorApplicationListItemSchema.extend({
+  vendorId: VendorIdSchema.nullable(),
+});
+export type VendorApplicationReviewResult = z.infer<typeof VendorApplicationReviewResultSchema>;

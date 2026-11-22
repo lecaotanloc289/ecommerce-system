@@ -14,6 +14,7 @@ import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { StorageModule } from './storage/storage.module';
+import { VendorApplicationsModule } from './vendor-applications/vendor-applications.module';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -38,6 +39,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     CatalogModule,
     OrdersModule,
     StorageModule,
+    VendorApplicationsModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
