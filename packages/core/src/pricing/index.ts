@@ -53,8 +53,12 @@ export type CouponEvaluation =
 export function evaluateCoupon(coupon: Coupon, ctx: CouponEvalContext): CouponEvaluation {
   if (!coupon.isActive) return { ok: false, code: 'coupon.error.not-found' };
   const t = ctx.now.getTime();
-  if (t < Date.parse(coupon.startsAt)) return { ok: false, code: 'coupon.error.not-started' };
-  if (t >= Date.parse(coupon.endsAt)) return { ok: false, code: 'coupon.error.expired' };
+  const starts = Date.parse(coupon.startsAt);
+  const ends = Date.parse(coupon.endsAt);
+  // NaN comparisons are always false, which would let a bad date pass as valid: fail closed.
+  invariant(!Number.isNaN(t + starts + ends), 'coupon window and now must be valid dates');
+  if (t < starts) return { ok: false, code: 'coupon.error.not-started' };
+  if (t >= ends) return { ok: false, code: 'coupon.error.expired' };
   if (coupon.minSpend !== null && M.compare(ctx.base, coupon.minSpend) < 0) {
     return { ok: false, code: 'coupon.error.min-spend-not-met' };
   }
@@ -163,8 +167,17 @@ export function priceOrder(input: PriceOrderInput): PricedOrder {
     throw new DomainError('coupon.error.stack-limit-exceeded', { max: input.maxCouponStack });
   }
 
+  const vendorIds = input.subOrders.map((s) => s.vendorId);
+  invariant(new Set(vendorIds).size === vendorIds.length, 'one sub-order per vendor');
+  // The same coupon may not be applied twice (it would bypass perUserLimit / maxRedemptions).
+  const couponIds = [...input.vendorCoupons, ...input.platformCoupons].map((a) => a.coupon.id);
+  if (new Set(couponIds).size !== couponIds.length) {
+    throw new DomainError('coupon.error.stack-limit-exceeded', { reason: 'duplicate-coupon' });
+  }
+
   // 1. Line totals and subtotals.
   const subs = input.subOrders.map((so) => {
+    invariant(!isNeg(M.add(so.shipping, zero)), 'shipping must not be negative');
     const lineTotals = so.lines.map((line) => {
       invariant(Number.isSafeInteger(line.qty) && line.qty > 0, 'qty must be a positive integer');
       invariant(!isNeg(line.unitPrice), 'unitPrice must not be negative');
@@ -201,6 +214,8 @@ export function priceOrder(input: PriceOrderInput): PricedOrder {
   for (const applied of input.platformCoupons) {
     const { coupon } = applied;
     if (coupon.scope !== 'PLATFORM') reject('coupon.error.not-found', coupon);
+    // Eligibility (minSpend) is judged on the items total after vendor discounts, for every
+    // platform coupon alike; only the discount itself is taken from what is `remaining`.
     const verdict = evaluateCoupon(coupon, { now, base: itemsAfterVendor, ...counts(applied) });
     if (!verdict.ok) reject(verdict.code, coupon);
     const discount = couponDiscount(coupon, remaining);

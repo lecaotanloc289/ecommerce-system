@@ -460,6 +460,69 @@ describe('priceOrder', () => {
   });
 });
 
+describe('priceOrder hardening', () => {
+  it('rejects the same coupon applied twice, in either list', () => {
+    const p = percent(1000);
+    const subOrders = [so(V1, [[100_000, 1, 1000]])];
+    expect(
+      code(() => priceOrder(input({ subOrders, platformCoupons: [applied(p), applied(p)] }))),
+    ).toBe('coupon.error.stack-limit-exceeded');
+    const v = percent(1000, vendorScope(V1));
+    expect(
+      code(() =>
+        priceOrder(
+          input({ subOrders, vendorCoupons: [applied(v)], platformCoupons: [applied(v)] }),
+        ),
+      ),
+    ).toBe('coupon.error.stack-limit-exceeded');
+  });
+  it('fails closed on invalid dates and rejects bad structure', () => {
+    const subOrders = [so(V1, [[100_000, 1, 1000]])];
+    expect(
+      code(() =>
+        evaluateCoupon(percent(1000), {
+          now: new Date('x'),
+          base: vnd(1),
+          totalRedemptions: 0,
+          userRedemptions: 0,
+        }),
+      ),
+    ).toBe('money.error.invalid-operand');
+    expect(
+      code(() => priceOrder(input({ subOrders: [so(V1, [[1, 1, 0]]), so(V1, [[1, 1, 0]])] }))),
+    ).toBe('money.error.invalid-operand');
+    expect(code(() => priceOrder(input({ subOrders: [so(V1, [[1, 1, 0]], -1)] })))).toBe(
+      'money.error.invalid-operand',
+    );
+    expect(
+      code(() =>
+        priceOrder(
+          input({ subOrders, maxCouponStack: 0, platformCoupons: [applied(percent(100))] }),
+        ),
+      ),
+    ).toBe('coupon.error.stack-limit-exceeded');
+  });
+  it('platform coupon after a 100% vendor discount, and a zero-base sub-order', () => {
+    const r = priceOrder(
+      input({
+        subOrders: [so(V1, [[10_000, 1, 1000]]), so(V2, [[20_000, 1, 1000]])],
+        vendorCoupons: [applied(percent(10_000, vendorScope(V1)))],
+        platformCoupons: [applied(percent(5000))],
+      }),
+    );
+    expect(r.subOrders[0]!.platformDiscount).toEqual(vnd(0));
+    expect(r.subOrders[1]!.platformDiscount).toEqual(vnd(10_000));
+    const all = priceOrder(
+      input({
+        subOrders: [so(V1, [[10_000, 1, 1000]])],
+        vendorCoupons: [applied(percent(10_000, vendorScope(V1)))],
+        platformCoupons: [applied(fixed(5_000))],
+      }),
+    );
+    expect(all.grandTotal).toEqual(vnd(0));
+  });
+});
+
 describe('computePayoutPostings', () => {
   it('matches D7 and sums to zero, revenue may be negative', () => {
     const r = priceOrder(
