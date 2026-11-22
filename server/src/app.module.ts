@@ -11,6 +11,7 @@ import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
 import { MeModule } from './me/me.module';
 import { OrdersModule } from './orders/orders.module';
+import { PlatformModule } from './platform/platform.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -43,6 +44,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     CatalogModule,
     OrdersModule,
     ReviewsModule,
+    PlatformModule,
     StorageModule,
     VendorApplicationsModule,
     VendorModule,
