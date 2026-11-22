@@ -51,7 +51,7 @@ Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables
 **Cache, Queue, Storage**
 
 - Redis 7: session denylist, rate limiting, BullMQ
-- S3-compatible storage: R2 (prod) or MinIO (local docker) for product images and KYC documents
+- S3-compatible storage: R2 (prod) or RustFS (local docker; MinIO images are no longer pullable) for product images and KYC documents
 
 **Payment**
 
@@ -91,7 +91,7 @@ ecommerce-system/
 │   ├── i18n/                      Messages vi/en (typed TS catalogs), translator, formatters (currency, date).
 │   │                              Follows next-intl conventions, shared between web and admin.
 │   └── config/                    Shared ESLint / TS / Tailwind / Prettier / commitlint configs.
-├── docker-compose.yml + docker/   Local Postgres + Redis + MinIO + Mailhog
+├── docker-compose.yml + docker/   Local Postgres + Redis + RustFS (S3) + Mailhog
 ├── turbo.json
 ├── pnpm-workspace.yaml
 ├── .env.example                   (NEVER commit real .env)
@@ -497,22 +497,22 @@ pnpm sdk:generate                   # export spec (no DB/Redis needed) → opena
 ### Local services (docker compose)
 
 ```bash
-pnpm services:up                    # postgres + redis + minio + mailhog
+pnpm services:up                    # postgres + redis + s3 (+ s3-init) + mailhog
 pnpm services:down
 pnpm services:logs
 ```
 
 ### Ports
 
-| Service       | Port        | Notes                                     |
-| ------------- | ----------- | ----------------------------------------- |
-| `@apps/web`   | 3000        | Next.js storefront                        |
-| `@server/api` | 3001        | NestJS + Fastify, prefix `/v1`            |
-| `@apps/admin` | 5173        | Vite dev server                           |
-| Postgres      | 5432        | DBs: `ecommerce`, `ecommerce_shadow`      |
-| Redis         | 6379        | Cache + BullMQ                            |
-| MinIO         | 9000 / 9001 | S3 API / web console (`minioadmin`/`...`) |
-| Mailhog       | 1025 / 8025 | SMTP / web UI                             |
+| Service       | Port        | Notes                                                                                 |
+| ------------- | ----------- | ------------------------------------------------------------------------------------- |
+| `@apps/web`   | 3000        | Next.js storefront                                                                    |
+| `@server/api` | 3001        | NestJS + Fastify, prefix `/v1`                                                        |
+| `@apps/admin` | 5173        | Vite dev server                                                                       |
+| Postgres      | 5432        | DBs: `ecommerce`, `ecommerce_shadow`                                                  |
+| Redis         | 6379        | Cache + BullMQ                                                                        |
+| RustFS (S3)   | 9000 / 9001 | S3 API / web console (`rustfsadmin`/`...`); buckets `kyc` (private), `media` (public) |
+| Mailhog       | 1025 / 8025 | SMTP / web UI                                                                         |
 
 ### First-time setup
 

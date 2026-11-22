@@ -31,6 +31,7 @@ Controllers orchestrate only: middleware (helmet, cors, rate-limit, request-id) 
 - Cart module (`src/cart/`) — see "Cart" below.
 - Catalog module (`src/catalog/`) — public read API, see below.
 - Orders module (`src/orders/`) — checkout + customer orders, see "Orders" below. Writes outbox rows; nothing dispatches them yet (worker = T2.2).
+- Storage module (`src/storage/`): presigned uploads to S3-compatible storage — see "Storage / uploads" below.
 - Not started: payment webhooks, vendor fulfilment, payouts, outbox dispatcher (worker).
 
 ## Idempotency (Golden Rule #3, roadmap D9)
@@ -159,6 +160,16 @@ All routes `@Roles('CUSTOMER')`, scoped to `req.user.id`; another user's order i
 **Contracts for later tasks:** the T2.2 worker writes `Payment.redirectUrl` / `expiresAt` only `WHERE status = 'PENDING'` (a retry or cancel may have failed the attempt meanwhile). T3.1 confirmation must lock the order row first and route a CONFIRMED webhook for an attempt that is already FAILED (replaced by a retry, or order cancelled) to the refund path.
 
 Tests: `test/integration/orders.spec.ts` (single + two-vendor money, out-of-stock rollback, concurrent last unit, idempotency replay + DB backstop, coupon limit, shipping validation, client prices ignored, cancel, 404 for others, payment session 202/200, retry rules).
+
+## Storage / uploads (roadmap D13)
+
+`StorageModule` (`src/storage/`) exports `StorageService`; import it in a feature module to validate or read keys. AWS SDK v3 (`@aws-sdk/client-s3` + `s3-request-presigner`), `forcePathStyle` locally. Local S3 = RustFS (compose service `s3`, ports 9000/9001, creds `rustfsadmin`; Docker Hub `minio/minio` is no longer pullable) plus the one-shot `s3-init` job (`docker/s3-init.sh`) that creates `kyc` (private) and `media` (public read).
+
+- **Env** (`env.ts`): `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (required), `S3_FORCE_PATH_STYLE` (default true; set false for R2 virtual-host style if desired), `S3_BUCKET_KYC` (`kyc`), `S3_BUCKET_MEDIA` (`media`), `MEDIA_PUBLIC_BASE_URL` (default `http://localhost:9000/media`; `publicUrl` = base + `/` + key, so locally the path reads `/media/media/vendors/…` — the key itself starts with `media/`).
+- **`POST /v1/uploads/presign`** (`UploadsController`, `JwtAuthGuard` + `RolesGuard`, body `PresignRequest`, returns `PresignResponse`): `kyc` needs `CUSTOMER` (key `kyc/{userId}/{ulid}.{ext}`, jpeg/png/webp/pdf); `product-image` / `vendor-logo` need `VENDOR_OWNER|VENDOR_STAFF` with `vendorId` from the token (key `media/vendors/{vendorId}/{ulid}.{ext}`, jpeg/png/webp). Max 10 MB, URL valid 5 min. Errors: `upload.error.content-type-not-allowed` (422), `upload.error.too-large` (413), `common.error.forbidden`. No `@Idempotent()`: presigning writes no state (a retry just returns another unused key). Default rate-limit bucket.
+- **Content-Type and size are enforced by S3, not by us:** the PUT is signed with `content-type` and `content-length` as signed headers, so a PUT with a different type or byte length gets 403 (verified against RustFS). The client must send `headers` from the response and a body of exactly the declared `size`. We do not inspect the bytes (no magic-number sniffing / virus scan).
+- **`StorageService`:** `presignPut(purpose, owner, contentType, size)`, `presignGet(key)` (kyc keys only, 60s TTL — authorise platform staff in the caller), `publicUrl(key)` (media keys only), `assertOwnedKey(key, owner)` → returns the key or throws `upload.error.invalid-key`. `owner` = `{ type: 'user', userId }` for kyc keys, `{ type: 'vendor', vendorId }` for media keys (always from `req.user`). It checks owner + shape only (media keys: images only), not the exact purpose and not that the object exists — HEAD it if that matters. Signed `content-length` is verified on RustFS only; smoke-test on R2 before prod. In production `S3_ENDPOINT` / `MEDIA_PUBLIC_BASE_URL` must not be localhost (env refine). **Any feature that persists a client-echoed key (vendor application, product images, logo) must call `assertOwnedKey` first.**
+- The S3 client is lazy (no connection at construction), so `openapi:export` needs no S3 stub. Unit tests mock the presigner (`test/storage/`, `test/http/uploads.http.spec.ts`); there is no Testcontainers S3 test (the harness only starts Postgres + Redis).
 
 ## OpenAPI / SDK
 
