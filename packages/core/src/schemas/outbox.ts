@@ -51,6 +51,16 @@ export const OrderCancelledEventSchema = z.object({
 export type OrderCancelledEvent = z.infer<typeof OrderCancelledEventSchema>;
 
 /**
+ * `order.paid` — a payment was confirmed (T3.1): sub-orders PAID, escrow IN posted, stock
+ * committed (customer + vendor emails).
+ */
+export const OrderPaidEventSchema = z.object({
+  orderId: OrderIdSchema,
+  customerId: UserIdSchema,
+});
+export type OrderPaidEvent = z.infer<typeof OrderPaidEventSchema>;
+
+/**
  * `refund.requested` — a Refund row is PENDING (admin refund of a whole sub-order, T3.5, or a
  * payment that arrived for a cancelled order, T3.1); the worker calls `PaymentProvider.refund`
  * and moves the Refund to SUCCEEDED / FAILED. Skip it when the refund is no longer PENDING.
@@ -126,6 +136,7 @@ export const OUTBOX_EVENT_SCHEMAS = {
   'order.created': OrderCreatedEventSchema,
   'payment.requested': PaymentRequestedEventSchema,
   'order.cancelled': OrderCancelledEventSchema,
+  'order.paid': OrderPaidEventSchema,
   'refund.requested': RefundRequestedEventSchema,
   'sub-order.shipped': SubOrderShippedEventSchema,
   'sub-order.delivered': SubOrderDeliveredEventSchema,

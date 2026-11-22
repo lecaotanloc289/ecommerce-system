@@ -11,6 +11,7 @@ import { PARAMS_PROVIDER_TOKEN, type Params } from 'nestjs-pino';
 import { AppModule } from '../../src/app.module';
 import { AccessTokenClaimsSchema } from '../../src/auth/auth.schemas';
 import { TokenService } from '../../src/auth/token.service';
+import { registerRawBodyCapture } from '../../src/common/raw-body';
 import { registerRateLimit } from '../../src/common/rate-limit';
 import { ENV } from '../../src/config/config.module';
 import type { Env } from '../../src/config/env';
@@ -95,6 +96,7 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
     exposedHeaders: ['retry-after', 'idempotent-replayed'],
   });
   await registerRateLimit(app);
+  registerRawBodyCapture(app);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
 
