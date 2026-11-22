@@ -11,7 +11,7 @@ Pure TypeScript + `zod` — runs in browser and Node. Never imports `@repo/db`, 
 | `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`         |
 | `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum      |
 | `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                           |
-| `src/schemas/*` | `@repo/core/schemas/*` | `money`, `common`, `address`, `category`, `product`, `cart`, `checkout`                            |
+| `src/schemas/*` | `@repo/core/schemas/*` | `money`, `common`, `address`, `category`, `product`, `cart`, `checkout`, `live`                    |
 
 The root export (`@repo/core`) re-exports everything; Money helpers are namespaced there:
 `const m: Money = Money.of(150_000, 'VND')`. Every export (root and subpaths) resolves to `dist/`, built
@@ -35,6 +35,10 @@ whichever path it was imported from). Consumers need `@repo/core` built first (t
   `ERROR_HTTP_STATUS` (the compiler enforces the second). No user-facing text in this package.
 - **Schemas:** read shapes mirror DB nullability (`null`, not optional). Request schemas never carry
   `price`, `vendorId`, `userId` or `role` — the server re-reads them.
+- **Live (`schemas/live.ts`):** request/read shapes, the realtime `LiveEventSchema` union (SSE
+  payloads) and `LiveOutboxEventSchema` (outbox rows the worker consumes) — the shared contract of
+  `docs/superpowers/plans/2026-11-23-live-shopping.md` §1. `ReactionKind` lives here, not in
+  `enums/`, because it is never persisted. Request datetimes accept an offset; read datetimes are UTC `Z`.
 
 ## Commands
 

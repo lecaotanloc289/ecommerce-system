@@ -86,3 +86,6 @@ export type OutboxEventId = z.infer<typeof OutboxEventIdSchema>;
 /** `Idempotency-Key` header value (Golden Rule #3) — a client-generated ULID. */
 export const IdempotencyKeySchema = UlidSchema.brand<'IdempotencyKey'>();
 export type IdempotencyKey = z.infer<typeof IdempotencyKeySchema>;
+
+export const LiveSessionIdSchema = UlidSchema.brand<'LiveSessionId'>();
+export type LiveSessionId = z.infer<typeof LiveSessionIdSchema>;

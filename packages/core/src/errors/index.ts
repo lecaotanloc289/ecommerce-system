@@ -65,6 +65,20 @@ export const ERROR_CODES = [
   'payment.error.signature-invalid',
   'payment.error.amount-mismatch',
   'payment.error.already-confirmed',
+  // live
+  'live.error.not-found',
+  'live.error.invalid-transition',
+  'live.error.not-provisioned',
+  'live.error.encoder-offline',
+  'live.error.already-live',
+  'live.error.not-live',
+  'live.error.product-not-owned',
+  'live.error.product-inactive',
+  'live.error.too-many-products',
+  'live.error.chat-rate-limited',
+  'live.error.chat-muted',
+  'live.error.webhook-signature-invalid',
+  'live.error.stream-provider-unavailable',
 ] as const;
 
 export const ErrorCodeSchema = z.enum(ERROR_CODES);
@@ -116,6 +130,20 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'payment.error.signature-invalid': 400,
   'payment.error.amount-mismatch': 422,
   'payment.error.already-confirmed': 409,
+  // live
+  'live.error.not-found': 404,
+  'live.error.invalid-transition': 409,
+  'live.error.not-provisioned': 409,
+  'live.error.encoder-offline': 409,
+  'live.error.already-live': 409,
+  'live.error.not-live': 409,
+  'live.error.product-not-owned': 422,
+  'live.error.product-inactive': 422,
+  'live.error.too-many-products': 422,
+  'live.error.chat-rate-limited': 429,
+  'live.error.chat-muted': 403,
+  'live.error.webhook-signature-invalid': 401,
+  'live.error.stream-provider-unavailable': 503,
 };
 
 /** Interpolation values for the translated message (e.g. `{ sku, available }`). */

@@ -101,3 +101,11 @@ export const CouponScope = CouponScopeSchema.enum;
 export const DiscountTypeSchema = z.enum(['PERCENT', 'FIXED']);
 export type DiscountType = z.infer<typeof DiscountTypeSchema>;
 export const DiscountType = DiscountTypeSchema.enum;
+
+export const LiveSessionStatusSchema = z.enum(['SCHEDULED', 'LIVE', 'ENDED', 'CANCELLED']);
+export type LiveSessionStatus = z.infer<typeof LiveSessionStatusSchema>;
+export const LiveSessionStatus = LiveSessionStatusSchema.enum;
+
+export const LiveEndReasonSchema = z.enum(['VENDOR', 'DISCONNECT_TIMEOUT', 'TERMINATED']);
+export type LiveEndReason = z.infer<typeof LiveEndReasonSchema>;
+export const LiveEndReason = LiveEndReasonSchema.enum;
