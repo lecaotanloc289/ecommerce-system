@@ -83,6 +83,15 @@ export type ReviewId = z.infer<typeof ReviewIdSchema>;
 export const OutboxEventIdSchema = UlidSchema.brand<'OutboxEventId'>();
 export type OutboxEventId = z.infer<typeof OutboxEventIdSchema>;
 
+export const PlatformSettingsIdSchema = UlidSchema.brand<'PlatformSettingsId'>();
+export type PlatformSettingsId = z.infer<typeof PlatformSettingsIdSchema>;
+
+export const RefundIdSchema = UlidSchema.brand<'RefundId'>();
+export type RefundId = z.infer<typeof RefundIdSchema>;
+
+export const VendorInvitationIdSchema = UlidSchema.brand<'VendorInvitationId'>();
+export type VendorInvitationId = z.infer<typeof VendorInvitationIdSchema>;
+
 /** `Idempotency-Key` header value (Golden Rule #3) — a client-generated ULID. */
 export const IdempotencyKeySchema = UlidSchema.brand<'IdempotencyKey'>();
 export type IdempotencyKey = z.infer<typeof IdempotencyKeySchema>;

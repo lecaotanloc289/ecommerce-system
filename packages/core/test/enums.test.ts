@@ -39,6 +39,7 @@ const coreEnums: Record<string, z.ZodEnum> = {
   LedgerEntryType: enums.LedgerEntryTypeSchema,
   CouponScope: enums.CouponScopeSchema,
   DiscountType: enums.DiscountTypeSchema,
+  RefundStatus: enums.RefundStatusSchema,
 };
 
 describe('enums mirror Prisma', () => {
