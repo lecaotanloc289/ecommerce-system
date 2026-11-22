@@ -18,3 +18,4 @@ export * from './wallet';
 export * from './refund';
 export * from './vendor-invitation';
 export * from './product-admin';
+export * from './catalog';

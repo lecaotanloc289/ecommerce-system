@@ -32,7 +32,8 @@ Read shapes use Money, ISO-datetime strings and branded ids. Input shapes never 
 - `order`: `Order`, `SubOrder`, `VendorSubOrder` (adds commission + net), `OrderItem`, `OrderSummary`, `ShippingAddressSnapshot`, `PaymentSession` (`redirectUrl` null until the worker creates the session), `SubOrderShip`.
 - `shipping-method`: `ShippingMethod`, `ShippingMethodInput`.
 - `coupon`: `CouponInput`, `Coupon` — a union on `discountType`: FIXED carries `discount: Money`, PERCENT carries `discountBps` (basis points, 1..10000). Scope comes from the endpoint, not the body.
-- `review`: `ReviewCreate`, `Review`, `RatingSummary`.
+- `review`: `ReviewCreate`, `Review`, `RatingSummary` (`average` is null when there are no reviews).
+- `catalog`: public catalog queries/reads — `CatalogLocale` (`vi|en`), `LocaleQuery`, `ProductListQuery`, `SearchQuery`, `VendorProductsQuery`, `CategoryTree`/`CategoryNode` (recursive), `CategoryDetail`, `ProductSummary`(+`Page`), `ProductDetail`, `VendorDetail`.
 - `platform-settings`: `PlatformSettingsPublic`, `PlatformSettings`, `PlatformSettingsUpdate` (partial, non-empty).
 - `wallet`: `Wallet`, `LedgerEntry` (signed `amount`). `refund`: `RefundCreate` (whole sub-order, reason only), `Refund`.
 - `vendor-invitation`: `VendorInvitationCreate` (email lowercased), `VendorInvitation`, `VendorInvitationAccept`.
