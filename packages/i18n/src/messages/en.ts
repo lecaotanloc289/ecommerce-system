@@ -318,6 +318,7 @@ export const en = {
   /** Transactional emails rendered by the worker (`@workers/jobs`) in the recipient's locale. */
   email: {
     greeting: 'Hi {name},',
+    greetingNoName: 'Hello,',
     signature: 'The Elma team',
     footer: 'You received this email because of activity on your Elma account.',
     viewOrder: 'View your order',
@@ -352,6 +353,12 @@ export const en = {
       subject: 'Your seller application was not approved',
       intro: 'Unfortunately, your application to sell on Elma was not approved.',
       reason: 'Reason: {reason}',
+    },
+    vendorInvitation: {
+      subject: 'You are invited to join {vendor} on Elma',
+      intro: '{vendor} invited you to help run their shop on Elma.',
+      howTo: 'Sign in with this email address to accept. The invitation expires on {expiresAt}.',
+      accept: 'Accept the invitation',
     },
     payoutReleased: {
       subject: 'Payout released for order {orderId}',

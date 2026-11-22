@@ -18,6 +18,7 @@ Chosen stack (per user answers):
 | `apps/client` (storefront) | **Cloudflare Workers** — Next.js SSR via `@opennextjs/cloudflare` (subdomain `*.workers.dev`) |
 | `apps/admin`               | **Cloudflare Pages** (subdomain `*.pages.dev`)                                                |
 | `server`                   | **Fly.io** Docker (subdomain `*.fly.dev`)                                                     |
+| `workers/jobs`             | **Fly.io** Docker, separate app `elma-worker-{dev,prod}`, no HTTP service                     |
 | Postgres                   | **Neon** — DB branches per env                                                                |
 | Redis                      | **Upstash** — 2 separate databases                                                            |
 | Secrets                    | GitHub Actions repo secrets, mirrored to Fly via `fly secrets set`                            |
@@ -54,6 +55,8 @@ Steps:
 | `server/Dockerfile`               | Multi-stage Node 20 build → small runtime image                                               |
 | `server/.dockerignore`            | Exclude `node_modules`, `.next`, `dist`, tests, env files                                     |
 | `server/fly.toml`                 | Fly app config (region `sin`, internal port `3001`, health check `/v1/health`)                |
+| `workers/jobs/Dockerfile`         | Node 22 worker image (build context = repo root; `Dockerfile.dockerignore` beside it)         |
+| `workers/jobs/fly.toml`           | Worker Fly app config (region `sin`, no `[http_service]`, `kill_timeout` 90s)                 |
 | `apps/client/wrangler.jsonc`      | Worker config: `.open-next/worker.js`, `nodejs_compat`, `ASSETS` binding, envs `dev` / `prod` |
 | `apps/client/open-next.config.ts` | OpenNext config (read-only static-assets incremental cache — no R2/KV yet)                    |
 
@@ -65,6 +68,7 @@ Steps:
 | `.github/workflows/deploy-web.yml`              | push to `dev` or `prod`                  | `opennextjs-cloudflare build` → `opennextjs-cloudflare deploy --env <branch>` |
 | `.github/workflows/deploy-admin.yml`            | push to `dev` or `prod`                  | Build Vite → `wrangler pages deploy ./apps/admin/dist`                        |
 | `.github/workflows/deploy-server.yml`           | push to `dev` or `prod`                  | `flyctl deploy --app $APP --remote-only`                                      |
+| `.github/workflows/deploy-worker.yml`           | push to `dev` or `prod` (worker paths)   | `flyctl deploy --app elma-worker-<branch> --remote-only` (no smoke check)     |
 
 Each deploy workflow:
 
@@ -122,6 +126,18 @@ fly launch --no-deploy --name elma-api-prod --region sin --copy-config server/fl
 Size: `shared-cpu-1x 256mb` for `elma-api-dev` (~$1.94 / mo), `512mb` for `elma-api-prod`.
 
 Secrets set per app via `fly secrets set --app elma-api-{dev|prod} KEY=value` (see secret list below).
+
+Worker apps (`workers/jobs`, outbox dispatcher — see `workers/jobs/CLAUDE.md`):
+
+```bash
+fly launch --no-deploy --name elma-worker-dev  --region sin --copy-config workers/jobs/fly.toml
+fly launch --no-deploy --name elma-worker-prod --region sin --copy-config workers/jobs/fly.toml
+fly secrets set --app elma-worker-dev DATABASE_URL=... REDIS_URL=... SMTP_HOST=... SMTP_PORT=... SMTP_USER=... SMTP_PASS=... SMTP_FROM=... \
+  WEB_ORIGIN=... ADMIN_ORIGIN=... API_PUBLIC_URL=https://elma-api-dev.fly.dev VNPAY_TMN_CODE=... VNPAY_HASH_SECRET=... \
+  VNPAY_PAY_URL=... VNPAY_API_URL=... STRIPE_SECRET_KEY=...
+```
+
+Run exactly one machine per worker app for now (`fly scale count 1`); more are safe (claims use `FOR UPDATE SKIP LOCKED`) but not needed.
 
 `server/fly.toml`:
 

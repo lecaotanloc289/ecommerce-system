@@ -316,6 +316,7 @@ export const vi: Messages = {
   },
   email: {
     greeting: 'Xin chào {name},',
+    greetingNoName: 'Xin chào,',
     signature: 'Đội ngũ Elma',
     footer: 'Bạn nhận được email này vì có hoạt động trên tài khoản Elma của bạn.',
     viewOrder: 'Xem đơn hàng',
@@ -351,6 +352,12 @@ export const vi: Messages = {
       subject: 'Đơn đăng ký bán hàng của bạn chưa được duyệt',
       intro: 'Rất tiếc, đơn đăng ký bán hàng trên Elma của bạn chưa được duyệt.',
       reason: 'Lý do: {reason}',
+    },
+    vendorInvitation: {
+      subject: 'Bạn được mời tham gia {vendor} trên Elma',
+      intro: '{vendor} đã mời bạn cùng quản lý cửa hàng trên Elma.',
+      howTo: 'Hãy đăng nhập bằng địa chỉ email này để chấp nhận. Lời mời hết hạn vào {expiresAt}.',
+      accept: 'Chấp nhận lời mời',
     },
     payoutReleased: {
       subject: 'Đã chuyển tiền cho đơn hàng {orderId}',
