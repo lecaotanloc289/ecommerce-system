@@ -37,6 +37,7 @@ import {
   OrderSummaryPageDto,
   PaymentRetryDto,
   PaymentSessionDto,
+  SubOrderParamsDto,
 } from './orders.dto';
 import { OrdersService } from './orders.service';
 
@@ -146,5 +147,21 @@ export class OrdersController {
     @Body() body: PaymentRetryDto,
   ): Promise<PaymentSession> {
     return this.orders.retryPayment(user.id, params.id, body);
+  }
+
+  @ApiOperation({
+    summary: 'Confirm a parcel was received (sub-order SHIPPED | DELIVERED → COMPLETED)',
+    description: 'Starts the payout hold period of that vendor. Returns the whole order.',
+  })
+  @ApiHeader(IDEMPOTENCY_HEADER)
+  @ZodResponse({ status: 200, description: 'The order', type: OrderDto })
+  @Post(':orderId/sub-orders/:id/confirm-received')
+  @HttpCode(200)
+  @Idempotent()
+  confirmReceived(
+    @CurrentUser() user: AuthUser,
+    @Param() params: SubOrderParamsDto,
+  ): Promise<Order> {
+    return this.orders.confirmReceived(user.id, params.orderId, params.id);
   }
 }

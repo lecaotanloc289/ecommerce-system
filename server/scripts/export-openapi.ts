@@ -27,6 +27,10 @@ const DUMMY_ENV: Record<string, string> = {
   FACEBOOK_OAUTH_CALLBACK_URL: 'http://localhost:3001/v1/auth/facebook/callback',
   S3_ACCESS_KEY_ID: 'openapi-export',
   S3_SECRET_ACCESS_KEY: 'openapi-export',
+  VNPAY_TMN_CODE: 'openapi-export',
+  VNPAY_HASH_SECRET: 'openapi-export',
+  STRIPE_SECRET_KEY: 'sk_test_openapi_export',
+  STRIPE_WEBHOOK_SECRET: 'whsec_openapi_export',
 };
 
 const OUTPUT_PATH = resolve(__dirname, '../../packages/sdk/openapi.json');

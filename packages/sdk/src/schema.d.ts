@@ -444,6 +444,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/orders/{orderId}/sub-orders/{id}/confirm-received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm a parcel was received (sub-order SHIPPED | DELIVERED → COMPLETED)
+         * @description Starts the payout hold period of that vendor. Returns the whole order.
+         */
+        post: operations["OrdersController_confirmReceived"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/platform-settings/public": {
         parameters: {
             query?: never;
@@ -461,6 +481,346 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Orders of every customer, newest first
+         * @description `q` matches the order id (prefix) or the customer email (substring).
+         */
+        get: operations["PlatformOrdersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Order with sub-orders, items, payments, ledger entries and refunds
+         * @description Payments never include the provider raw payload.
+         */
+        get: operations["PlatformOrdersController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Products of every vendor, newest first */
+        get: operations["PlatformProductsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/products/{id}/block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Block a product (staff or admin)
+         * @description Hides it from catalog, cart and checkout; the vendor cannot publish, archive or edit it (`product.error.blocked`). Already BLOCKED → 409 `common.error.conflict`.
+         */
+        post: operations["PlatformProductsController_block"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/products/{id}/unblock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unblock a product → DRAFT (staff or admin)
+         * @description The vendor must publish it again. Not BLOCKED → 409 `common.error.conflict`.
+         */
+        post: operations["PlatformProductsController_unblock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Refunds, newest first, optional `status` filter */
+        get: operations["PlatformRefundsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Platform tunables (commission, hold period, currencies, …) */
+        get: operations["PlatformSettingsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change any subset of the tunables (admin only)
+         * @description Bounds: commissionBps 0..10000, holdPeriodDays / refundWindowDays 0..365, paymentTimeoutMinutes 5..1440, maxCouponStack 1..10, non-empty supportedCurrencies that contains defaultCurrency (checked against the stored values when only one is sent).
+         */
+        patch: operations["PlatformSettingsController_update"];
+        trace?: never;
+    };
+    "/v1/platform/sub-orders/{id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refund a whole sub-order (admin)
+         * @description Amount = what the customer paid for the sub-order. Sub-order → REFUNDED, stock returned when not yet shipped, escrow → customer in the ledger, order status re-derived; the provider refund runs asynchronously (refund PENDING until the worker settles it). Not PAID..DELIVERED, payout already released, no confirmed payment or a refund already exists → 409 `refund.error.not-refundable`; unknown sub-order → 404 `sub-order.error.not-found`; refunding your own order → 403 `common.error.forbidden`.
+         */
+        post: operations["PlatformRefundsController_refund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Users, newest first; `q` matches email or name */
+        get: operations["PlatformUsersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/users/{id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grant PLATFORM_STAFF / PLATFORM_ADMIN (admin only)
+         * @description The user sees the role from their next access-token refresh. Already held: no-op.
+         */
+        post: operations["PlatformUsersController_grant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/users/{id}/roles/{role}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke PLATFORM_STAFF / PLATFORM_ADMIN (admin only)
+         * @description An admin cannot remove their own PLATFORM_ADMIN (403 `common.error.forbidden`); the last admin cannot be removed (409 `common.error.conflict`). Not held: no-op.
+         */
+        delete: operations["PlatformUsersController_revoke"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/vendor-applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Applications, newest first, optional `status` filter (KYC numbers masked) */
+        get: operations["PlatformVendorApplicationsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/vendor-applications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One application with full KYC data and short-lived presigned document URLs */
+        get: operations["PlatformVendorApplicationsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/vendor-applications/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve: creates the ACTIVE vendor, its wallet and the VENDOR_OWNER role
+         * @description The applicant gets the new role on their next access-token refresh. Not PENDING → 409 `vendor.error.application-not-pending`; slug taken → 409 `common.error.conflict`.
+         */
+        post: operations["PlatformVendorApplicationsController_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/vendor-applications/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a PENDING application with a reason */
+        post: operations["PlatformVendorApplicationsController_reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/vendors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vendors, newest first; filter by `status`, search `q` */
+        get: operations["PlatformVendorsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/vendors/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reactivate a SUSPENDED vendor (staff or admin)
+         * @description Not SUSPENDED → 409 `common.error.conflict`.
+         */
+        post: operations["PlatformVendorsController_reactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/vendors/{id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suspend an ACTIVE vendor (staff or admin)
+         * @description Its products leave the catalog, cart and checkout and its writes are refused with `vendor.error.suspended` at once. Not ACTIVE → 409 `common.error.conflict`.
+         */
+        post: operations["PlatformVendorsController_suspend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/products": {
         parameters: {
             query?: never;
@@ -472,6 +832,27 @@ export interface paths {
         get: operations["ProductsController_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/products/{id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reviews of a visible product, newest first, with the rating summary (public) */
+        get: operations["ReviewsController_list"];
+        put?: never;
+        /**
+         * Review a purchased product (once per sub-order and product)
+         * @description The sub-order must be the caller's, DELIVERED or COMPLETED, and contain this product, else 422 `review.error.not-eligible`. A second review → 409 `review.error.already-exists`.
+         */
+        post: operations["ReviewsController_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -526,6 +907,405 @@ export interface paths {
          * @description `kyc` requires CUSTOMER; `product-image` / `vendor-logo` require VENDOR_OWNER or VENDOR_STAFF (vendor taken from the access token). The PUT body must be exactly `size` bytes.
          */
         post: operations["UploadsController_presign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor-applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply to become a vendor (KYC documents referenced by upload keys)
+         * @description Keys come from `POST /v1/uploads/presign` (purpose `kyc`) and must belong to the caller (`upload.error.invalid-key` otherwise). One PENDING application at a time (`vendor.error.application-already-pending`); a user who already owns a shop gets 409 `common.error.conflict`. Re-applying after a rejection is allowed.
+         */
+        post: operations["VendorApplicationsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor-applications/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Own applications, newest first (`latest` = `history[0]`) */
+        get: operations["VendorApplicationsController_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor-invitations/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept an invitation (verified email must match); then refresh the token */
+        post: operations["VendorInvitationAcceptController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Own invitations, newest first, with derived status */
+        get: operations["VendorStaffController_list"];
+        put?: never;
+        /** Invite a staff member by email (the link is emailed, never returned) */
+        post: operations["VendorStaffController_invite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/invitations/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke an invitation that was not accepted */
+        post: operations["VendorStaffController_revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Own wallet ledger lines, newest first (cursor pagination) */
+        get: operations["VendorWalletController_ledger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Own products, newest first (cursor pagination, optional status) */
+        get: operations["VendorProductsController_list"];
+        put?: never;
+        /**
+         * Create a DRAFT product
+         * @description `status` in the body is ignored. Variant/image `id`s are not allowed on create. `basePrice` is stored as the lowest variant price.
+         */
+        post: operations["VendorProductsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/products/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One own product with raw translations and stock counters */
+        get: operations["VendorProductsController_get"];
+        /**
+         * Replace translations, variants, images and categories of an own product
+         * @description Variants are matched by `id`, else by `sku`; variants missing from the payload are deleted unless ordered or carted (409 `product.error.variant-in-use`: set stock to 0 instead). `stockOnHand` never goes below the reserved quantity (409 `product.error.stock-below-reserved`). `status` in the body is ignored; use publish / archive.
+         */
+        put: operations["VendorProductsController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/products/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive an own product (hidden from the storefront) */
+        post: operations["VendorProductsController_archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/products/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish (ACTIVE) an own product
+         * @description Needs a Vietnamese name and a variant priced above zero (422 `product.error.not-publishable`); BLOCKED products → 409 `product.error.blocked`.
+         */
+        post: operations["VendorProductsController_publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/shipping-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Own shipping methods, active and inactive */
+        get: operations["VendorShippingController_list"];
+        put?: never;
+        /** Create a shipping method */
+        post: operations["VendorShippingController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/shipping-methods/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace an own shipping method */
+        put: operations["VendorShippingController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/shipping-methods/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop offering an own shipping method at checkout */
+        post: operations["VendorShippingController_deactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Owner and staff of the vendor */
+        get: operations["VendorStaffController_listStaff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/staff/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a staff member (the owner cannot be removed) */
+        delete: operations["VendorStaffController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/sub-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Own paid sub-orders, newest first (cursor pagination, optional status)
+         * @description Unpaid (AWAITING_PAYMENT) and cancelled-unpaid sub-orders are never listed.
+         */
+        get: operations["VendorSubOrdersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/sub-orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One own sub-order: items, shipping address snapshot, commission and net
+         * @description Customer contact = `shippingAddress.recipientName` / `phone` (checkout snapshot).
+         */
+        get: operations["VendorSubOrdersController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/sub-orders/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a paid sub-order (PAID → PROCESSING) */
+        post: operations["VendorSubOrdersController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/sub-orders/{id}/deliver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark as delivered (SHIPPED → DELIVERED) */
+        post: operations["VendorSubOrdersController_deliver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/sub-orders/{id}/ship": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hand over to the carrier (PROCESSING → SHIPPED) */
+        post: operations["VendorSubOrdersController_ship"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/variants/{id}/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set the absolute on-hand stock of an own variant
+         * @description Below the reserved quantity → 409 `product.error.stock-below-reserved`.
+         */
+        patch: operations["VendorProductsController_setStock"];
+        trace?: never;
+    };
+    "/v1/vendor/wallet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Released balance + pending net (paid, not yet paid out) per currency */
+        get: operations["VendorWalletController_wallet"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -770,6 +1550,65 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
         };
+        InvitationAcceptDto: {
+            token: string;
+        };
+        InvitationAcceptResultDto_Output: {
+            vendorId: string;
+        };
+        InvitationCreateDto: {
+            /** Format: email */
+            email: string;
+        };
+        InvitationDto_Output: {
+            acceptedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            email: string;
+            /** Format: date-time */
+            expiresAt: string;
+            id: string;
+            revokedAt: string | null;
+            /** @enum {string} */
+            status: "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
+            vendorId: string;
+        };
+        InvitationPageDto_Output: {
+            items: {
+                acceptedAt: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                email: string;
+                /** Format: date-time */
+                expiresAt: string;
+                id: string;
+                revokedAt: string | null;
+                /** @enum {string} */
+                status: "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
+                vendorId: string;
+            }[];
+            nextCursor: string | null;
+        };
+        LedgerEntryPageDto_Output: {
+            items: {
+                /** @enum {string} */
+                account: "CUSTOMER" | "PLATFORM_ESCROW" | "VENDOR_WALLET" | "PLATFORM_REVENUE";
+                amount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                /** Format: date-time */
+                createdAt: string;
+                /** @enum {string} */
+                entryType: "ESCROW_IN" | "PAYOUT_OUT" | "COMMISSION" | "REFUND" | "ADJUSTMENT";
+                id: string;
+                orderId: string | null;
+                subOrderId: string | null;
+                txnGroupId: string;
+            }[];
+            nextCursor: string | null;
+        };
         MeResponseDto_Output: {
             avatarUrl: string | null;
             email: string | null;
@@ -913,11 +1752,316 @@ export interface components {
             /** @enum {string} */
             status: "PENDING" | "CONFIRMED" | "FAILED" | "REFUNDED";
         };
+        PlatformOrderDetailDto_Output: {
+            /** Format: date-time */
+            createdAt: string;
+            customerEmail: string | null;
+            customerId: string;
+            customerName: string;
+            discountTotal: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            grandTotal: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            id: string;
+            itemsTotal: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            ledgerEntries: {
+                /** @enum {string} */
+                account: "CUSTOMER" | "PLATFORM_ESCROW" | "VENDOR_WALLET" | "PLATFORM_REVENUE";
+                amount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                /** Format: date-time */
+                createdAt: string;
+                /** @enum {string} */
+                entryType: "ESCROW_IN" | "PAYOUT_OUT" | "COMMISSION" | "REFUND" | "ADJUSTMENT";
+                id: string;
+                orderId: string | null;
+                subOrderId: string | null;
+                txnGroupId: string;
+            }[];
+            paymentDeadlineAt: string | null;
+            payments: {
+                amount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                attemptNo: number;
+                /** Format: date-time */
+                createdAt: string;
+                expiresAt: string | null;
+                id: string;
+                /** @enum {string} */
+                provider: "VNPAY" | "STRIPE";
+                providerTxnId: string | null;
+                /** @enum {string} */
+                status: "PENDING" | "CONFIRMED" | "FAILED" | "REFUNDED";
+                /** Format: date-time */
+                updatedAt: string;
+            }[];
+            refunds: {
+                amount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+                paymentId: string;
+                providerRefundId: string | null;
+                reason: string;
+                requestedById: string;
+                /** @enum {string} */
+                status: "PENDING" | "SUCCEEDED" | "FAILED";
+                subOrderId: string;
+                /** Format: date-time */
+                updatedAt: string;
+            }[];
+            shippingTotal: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            /** @enum {string} */
+            status: "AWAITING_PAYMENT" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED" | "CANCELLED" | "COMPLETED";
+            subOrders: {
+                cancelledAt: string | null;
+                carrier: string | null;
+                completedAt: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                deliveredAt: string | null;
+                id: string;
+                items: {
+                    attributes: {
+                        [key: string]: string;
+                    };
+                    id: string;
+                    lineTotal: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    };
+                    productId: string;
+                    productTitle: string;
+                    quantity: number;
+                    unitPrice: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    };
+                    variantId: string;
+                }[];
+                orderId: string;
+                platformDiscount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                shippedAt: string | null;
+                shipping: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                shippingAddress: {
+                    city: string;
+                    country: string;
+                    district: string;
+                    line1: string;
+                    line2: string | null;
+                    phone: string;
+                    recipientName: string;
+                    ward: string;
+                };
+                shippingMethodName: string | null;
+                /** @enum {string} */
+                status: "AWAITING_PAYMENT" | "PAID" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "COMPLETED" | "REFUNDED" | "CANCELLED";
+                subtotal: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                total: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                trackingNumber: string | null;
+                vendorDiscount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                vendorId: string;
+                vendorName: string;
+            }[];
+        };
+        PlatformOrderPageDto_Output: {
+            items: {
+                /** Format: date-time */
+                createdAt: string;
+                customerEmail: string | null;
+                customerId: string;
+                customerName: string;
+                grandTotal: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                id: string;
+                /** @enum {string} */
+                status: "AWAITING_PAYMENT" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED" | "CANCELLED" | "COMPLETED";
+                subOrderCount: number;
+            }[];
+            nextCursor: string | null;
+        };
+        PlatformProductBlockDto: {
+            reason: string;
+        };
+        PlatformProductDto_Output: {
+            basePrice: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            blockedReason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            name: string;
+            primaryImageUrl: string | null;
+            /** @enum {string} */
+            status: "DRAFT" | "ACTIVE" | "ARCHIVED" | "BLOCKED";
+            /** Format: date-time */
+            updatedAt: string;
+            vendorId: string;
+            vendorName: string;
+        };
+        PlatformProductPageDto_Output: {
+            items: {
+                basePrice: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                blockedReason: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+                name: string;
+                primaryImageUrl: string | null;
+                /** @enum {string} */
+                status: "DRAFT" | "ACTIVE" | "ARCHIVED" | "BLOCKED";
+                /** Format: date-time */
+                updatedAt: string;
+                vendorId: string;
+                vendorName: string;
+            }[];
+            nextCursor: string | null;
+        };
+        PlatformRoleGrantDto: {
+            /** @enum {string} */
+            role: "PLATFORM_STAFF" | "PLATFORM_ADMIN";
+        };
+        PlatformSettingsDto_Output: {
+            commissionBps: number;
+            /** @enum {string} */
+            defaultCurrency: "VND" | "USD";
+            holdPeriodDays: number;
+            id: string;
+            maxCouponStack: number;
+            paymentTimeoutMinutes: number;
+            refundWindowDays: number;
+            supportedCurrencies: ("VND" | "USD")[];
+            /** Format: date-time */
+            updatedAt: string;
+        };
         PlatformSettingsPublicDto_Output: {
             /** @enum {string} */
             defaultCurrency: "VND" | "USD";
             maxCouponStack: number;
             supportedCurrencies: ("VND" | "USD")[];
+        };
+        PlatformSettingsUpdateDto: {
+            commissionBps?: number;
+            /** @enum {string} */
+            defaultCurrency?: "VND" | "USD";
+            holdPeriodDays?: number;
+            maxCouponStack?: number;
+            paymentTimeoutMinutes?: number;
+            refundWindowDays?: number;
+            supportedCurrencies?: ("VND" | "USD")[];
+        };
+        PlatformUserDto_Output: {
+            /** Format: date-time */
+            createdAt: string;
+            email: string | null;
+            id: string;
+            name: string;
+            roles: ("GUEST" | "CUSTOMER" | "VENDOR_OWNER" | "VENDOR_STAFF" | "PLATFORM_STAFF" | "PLATFORM_ADMIN")[];
+        };
+        PlatformUserPageDto_Output: {
+            items: {
+                /** Format: date-time */
+                createdAt: string;
+                email: string | null;
+                id: string;
+                name: string;
+                roles: ("GUEST" | "CUSTOMER" | "VENDOR_OWNER" | "VENDOR_STAFF" | "PLATFORM_STAFF" | "PLATFORM_ADMIN")[];
+            }[];
+            nextCursor: string | null;
+        };
+        PlatformVendorDto_Output: {
+            commissionBpsOverride: number | null;
+            /** Format: date-time */
+            createdAt: string;
+            displayName: string;
+            id: string;
+            ownerEmail: string | null;
+            ownerId: string;
+            ownerName: string;
+            slug: string;
+            /** @enum {string} */
+            status: "PENDING" | "ACTIVE" | "SUSPENDED";
+            suspendedReason: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PlatformVendorPageDto_Output: {
+            items: {
+                commissionBpsOverride: number | null;
+                /** Format: date-time */
+                createdAt: string;
+                displayName: string;
+                id: string;
+                ownerEmail: string | null;
+                ownerId: string;
+                ownerName: string;
+                slug: string;
+                /** @enum {string} */
+                status: "PENDING" | "ACTIVE" | "SUSPENDED";
+                suspendedReason: string | null;
+                /** Format: date-time */
+                updatedAt: string;
+            }[];
+            nextCursor: string | null;
+        };
+        PlatformVendorSuspendDto: {
+            reason: string;
         };
         PresignRequestDto: {
             contentType: string;
@@ -1009,16 +2153,317 @@ export interface components {
             }[];
             nextCursor: string | null;
         };
+        ProductUpsertDto: {
+            basePrice: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            categoryIds: string[];
+            /** @default [] */
+            images: ({
+                /** @default null */
+                alt: string | null;
+                id: string;
+            } | {
+                /** @default null */
+                alt: string | null;
+                key: string;
+            })[];
+            /**
+             * @default DRAFT
+             * @enum {string}
+             */
+            status: "DRAFT" | "ACTIVE" | "ARCHIVED";
+            translations: {
+                description?: string;
+                /** @enum {string} */
+                locale: "VI" | "EN";
+                name: string;
+                slug: string;
+            }[];
+            variants: {
+                attributes: {
+                    [key: string]: string;
+                };
+                id?: string;
+                price: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                sku: string;
+                stockOnHand: number;
+            }[];
+        };
         ProfileUpdateDto: {
             name?: string;
             /** @enum {string} */
             primaryLocale?: "VI" | "EN";
+        };
+        RefundCreateDto: {
+            reason: string;
+        };
+        RefundDto_Output: {
+            amount: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            paymentId: string;
+            providerRefundId: string | null;
+            reason: string;
+            requestedById: string;
+            /** @enum {string} */
+            status: "PENDING" | "SUCCEEDED" | "FAILED";
+            subOrderId: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        RefundPageDto_Output: {
+            items: {
+                amount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+                orderId: string;
+                paymentId: string;
+                providerRefundId: string | null;
+                reason: string;
+                requestedById: string;
+                /** @enum {string} */
+                status: "PENDING" | "SUCCEEDED" | "FAILED";
+                subOrderId: string;
+                /** Format: date-time */
+                updatedAt: string;
+                vendorId: string;
+            }[];
+            nextCursor: string | null;
+        };
+        ReviewCreateBodyDto: {
+            body?: string;
+            rating: number;
+            subOrderId: string;
+        };
+        ReviewDto_Output: {
+            authorName: string;
+            body: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            productId: string;
+            rating: number;
+        };
+        ReviewPageDto_Output: {
+            items: {
+                authorName: string;
+                body: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+                productId: string;
+                rating: number;
+            }[];
+            nextCursor: string | null;
+            summary: {
+                average: number | null;
+                count: number;
+                distribution: [
+                    number,
+                    number,
+                    number,
+                    number,
+                    number
+                ];
+            };
+        };
+        ShippingMethodDto_Output: {
+            estDays: number;
+            id: string;
+            isActive: boolean;
+            name: string;
+            price: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            vendorId: string;
+        };
+        ShippingMethodInputDto: {
+            estDays: number;
+            /** @default true */
+            isActive: boolean;
+            name: string;
+            price: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+        };
+        ShippingMethodListDto_Output: {
+            estDays: number;
+            id: string;
+            isActive: boolean;
+            name: string;
+            price: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            vendorId: string;
+        }[];
+        StaffListDto_Output: {
+            email: string | null;
+            /** Format: date-time */
+            joinedAt: string;
+            name: string;
+            /** @enum {string} */
+            role: "VENDOR_OWNER" | "VENDOR_STAFF";
+            userId: string;
+        }[];
+        SubOrderShipDto: {
+            carrier: string;
+            trackingNumber: string;
         };
         TokenResponseDto_Output: {
             accessToken: string;
             expiresIn: number;
             /** @constant */
             tokenType: "Bearer";
+        };
+        VariantStockUpdateDto: {
+            stockOnHand: number;
+        };
+        VendorApplicationCreateDto: {
+            accountHolder: string;
+            bankAccountNumber: string;
+            bankName: string;
+            businessLicenseKey: string;
+            nationalIdKey: string;
+            nationalIdNumber: string;
+            taxId: string;
+        };
+        VendorApplicationDetailDto_Output: {
+            accountHolder: string;
+            applicantId: string;
+            applicantName: string;
+            bankAccountNumber: string;
+            bankName: string;
+            bankVerified: boolean;
+            businessLicenseKey: string;
+            /** Format: uri */
+            businessLicenseUrl: string;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            nationalIdKey: string;
+            nationalIdNumber: string;
+            /** Format: uri */
+            nationalIdUrl: string;
+            rejectReason: string | null;
+            reviewedAt: string | null;
+            reviewedById: string | null;
+            /** @enum {string} */
+            status: "PENDING" | "APPROVED" | "REJECTED";
+            taxId: string;
+        };
+        VendorApplicationListItemDto_Output: {
+            accountHolder: string;
+            applicantId: string;
+            applicantName: string;
+            bankAccountNumberMasked: string;
+            bankName: string;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            nationalIdNumberMasked: string;
+            reviewedAt: string | null;
+            /** @enum {string} */
+            status: "PENDING" | "APPROVED" | "REJECTED";
+            taxIdMasked: string;
+        };
+        VendorApplicationListPageDto_Output: {
+            items: {
+                accountHolder: string;
+                applicantId: string;
+                applicantName: string;
+                bankAccountNumberMasked: string;
+                bankName: string;
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+                nationalIdNumberMasked: string;
+                reviewedAt: string | null;
+                /** @enum {string} */
+                status: "PENDING" | "APPROVED" | "REJECTED";
+                taxIdMasked: string;
+            }[];
+            nextCursor: string | null;
+        };
+        VendorApplicationMeDto_Output: {
+            history: {
+                accountHolder: string;
+                applicantId: string;
+                bankAccountNumber: string;
+                bankName: string;
+                bankVerified: boolean;
+                businessLicenseKey: string;
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+                nationalIdKey: string;
+                nationalIdNumber: string;
+                rejectReason: string | null;
+                reviewedAt: string | null;
+                /** @enum {string} */
+                status: "PENDING" | "APPROVED" | "REJECTED";
+                taxId: string;
+            }[];
+            latest: {
+                accountHolder: string;
+                applicantId: string;
+                bankAccountNumber: string;
+                bankName: string;
+                bankVerified: boolean;
+                businessLicenseKey: string;
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+                nationalIdKey: string;
+                nationalIdNumber: string;
+                rejectReason: string | null;
+                reviewedAt: string | null;
+                /** @enum {string} */
+                status: "PENDING" | "APPROVED" | "REJECTED";
+                taxId: string;
+            } | null;
+        };
+        VendorApplicationReviewResultDto_Output: {
+            accountHolder: string;
+            applicantId: string;
+            applicantName: string;
+            bankAccountNumberMasked: string;
+            bankName: string;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            nationalIdNumberMasked: string;
+            reviewedAt: string | null;
+            /** @enum {string} */
+            status: "PENDING" | "APPROVED" | "REJECTED";
+            taxIdMasked: string;
+            vendorId: string | null;
+        };
+        VendorApproveDto: {
+            displayName: string;
+            slug: string;
         };
         VendorDetailDto_Output: {
             description: string | null;
@@ -1045,6 +2490,272 @@ export interface components {
                 nextCursor: string | null;
             };
             slug: string;
+        };
+        VendorProductDto_Output: {
+            basePrice: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            blockedReason: string | null;
+            categoryIds: string[];
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            images: {
+                alt: string | null;
+                id: string;
+                sortOrder: number;
+                /** Format: uri */
+                url: string;
+            }[];
+            primaryImageUrl: string | null;
+            /** @enum {string} */
+            status: "DRAFT" | "ACTIVE" | "ARCHIVED" | "BLOCKED";
+            translations: {
+                description: string | null;
+                /** @enum {string} */
+                locale: "VI" | "EN";
+                name: string;
+                slug: string;
+            }[];
+            /** Format: date-time */
+            updatedAt: string;
+            variants: {
+                attributes: {
+                    [key: string]: string;
+                };
+                id: string;
+                price: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                productId: string;
+                sku: string;
+                stockOnHand: number;
+                stockReserved: number;
+            }[];
+            vendorId: string;
+        };
+        VendorProductPageDto_Output: {
+            items: {
+                basePrice: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                blockedReason: string | null;
+                id: string;
+                name: string;
+                primaryImageUrl: string | null;
+                /** @enum {string} */
+                status: "DRAFT" | "ACTIVE" | "ARCHIVED" | "BLOCKED";
+                stockOnHand: number;
+                /** Format: date-time */
+                updatedAt: string;
+                variantCount: number;
+            }[];
+            nextCursor: string | null;
+        };
+        VendorProductVariantDto_Output: {
+            attributes: {
+                [key: string]: string;
+            };
+            id: string;
+            price: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            productId: string;
+            sku: string;
+            stockOnHand: number;
+            stockReserved: number;
+        };
+        VendorRejectDto: {
+            reason: string;
+        };
+        VendorSubOrderDto_Output: {
+            cancelledAt: string | null;
+            carrier: string | null;
+            commission: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            completedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            deliveredAt: string | null;
+            id: string;
+            items: {
+                attributes: {
+                    [key: string]: string;
+                };
+                id: string;
+                lineTotal: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                productId: string;
+                productTitle: string;
+                quantity: number;
+                unitPrice: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                variantId: string;
+            }[];
+            net: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            orderId: string;
+            platformDiscount: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            shippedAt: string | null;
+            shipping: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            shippingAddress: {
+                city: string;
+                country: string;
+                district: string;
+                line1: string;
+                line2: string | null;
+                phone: string;
+                recipientName: string;
+                ward: string;
+            };
+            shippingMethodName: string | null;
+            /** @enum {string} */
+            status: "AWAITING_PAYMENT" | "PAID" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "COMPLETED" | "REFUNDED" | "CANCELLED";
+            subtotal: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            total: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            trackingNumber: string | null;
+            vendorDiscount: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            vendorId: string;
+            vendorName: string;
+        };
+        VendorSubOrderPageDto_Output: {
+            items: {
+                cancelledAt: string | null;
+                carrier: string | null;
+                commission: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                completedAt: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                deliveredAt: string | null;
+                id: string;
+                items: {
+                    attributes: {
+                        [key: string]: string;
+                    };
+                    id: string;
+                    lineTotal: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    };
+                    productId: string;
+                    productTitle: string;
+                    quantity: number;
+                    unitPrice: {
+                        amount: number;
+                        /** @enum {string} */
+                        currency: "VND" | "USD";
+                    };
+                    variantId: string;
+                }[];
+                net: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                orderId: string;
+                platformDiscount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                shippedAt: string | null;
+                shipping: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                shippingAddress: {
+                    city: string;
+                    country: string;
+                    district: string;
+                    line1: string;
+                    line2: string | null;
+                    phone: string;
+                    recipientName: string;
+                    ward: string;
+                };
+                shippingMethodName: string | null;
+                /** @enum {string} */
+                status: "AWAITING_PAYMENT" | "PAID" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "COMPLETED" | "REFUNDED" | "CANCELLED";
+                subtotal: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                total: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                trackingNumber: string | null;
+                vendorDiscount: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+                vendorId: string;
+                vendorName: string;
+            }[];
+            nextCursor: string | null;
+        };
+        VendorWalletDto_Output: {
+            balance: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            };
+            id: string;
+            pending: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            }[];
+            vendorId: string;
         };
     };
     responses: never;
@@ -1696,6 +3407,32 @@ export interface operations {
             };
         };
     };
+    OrdersController_confirmReceived: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                orderId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDto_Output"];
+                };
+            };
+        };
+    };
     PlatformSettingsPublicController_get: {
         parameters: {
             query?: never;
@@ -1711,6 +3448,495 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlatformSettingsPublicDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformOrdersController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                status?: "AWAITING_PAYMENT" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED" | "CANCELLED" | "COMPLETED";
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrderPageDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformOrdersController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrderDetailDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformProductsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                status?: "DRAFT" | "ACTIVE" | "ARCHIVED" | "BLOCKED";
+                vendorId?: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformProductPageDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformProductsController_block: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformProductBlockDto"];
+            };
+        };
+        responses: {
+            /** @description The product */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformProductDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformProductsController_unblock: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The product */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformProductDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformRefundsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                status?: "PENDING" | "SUCCEEDED" | "FAILED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundPageDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformSettingsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings row */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformSettingsDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformSettingsController_update: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformSettingsUpdateDto"];
+            };
+        };
+        responses: {
+            /** @description The updated settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformSettingsDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformRefundsController_refund: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundCreateDto"];
+            };
+        };
+        responses: {
+            /** @description The created refund */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformUsersController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformUserPageDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformUsersController_grant: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformRoleGrantDto"];
+            };
+        };
+        responses: {
+            /** @description The user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformUserDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformUsersController_revoke: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                role: "PLATFORM_STAFF" | "PLATFORM_ADMIN";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformUserDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformVendorApplicationsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                status?: "PENDING" | "APPROVED" | "REJECTED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorApplicationListPageDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformVendorApplicationsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The application */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorApplicationDetailDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformVendorApplicationsController_approve: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorApproveDto"];
+            };
+        };
+        responses: {
+            /** @description Reviewed application */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorApplicationReviewResultDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformVendorApplicationsController_reject: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorRejectDto"];
+            };
+        };
+        responses: {
+            /** @description Reviewed application */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorApplicationReviewResultDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformVendorsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                status?: "PENDING" | "ACTIVE" | "SUSPENDED";
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformVendorPageDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformVendorsController_reactivate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The vendor */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformVendorDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformVendorsController_suspend: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformVendorSuspendDto"];
+            };
+        };
+        responses: {
+            /** @description The vendor */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformVendorDto_Output"];
                 };
             };
         };
@@ -1740,6 +3966,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductSummaryPageDto_Output"];
+                };
+            };
+        };
+    };
+    ReviewsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of reviews + summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewPageDto_Output"];
+                };
+            };
+        };
+    };
+    ReviewsController_create: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewCreateBodyDto"];
+            };
+        };
+        responses: {
+            /** @description The created review */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDto_Output"];
                 };
             };
         };
@@ -1811,6 +4091,648 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PresignResponseDto_Output"];
+                };
+            };
+        };
+    };
+    VendorApplicationsController_create: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorApplicationCreateDto"];
+            };
+        };
+        responses: {
+            /** @description The PENDING application (KYC numbers masked) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorApplicationListItemDto_Output"];
+                };
+            };
+        };
+    };
+    VendorApplicationsController_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Latest application + history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorApplicationMeDto_Output"];
+                };
+            };
+        };
+    };
+    VendorInvitationAcceptController_accept: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationAcceptDto"];
+            };
+        };
+        responses: {
+            /** @description Joined vendor */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationAcceptResultDto_Output"];
+                };
+            };
+        };
+    };
+    VendorStaffController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationPageDto_Output"];
+                };
+            };
+        };
+    };
+    VendorStaffController_invite: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationCreateDto"];
+            };
+        };
+        responses: {
+            /** @description The pending invitation */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationDto_Output"];
+                };
+            };
+        };
+    };
+    VendorStaffController_revoke: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The revoked invitation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationDto_Output"];
+                };
+            };
+        };
+    };
+    VendorWalletController_ledger: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of ledger lines */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerEntryPageDto_Output"];
+                };
+            };
+        };
+    };
+    VendorProductsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                status?: "DRAFT" | "ACTIVE" | "ARCHIVED" | "BLOCKED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of products */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProductPageDto_Output"];
+                };
+            };
+        };
+    };
+    VendorProductsController_create: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductUpsertDto"];
+            };
+        };
+        responses: {
+            /** @description The created product */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProductDto_Output"];
+                };
+            };
+        };
+    };
+    VendorProductsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The product */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProductDto_Output"];
+                };
+            };
+        };
+    };
+    VendorProductsController_update: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductUpsertDto"];
+            };
+        };
+        responses: {
+            /** @description The updated product */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProductDto_Output"];
+                };
+            };
+        };
+    };
+    VendorProductsController_archive: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The product */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProductDto_Output"];
+                };
+            };
+        };
+    };
+    VendorProductsController_publish: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The product */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProductDto_Output"];
+                };
+            };
+        };
+    };
+    VendorShippingController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Shipping methods */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShippingMethodListDto_Output"];
+                };
+            };
+        };
+    };
+    VendorShippingController_create: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShippingMethodInputDto"];
+            };
+        };
+        responses: {
+            /** @description The shipping method */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShippingMethodDto_Output"];
+                };
+            };
+        };
+    };
+    VendorShippingController_update: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShippingMethodInputDto"];
+            };
+        };
+        responses: {
+            /** @description The shipping method */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShippingMethodDto_Output"];
+                };
+            };
+        };
+    };
+    VendorShippingController_deactivate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The shipping method */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShippingMethodDto_Output"];
+                };
+            };
+        };
+    };
+    VendorStaffController_listStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Members */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffListDto_Output"];
+                };
+            };
+        };
+    };
+    VendorStaffController_remove: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorSubOrdersController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                status?: "PAID" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "COMPLETED" | "REFUNDED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of sub-orders */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorSubOrderPageDto_Output"];
+                };
+            };
+        };
+    };
+    VendorSubOrdersController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sub-order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorSubOrderDto_Output"];
+                };
+            };
+        };
+    };
+    VendorSubOrdersController_accept: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sub-order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorSubOrderDto_Output"];
+                };
+            };
+        };
+    };
+    VendorSubOrdersController_deliver: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sub-order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorSubOrderDto_Output"];
+                };
+            };
+        };
+    };
+    VendorSubOrdersController_ship: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubOrderShipDto"];
+            };
+        };
+        responses: {
+            /** @description The sub-order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorSubOrderDto_Output"];
+                };
+            };
+        };
+    };
+    VendorProductsController_setStock: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VariantStockUpdateDto"];
+            };
+        };
+        responses: {
+            /** @description The variant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorProductVariantDto_Output"];
+                };
+            };
+        };
+    };
+    VendorWalletController_wallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The wallet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorWalletDto_Output"];
                 };
             };
         };

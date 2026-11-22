@@ -8,6 +8,7 @@ import {
   PageQuerySchema,
   PaymentRetrySchema,
   PaymentSessionSchema,
+  SubOrderIdSchema,
 } from '@repo/core';
 
 /** OpenAPI/request/response DTOs for the orders controller (schemas live in `@repo/core`). */
@@ -18,3 +19,6 @@ export class OrderPageQueryDto extends createZodDto(PageQuerySchema) {}
 export class PaymentSessionDto extends createZodDto(PaymentSessionSchema) {}
 export class PaymentRetryDto extends createZodDto(PaymentRetrySchema) {}
 export class OrderParamsDto extends createZodDto(z.object({ id: OrderIdSchema })) {}
+export class SubOrderParamsDto extends createZodDto(
+  z.object({ orderId: OrderIdSchema, id: SubOrderIdSchema }),
+) {}

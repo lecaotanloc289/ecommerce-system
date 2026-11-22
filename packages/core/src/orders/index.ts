@@ -1,6 +1,8 @@
 import type { Currency, OrderStatus, PaymentProvider, SubOrderStatus } from '../enums';
 import { DomainError } from '../errors';
 
+export * from './escrow';
+
 /** Currencies each payment gateway can charge in (VNPay is VND-only; Stripe takes both). */
 export const PROVIDER_CURRENCIES: Readonly<Record<PaymentProvider, readonly Currency[]>> = {
   VNPAY: ['VND'],
@@ -41,3 +43,5 @@ export function deriveOrderStatus(subOrderStatuses: readonly SubOrderStatus[]): 
   if (live.length > 0 && live.every((s) => s === 'COMPLETED')) return 'COMPLETED';
   return 'PAID';
 }
+
+export * from './sub-order-state';

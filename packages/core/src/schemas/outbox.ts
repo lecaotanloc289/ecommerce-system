@@ -52,6 +52,16 @@ export const OrderCancelledEventSchema = z.object({
 export type OrderCancelledEvent = z.infer<typeof OrderCancelledEventSchema>;
 
 /**
+ * `order.paid` — a payment was confirmed (T3.1): sub-orders PAID, escrow IN posted, stock
+ * committed (customer + vendor emails).
+ */
+export const OrderPaidEventSchema = z.object({
+  orderId: OrderIdSchema,
+  customerId: UserIdSchema,
+});
+export type OrderPaidEvent = z.infer<typeof OrderPaidEventSchema>;
+
+/**
  * `refund.requested` — a Refund row is PENDING (admin refund of a whole sub-order, T3.5, or a
  * payment that arrived for a cancelled order, T3.1); the worker calls `PaymentProvider.refund`
  * and moves the Refund to SUCCEEDED / FAILED. Skip it when the refund is no longer PENDING.
@@ -63,6 +73,30 @@ export const RefundRequestedEventSchema = z.object({
   subOrderId: SubOrderIdSchema,
 });
 export type RefundRequestedEvent = z.infer<typeof RefundRequestedEventSchema>;
+
+/** `sub-order.shipped` — vendor entered carrier + tracking (customer email: "on its way"). */
+export const SubOrderShippedEventSchema = z.object({
+  orderId: OrderIdSchema,
+  subOrderId: SubOrderIdSchema,
+  customerId: UserIdSchema,
+});
+export type SubOrderShippedEvent = z.infer<typeof SubOrderShippedEventSchema>;
+
+/** `sub-order.delivered` — vendor marked the parcel delivered (customer: "confirm or report"). */
+export const SubOrderDeliveredEventSchema = z.object({
+  orderId: OrderIdSchema,
+  subOrderId: SubOrderIdSchema,
+  customerId: UserIdSchema,
+});
+export type SubOrderDeliveredEvent = z.infer<typeof SubOrderDeliveredEventSchema>;
+
+/** `sub-order.completed` — customer confirmed receipt or auto-complete; the payout hold starts. */
+export const SubOrderCompletedEventSchema = z.object({
+  orderId: OrderIdSchema,
+  subOrderId: SubOrderIdSchema,
+  vendorId: VendorIdSchema,
+});
+export type SubOrderCompletedEvent = z.infer<typeof SubOrderCompletedEventSchema>;
 
 export const VENDOR_APPLICATION_AGGREGATE_TYPE = 'vendor-application';
 
@@ -112,7 +146,11 @@ export const OUTBOX_EVENT_SCHEMAS = {
   'order.created': OrderCreatedEventSchema,
   'payment.requested': PaymentRequestedEventSchema,
   'order.cancelled': OrderCancelledEventSchema,
+  'order.paid': OrderPaidEventSchema,
   'refund.requested': RefundRequestedEventSchema,
+  'sub-order.shipped': SubOrderShippedEventSchema,
+  'sub-order.delivered': SubOrderDeliveredEventSchema,
+  'sub-order.completed': SubOrderCompletedEventSchema,
   'vendor.application.approved': VendorApplicationApprovedEventSchema,
   'vendor.application.rejected': VendorApplicationRejectedEventSchema,
   'vendor.invitation.created': VendorInvitationCreatedEventSchema,

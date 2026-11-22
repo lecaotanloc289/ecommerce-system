@@ -64,6 +64,19 @@ export const EnvSchema = z
      * Decides which entry is the client IP for rate limiting; 0 = use the socket peer.
      */
     TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
+
+    /**
+     * Payment gateways (webhook verification only — the worker creates sessions and refunds).
+     * Optional: a provider whose keys are missing is disabled and its webhook answers 503
+     * `payment.error.provider-unavailable` instead of failing boot. VNPay needs TMN code + hash
+     * secret; Stripe needs the secret key + webhook signing secret.
+     */
+    VNPAY_TMN_CODE: z.string().min(1).optional(),
+    VNPAY_HASH_SECRET: z.string().min(1).optional(),
+    VNPAY_PAY_URL: z.url().default('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'),
+    VNPAY_API_URL: z.url().default('https://sandbox.vnpayment.vn/merchant_webapi/api/transaction'),
+    STRIPE_SECRET_KEY: z.string().min(1).optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   })
   .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {
     message: 'JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must differ',

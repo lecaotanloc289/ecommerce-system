@@ -15,6 +15,7 @@ import { ulid } from 'ulid';
 import { cursorPageArgs, toPage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import { cancelOrder } from './order-cancellation';
+import { transitionSubOrder } from './sub-order-transition';
 import {
   ORDER_DETAIL_ARGS,
   ORDER_SUMMARY_ARGS,
@@ -93,6 +94,33 @@ export class OrdersService {
       if (result === 'not-cancellable') {
         throw new DomainError('order.error.invalid-status-transition');
       }
+    });
+    return this.get(userId, orderId);
+  }
+
+  /**
+   * Customer confirms receipt: sub-order SHIPPED | DELIVERED → COMPLETED (`deliveredAt` filled if
+   * still null, `completedAt` = now), order status re-derived, outbox `sub-order.completed`
+   * (see `transitionSubOrder`). Another user's order → 404 `order.error.not-found`; a sub-order of
+   * another order → 404 `sub-order.error.not-found`; any other status → 409.
+   */
+  async confirmReceived(userId: string, orderId: string, subOrderId: string): Promise<Order> {
+    await this.prisma.client.$transaction(async (tx) => {
+      const owned = await tx.order.findFirst({
+        where: { id: orderId, customerId: userId },
+        select: { id: true },
+      });
+      if (!owned) throw new DomainError('order.error.not-found');
+      const so = await tx.subOrder.findFirst({
+        where: { id: subOrderId, orderId },
+        select: { vendorId: true },
+      });
+      if (!so) throw new DomainError('sub-order.error.not-found');
+      await transitionSubOrder(
+        tx,
+        { subOrderId, orderId, vendorId: so.vendorId, customerId: userId },
+        { to: 'COMPLETED', actor: 'CUSTOMER' },
+      );
     });
     return this.get(userId, orderId);
   }

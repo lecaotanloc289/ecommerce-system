@@ -12,6 +12,7 @@ import { HealthModule } from './health/health.module';
 import { MeModule } from './me/me.module';
 import { OrdersModule } from './orders/orders.module';
 import { PlatformModule } from './platform/platform.module';
+import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -20,6 +21,7 @@ import { StorageModule } from './storage/storage.module';
 import { VendorApplicationsModule } from './vendor-applications/vendor-applications.module';
 import { VendorStaffModule } from './vendor-staff/vendor-staff.module';
 import { VendorModule } from './vendor/vendor.module';
+import { VendorOrdersModule } from './vendor-orders/vendor-orders.module';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -45,11 +47,13 @@ const isDev = process.env.NODE_ENV !== 'production';
     OrdersModule,
     ReviewsModule,
     PlatformModule,
+    PaymentsModule,
     StorageModule,
     VendorApplicationsModule,
     VendorModule,
     VendorStaffModule,
     RefundsModule,
+    VendorOrdersModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
