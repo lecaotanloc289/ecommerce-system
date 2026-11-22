@@ -228,7 +228,7 @@ async function main() {
       startedAt: new Date('2026-11-20T10:00:00Z'),
       endedAt: new Date('2026-11-20T11:00:00Z'),
       endReason: LiveEndReason.VENDOR,
-      recordingVideoId: 'seed-recording-1',
+      recordingVideoId: 'seedrecording1',
       peakViewers: 128,
       products: {
         create: [IDS.productA1, IDS.productA2, IDS.productA3].map((productId, position) => ({
