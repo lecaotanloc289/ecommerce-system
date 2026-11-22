@@ -14,14 +14,16 @@ A single order may contain products from multiple vendors → the backend automa
 
 This file is the **constitution**. Every PR must respect the Golden Rules and NEVER DO list. Any deviation must be justified in the PR description and the file updated accordingly.
 
-### Implementation status (as of 2026-11-19)
+### Implementation status (as of 2026-11-23)
 
-- `packages/db` — done: full Prisma schema, migrations, seed, tests (see `packages/db/CLAUDE.md`).
-- `apps/client` — storefront UI for all `SCREENS.md` screens, on mock data (see `apps/client/CLAUDE.md`).
-- `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), Zod-validated env, Jest (see `server/CLAUDE.md`).
+- `packages/db` — done: full Prisma schema incl. live-session models, migrations, seed, tests (see `packages/db/CLAUDE.md`).
+- `apps/client` — storefront UI for all `SCREENS.md` screens + live list/watch pages, on mock data (see `apps/client/CLAUDE.md`).
+- `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), Zod-validated env, Jest + live shopping module (vendor/public/platform live-session endpoints, Cloudflare webhooks, SSE realtime chat/reactions/viewers) (see `server/CLAUDE.md`).
 - `apps/admin` — scaffold only.
-- `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
+- `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout, live), Vitest (see `packages/core/CLAUDE.md`).
 - `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
+- `packages/streaming` (`@repo/streaming`) — done: Cloudflare Stream live-input adapter + in-memory fake, timing-safe webhook verification (see `packages/streaming/CLAUDE.md`).
+- `workers/outbox` (`@workers/outbox`) — done: BullMQ outbox dispatcher (`FOR UPDATE SKIP LOCKED`) + live-session handlers (provision/retire live inputs, disconnect-grace auto-end) (see `workers/outbox/CLAUDE.md`).
 - `packages/{sdk,payments}` — placeholders (empty `src/index.ts`, scripts print `echo 'TODO: ...'`).
 
 Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
@@ -72,9 +74,10 @@ ecommerce-system/
 │   └── admin/                     Vite + React dashboard, package `@apps/admin` (platform admin + vendor portal)
 ├── server/                        Backend API (NestJS + Fastify), single workspace, package `@server/api`.
 │                                   Versioned /v1, OpenAPI exposed. Code in `server/src/`.
-│                                   Future async workers (outbox dispatcher, payout cron, email sender)
-│                                   live OUTSIDE this workspace — likely a sibling top-level dir like
-│                                   `workers/<name>/` if/when added.
+├── workers/                       Async workers (BullMQ), each its own package `@workers/<n>`
+│   └── outbox/                    Outbox dispatcher + live-session handlers, package `@workers/outbox`.
+│                                   Future workers (payout cron, email sender) go here too.
+│                                   May import `packages/*`; never `server` or `apps/*`.
 ├── packages/                      Shared libraries
 │   ├── core/                      Domain layer: Zod schemas, types (z.infer), enums, error codes,
 │   │                              Money utility, ID brands, shared constants.
@@ -87,6 +90,8 @@ ecommerce-system/
 │   │                              Re-exports Zod response schemas so web/admin can parse responses.
 │   ├── payments/                  PaymentProvider interface + VNPay / Stripe adapters.
 │   │                              Pure logic, no DB access; injected into `server/` services.
+│   ├── streaming/                 Live video provider abstraction: Cloudflare Stream adapter + fake,
+│   │                              webhook verification. Pure logic, no DB; used by `server/` and `workers/`.
 │   ├── i18n/                      Messages vi/en (typed TS catalogs), translator, formatters (currency, date).
 │   │                              Follows next-intl conventions, shared between web and admin.
 │   └── config/                    Shared ESLint / TS / Tailwind / Prettier / commitlint configs.
@@ -102,7 +107,9 @@ ecommerce-system/
 ```
 apps/*      → packages/*           (OK)
 server      → packages/*           (OK)
-packages/*  → packages/*           (OK, in dependency direction: core → ui/i18n/db/sdk/payments; no cycles)
+packages/*  → packages/*           (OK, in dependency direction: core → ui/i18n/db/sdk/payments/streaming; no cycles)
+workers/*   → packages/*           (OK)
+workers/*   ↔ server | apps/*      (FORBIDDEN — workers share code only via packages/*)
 apps/*      ↔ apps/*               (FORBIDDEN — share via packages/*)
 apps/*      ↔ server               (FORBIDDEN — frontends call HTTP via @repo/sdk)
 packages/*  → apps/* | server      (FORBIDDEN — packages don't depend on consumers)
@@ -208,26 +215,26 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
 
 ## 7. Naming conventions
 
-| Scope               | Convention                                                             | Example                                                 |
-| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
-| File                | kebab-case                                                             | `product-card.tsx`, `vendor-payout.service.ts`          |
-| React component     | PascalCase export                                                      | `export function ProductCard()`                         |
-| React hook          | `useXxx`                                                               | `useCartQuery`, `useCurrentVendor`                      |
-| Zod schema          | `XxxSchema`                                                            | `CheckoutSchema`, `VendorApplicationSchema`             |
-| Type from schema    | `Xxx = z.infer<typeof XxxSchema>`                                      | `type Checkout = z.infer<typeof CheckoutSchema>`        |
-| NestJS class        | `XxxController` / `XxxService` / `XxxModule` / `XxxRepository`         | `OrdersService`                                         |
-| Prisma model        | PascalCase, **singular**                                               | `Product`, `Order`, `OrderItem`, `SubOrder`             |
-| DB table (physical) | snake_case, **plural** via `@@map`                                     | `@@map("order_items")`                                  |
-| Enum (Prisma + TS)  | SCREAMING_SNAKE_CASE values                                            | `OrderStatus.AWAITING_PAYMENT`                          |
-| API route           | kebab-case, plural noun, versioned                                     | `POST /v1/vendor-applications`                          |
-| Env var             | SCREAMING_SNAKE_CASE                                                   | `DATABASE_URL`, `GOOGLE_OAUTH_CLIENT_ID`                |
-| i18n key            | dot-namespaced; namespaces + error codes kebab, UI leaf keys camelCase | `checkout.error.out-of-stock`, `common.addToCart`       |
-| Branch              | `feat/`, `fix/`, `chore/`, `refactor/`                                 | `feat/vendor-payout-cron`                               |
-| Commit              | Conventional Commits                                                   | `feat(orders): split multi-vendor cart into sub-orders` |
-| Workspace package   | `@apps/<n>` (UI), `@server/<n>` (backend), `@repo/<n>` (shared)        | `@apps/web`, `@server/api`, `@repo/core`                |
-| ID                  | ULID (text), brand type per entity                                     | `type OrderId = Brand<string, 'OrderId'>`               |
-| Boolean             | `is/has/can/should` prefix                                             | `isActive`, `hasShipped`, `canRefund`                   |
-| Money field         | suffix `_amount` + `_currency`                                         | `subtotal_amount`, `subtotal_currency`                  |
+| Scope               | Convention                                                                                     | Example                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| File                | kebab-case                                                                                     | `product-card.tsx`, `vendor-payout.service.ts`              |
+| React component     | PascalCase export                                                                              | `export function ProductCard()`                             |
+| React hook          | `useXxx`                                                                                       | `useCartQuery`, `useCurrentVendor`                          |
+| Zod schema          | `XxxSchema`                                                                                    | `CheckoutSchema`, `VendorApplicationSchema`                 |
+| Type from schema    | `Xxx = z.infer<typeof XxxSchema>`                                                              | `type Checkout = z.infer<typeof CheckoutSchema>`            |
+| NestJS class        | `XxxController` / `XxxService` / `XxxModule` / `XxxRepository`                                 | `OrdersService`                                             |
+| Prisma model        | PascalCase, **singular**                                                                       | `Product`, `Order`, `OrderItem`, `SubOrder`                 |
+| DB table (physical) | snake_case, **plural** via `@@map`                                                             | `@@map("order_items")`                                      |
+| Enum (Prisma + TS)  | SCREAMING_SNAKE_CASE values                                                                    | `OrderStatus.AWAITING_PAYMENT`                              |
+| API route           | kebab-case, plural noun, versioned                                                             | `POST /v1/vendor-applications`                              |
+| Env var             | SCREAMING_SNAKE_CASE                                                                           | `DATABASE_URL`, `GOOGLE_OAUTH_CLIENT_ID`                    |
+| i18n key            | dot-namespaced; namespaces + error codes kebab, UI leaf keys camelCase                         | `checkout.error.out-of-stock`, `common.addToCart`           |
+| Branch              | `feat/`, `fix/`, `chore/`, `refactor/`                                                         | `feat/vendor-payout-cron`                                   |
+| Commit              | Conventional Commits                                                                           | `feat(orders): split multi-vendor cart into sub-orders`     |
+| Workspace package   | `@apps/<n>` (UI), `@server/<n>` (backend), `@repo/<n>` (shared), `@workers/<n>` (async worker) | `@apps/web`, `@server/api`, `@repo/core`, `@workers/outbox` |
+| ID                  | ULID (text), brand type per entity                                                             | `type OrderId = Brand<string, 'OrderId'>`                   |
+| Boolean             | `is/has/can/should` prefix                                                                     | `isActive`, `hasShipped`, `canRefund`                       |
+| Money field         | suffix `_amount` + `_currency`                                                                 | `subtotal_amount`, `subtotal_currency`                      |
 
 ---
 
@@ -366,7 +373,7 @@ Never rename or drop in a single migration:
 | `VENDOR_OWNER`, `VENDOR_STAFF`     | `apps/admin` → `/vendor/*` routes   |
 | `PLATFORM_STAFF`, `PLATFORM_ADMIN` | `apps/admin` → `/platform/*` routes |
 
-`server/` (HTTP, package `@server/api`) serves all roles via REST; webhooks (payment, OAuth callback) terminate here. Future async workers (outbox dispatch, payout cron, email send) will live in a separate top-level dir (e.g. `workers/*`) — not nested inside `server/`.
+`server/` (HTTP, package `@server/api`) serves all roles via REST; webhooks (payment, OAuth callback, Cloudflare Stream) terminate here. Async workers (outbox dispatch, live-session handlers; future payout cron, email send) live in top-level `workers/*` — not nested inside `server/`.
 
 ### Customer journey (features in scope for MVP)
 
@@ -459,6 +466,7 @@ pnpm dev                            # all workspaces in parallel via Turbo
 pnpm --filter @apps/web dev         # storefront only       → http://localhost:3000
 pnpm --filter @apps/admin dev       # admin only            → http://localhost:5173
 pnpm --filter @server/api dev       # API only              → http://localhost:3001
+pnpm --filter @workers/outbox dev   # outbox worker         (needs Postgres + Redis)
 ```
 
 ### Build / lint / typecheck / test

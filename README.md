@@ -8,20 +8,22 @@ The full constitution lives in [`CLAUDE.md`](./CLAUDE.md) — read that before c
 
 ## Workspaces
 
-| Path                | Package          | Role                                                              |
-| ------------------- | ---------------- | ----------------------------------------------------------------- |
-| `apps/web`          | `@apps/web`      | Next.js 15 storefront (customer-facing, i18n vi/en)               |
-| `apps/admin`        | `@apps/admin`    | Vite 6 + React 19 dashboard (platform admin + vendor portal)      |
-| `server`            | `@server/api`    | NestJS 11 + Fastify API, prefix `/v1`                             |
-| `packages/ui`       | `@repo/ui`       | shadcn/ui components + design tokens (Tailwind v4)                |
-| `packages/core`     | `@repo/core`     | Zod schemas, types, Money utility, enums (single source of truth) |
-| `packages/db`       | `@repo/db`       | Prisma client + schema + migrations + seed                        |
-| `packages/sdk`      | `@repo/sdk`      | Typed API client generated from OpenAPI                           |
-| `packages/payments` | `@repo/payments` | `PaymentProvider` interface + VNPay / Stripe adapters             |
-| `packages/i18n`     | `@repo/i18n`     | vi/en message catalogs + formatters                               |
-| `packages/config`   | `@repo/config`   | Shared ESLint / TS / Prettier configs                             |
+| Path                 | Package           | Role                                                                |
+| -------------------- | ----------------- | ------------------------------------------------------------------- |
+| `apps/web`           | `@apps/web`       | Next.js 15 storefront (customer-facing, i18n vi/en)                 |
+| `apps/admin`         | `@apps/admin`     | Vite 6 + React 19 dashboard (platform admin + vendor portal)        |
+| `server`             | `@server/api`     | NestJS 11 + Fastify API, prefix `/v1`                               |
+| `packages/ui`        | `@repo/ui`        | shadcn/ui components + design tokens (Tailwind v4)                  |
+| `packages/core`      | `@repo/core`      | Zod schemas, types, Money utility, enums (single source of truth)   |
+| `packages/db`        | `@repo/db`        | Prisma client + schema + migrations + seed                          |
+| `packages/sdk`       | `@repo/sdk`       | Typed API client generated from OpenAPI                             |
+| `packages/payments`  | `@repo/payments`  | `PaymentProvider` interface + VNPay / Stripe adapters               |
+| `packages/i18n`      | `@repo/i18n`      | vi/en message catalogs + formatters                                 |
+| `packages/config`    | `@repo/config`    | Shared ESLint / TS / Prettier configs                               |
+| `packages/streaming` | `@repo/streaming` | Live video adapter (Cloudflare Stream + fake), webhook verification |
+| `workers/outbox`     | `@workers/outbox` | BullMQ outbox dispatcher + live-session handlers                    |
 
-Dependency rule: `apps/* → packages/*` and `server → packages/*` only. `apps/*` never imports from `apps/*` or `server`. Full map in [`CLAUDE.md` §3](./CLAUDE.md#3-monorepo-map).
+Dependency rule: `apps/* → packages/*`, `server → packages/*` and `workers/* → packages/*` only. `apps/*` never imports from `apps/*`, `server` or `workers`. Full map in [`CLAUDE.md` §3](./CLAUDE.md#3-monorepo-map).
 
 ---
 
@@ -72,6 +74,7 @@ pnpm dev
 pnpm --filter @apps/web dev       # storefront         → http://localhost:3000
 pnpm --filter @apps/admin dev     # admin              → http://localhost:5173
 pnpm --filter @server/api dev     # API                → http://localhost:3001
+pnpm --filter @workers/outbox dev # outbox worker       (needs Postgres + Redis)
 ```
 
 ### Design-system showcase

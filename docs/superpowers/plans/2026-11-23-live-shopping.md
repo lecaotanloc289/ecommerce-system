@@ -186,6 +186,22 @@ parseLiveInputNotification(json): { liveInputId, event: 'connected' | 'disconnec
 parseStreamVideoWebhook(json):    { videoId, liveInputId: string | null, readyToStream: boolean } | null
 ```
 
+**As built (Task B, see `packages/streaming/CLAUDE.md`):**
+
+- `createStreamProvider({ provider: 'fake', customerCode? } | { provider: 'cloudflare', accountId, apiToken, customerCode, fetch?, timeoutMs? })`.
+- `retireLiveInput` = `DELETE` (Cloudflare docs: deleting keeps existing recordings; 404 = success).
+  After deletion the input's video list is unreachable, so recording ids come **only** from the
+  Stream video webhook.
+- `parseStreamVideoWebhook` may return `liveInputId: null` (docs don't guarantee the field on live
+  recordings) — the server ignores such deliveries (204) and logs them.
+- `verifyStreamWebhookSignature` needs the **exact raw body**; capture it before JSON parsing.
+- `StreamProviderError.retryable` is `true` for network/timeout/5xx/408/429, else `false`.
+  Ids not matching `^[A-Za-z0-9]{1,32}$` are rejected (non-retryable) before any request.
+- Extra exports: `isStreamProviderError`, `FakeStreamProvider#inspectLiveInput(id)` (tests).
+
+**As built (Task A):** extra exports `LIVE_OUTBOX_AGGREGATE_TYPE = 'LiveSession'`,
+`LiveOutboxEventTypeSchema`, `LiveOutboxEventType`.
+
 ### 1.7 Env (server: `src/config/env.ts`; worker: own Zod env)
 
 | Var                                       | Server | Worker | Notes                                        |
@@ -355,7 +371,7 @@ Work:
    drops), then `pnpm db:generate`.
 4. Seed (`src/seed.ts`, idempotent upserts, new fixed ids in `src/seed-ids.ts` using the existing
    `01SEED…` pattern): for the first seeded ACTIVE vendor, one `ENDED` session (`endReason
-VENDOR`, `recordingVideoId 'seed-recording-1'`, 3 of its ACTIVE products, peakViewers 128) and
+VENDOR`, `recordingVideoId 'seedrecording1'`, 3 of its ACTIVE products, peakViewers 128) and
    one `SCHEDULED` session (no `liveInputId`, 2 products). PlatformSettings seed values 120 / 2.
 5. Tests `test/live-session.constraints.test.ts` (local Postgres, same setup as existing tests):
    second `LIVE` session for the same vendor fails (unique violation); a `LIVE` + an `ENDED` for

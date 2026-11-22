@@ -1,9 +1,10 @@
 # Live Shopping (Livestream) Design
 
 - **Date:** 2026-11-23
-- **Status:** Approved 2026-11-23 — all §11 decisions take the recommended option. Implementation
-  plan: `docs/superpowers/plans/2026-11-23-live-shopping.md` (its contracts supersede §4–§8 where
-  they differ: adapter in `@repo/streaming`, worker in `workers/outbox`, extra `LiveSession` columns)
+- **Status:** Implemented (MVP backend + storefront mock UI) 2026-11-23 — vendor broadcast console
+  (`apps/admin`) and the Phase 0 real-account spike are still pending; see the plan
+  `docs/superpowers/plans/2026-11-23-live-shopping.md` (its contracts supersede §4–§8 where they
+  differ: adapter in `@repo/streaming`, worker in `workers/outbox`, extra `LiveSession` columns)
 - **Owner:** `server/src/live` (API), `packages/core` (schemas), `packages/db` (models), `apps/client` (viewer), `apps/admin` (vendor broadcast console)
 - **Constitution:** root `CLAUDE.md` Golden Rules + NEVER DO list
 - **Video infrastructure:** Cloudflare Stream (Live Inputs)
