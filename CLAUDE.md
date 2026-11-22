@@ -23,6 +23,7 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 - `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
 - `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
 - `packages/sdk` — OpenAPI pipeline + `createApiClient` (openapi-fetch; Bearer, auto Idempotency-Key, single-flight 401 refresh); `pnpm sdk:generate` (see `packages/sdk/CLAUDE.md`).
+- `workers/zalo` — Zalo session keeper + automated order messages per shop (zca-js QR login, encrypted sessions, Redis leases, keep-alive, paced sending with retries); the API side is `server/src/zalo/` (see `workers/zalo/CLAUDE.md`).
 - `packages/payments` — `PaymentProvider` interface + VNPay (v2.1.0 HMAC-SHA512 pay URL, IPN/return verify, merchant-webapi refund) and Stripe (Checkout Session, `constructEvent` webhook verify, refunds) adapters; config via factory params, injectable `fetch` / Stripe client; ESLint + Vitest (see `packages/payments/CLAUDE.md`).
 
 Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
@@ -73,9 +74,9 @@ ecommerce-system/
 │   └── admin/                     Vite + React dashboard, package `@apps/admin` (platform admin + vendor portal)
 ├── server/                        Backend API (NestJS + Fastify), single workspace, package `@server/api`.
 │                                   Versioned /v1, OpenAPI exposed. Code in `server/src/`.
-│                                   Future async workers (outbox dispatcher, payout cron, email sender)
-│                                   live OUTSIDE this workspace — likely a sibling top-level dir like
-│                                   `workers/<name>/` if/when added.
+│                                   Async workers live OUTSIDE this workspace, in `workers/<name>/`.
+├── workers/                       Background processes (Node, no Nest). Package `@workers/<n>`.
+│   └── zalo/                      Holds shops' Zalo sessions (zca-js) + sends automated order messages
 ├── packages/                      Shared libraries
 │   ├── core/                      Domain layer: Zod schemas, types (z.infer), enums, error codes,
 │   │                              Money utility, ID brands, shared constants.
@@ -184,7 +185,7 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
 
 8. **Migrations are forward-only and reviewed.** Created with `pnpm db:migrate dev`. Never edit an applied migration. Destructive changes (drop column, rename) require a 2-phase migration: ship code that reads both → migrate → cleanup migration.
 
-9. **Side effects go through the Outbox.** Email, webhooks, payouts, notifications — write to `outbox_events` inside the same transaction as the business change; a BullMQ worker dispatches them. Do NOT `await externalApi()` in the request thread.
+9. **Side effects go through the Outbox.** Email, webhooks, payouts, notifications — write to `outbox_events` inside the same transaction as the business change; a BullMQ worker dispatches them. Do NOT `await externalApi()` in the request thread. _Exception:_ automated Zalo messages use their own outbox table `zalo_messages` (same transaction, written by `queueZaloMessages` / `queueZaloStatusMessages` in `server/src/zalo/`, delivered by `workers/zalo`) because they need a per-row send time (post-delivery care), per-shop session affinity and a vendor-visible send log.
 
 10. **CI gate must pass.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` must be green before merge. The pre-commit hook runs `lint-staged` + `typecheck` on changed files.
 
@@ -212,26 +213,26 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
 
 ## 7. Naming conventions
 
-| Scope               | Convention                                                             | Example                                                 |
-| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
-| File                | kebab-case                                                             | `product-card.tsx`, `vendor-payout.service.ts`          |
-| React component     | PascalCase export                                                      | `export function ProductCard()`                         |
-| React hook          | `useXxx`                                                               | `useCartQuery`, `useCurrentVendor`                      |
-| Zod schema          | `XxxSchema`                                                            | `CheckoutSchema`, `VendorApplicationSchema`             |
-| Type from schema    | `Xxx = z.infer<typeof XxxSchema>`                                      | `type Checkout = z.infer<typeof CheckoutSchema>`        |
-| NestJS class        | `XxxController` / `XxxService` / `XxxModule` / `XxxRepository`         | `OrdersService`                                         |
-| Prisma model        | PascalCase, **singular**                                               | `Product`, `Order`, `OrderItem`, `SubOrder`             |
-| DB table (physical) | snake_case, **plural** via `@@map`                                     | `@@map("order_items")`                                  |
-| Enum (Prisma + TS)  | SCREAMING_SNAKE_CASE values                                            | `OrderStatus.AWAITING_PAYMENT`                          |
-| API route           | kebab-case, plural noun, versioned                                     | `POST /v1/vendor-applications`                          |
-| Env var             | SCREAMING_SNAKE_CASE                                                   | `DATABASE_URL`, `GOOGLE_OAUTH_CLIENT_ID`                |
-| i18n key            | dot-namespaced; namespaces + error codes kebab, UI leaf keys camelCase | `checkout.error.out-of-stock`, `common.addToCart`       |
-| Branch              | `feat/`, `fix/`, `chore/`, `refactor/`                                 | `feat/vendor-payout-cron`                               |
-| Commit              | Conventional Commits                                                   | `feat(orders): split multi-vendor cart into sub-orders` |
-| Workspace package   | `@apps/<n>` (UI), `@server/<n>` (backend), `@repo/<n>` (shared)        | `@apps/web`, `@server/api`, `@repo/core`                |
-| ID                  | ULID (text), brand type per entity                                     | `type OrderId = Brand<string, 'OrderId'>`               |
-| Boolean             | `is/has/can/should` prefix                                             | `isActive`, `hasShipped`, `canRefund`                   |
-| Money field         | suffix `_amount` + `_currency`                                         | `subtotal_amount`, `subtotal_currency`                  |
+| Scope               | Convention                                                                      | Example                                                 |
+| ------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| File                | kebab-case                                                                      | `product-card.tsx`, `vendor-payout.service.ts`          |
+| React component     | PascalCase export                                                               | `export function ProductCard()`                         |
+| React hook          | `useXxx`                                                                        | `useCartQuery`, `useCurrentVendor`                      |
+| Zod schema          | `XxxSchema`                                                                     | `CheckoutSchema`, `VendorApplicationSchema`             |
+| Type from schema    | `Xxx = z.infer<typeof XxxSchema>`                                               | `type Checkout = z.infer<typeof CheckoutSchema>`        |
+| NestJS class        | `XxxController` / `XxxService` / `XxxModule` / `XxxRepository`                  | `OrdersService`                                         |
+| Prisma model        | PascalCase, **singular**                                                        | `Product`, `Order`, `OrderItem`, `SubOrder`             |
+| DB table (physical) | snake_case, **plural** via `@@map`                                              | `@@map("order_items")`                                  |
+| Enum (Prisma + TS)  | SCREAMING_SNAKE_CASE values                                                     | `OrderStatus.AWAITING_PAYMENT`                          |
+| API route           | kebab-case, plural noun, versioned                                              | `POST /v1/vendor-applications`                          |
+| Env var             | SCREAMING_SNAKE_CASE                                                            | `DATABASE_URL`, `GOOGLE_OAUTH_CLIENT_ID`                |
+| i18n key            | dot-namespaced; namespaces + error codes kebab, UI leaf keys camelCase          | `checkout.error.out-of-stock`, `common.addToCart`       |
+| Branch              | `feat/`, `fix/`, `chore/`, `refactor/`                                          | `feat/vendor-payout-cron`                               |
+| Commit              | Conventional Commits                                                            | `feat(orders): split multi-vendor cart into sub-orders` |
+| Workspace package   | `@apps/<n>` (UI), `@server/<n>` (backend), `@repo/<n>` (shared), `@workers/<n>` | `@apps/web`, `@server/api`, `@repo/core`                |
+| ID                  | ULID (text), brand type per entity                                              | `type OrderId = Brand<string, 'OrderId'>`               |
+| Boolean             | `is/has/can/should` prefix                                                      | `isActive`, `hasShipped`, `canRefund`                   |
+| Money field         | suffix `_amount` + `_currency`                                                  | `subtotal_amount`, `subtotal_currency`                  |
 
 ---
 
