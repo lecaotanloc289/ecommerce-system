@@ -34,6 +34,8 @@ import {
   VendorApplicationApprovedEventSchema,
   VendorInvitationAcceptSchema,
   VendorInvitationCreateSchema,
+  VendorInvitationCreatedEventSchema,
+  VendorStaffMemberSchema,
   VendorInvitationSchema,
   VendorPublicSchema,
   VendorRejectSchema,
@@ -509,12 +511,36 @@ describe('vendor invitation', () => {
         id: ulid(1),
         vendorId: ulid(2),
         email: 'a@b.co',
+        status: 'PENDING',
         expiresAt: later,
         acceptedAt: null,
         revokedAt: null,
         createdAt: at,
       }).success,
     ).toBe(true);
+  });
+
+  it('validates the created event payload and a staff member', () => {
+    expect(
+      VendorInvitationCreatedEventSchema.safeParse({
+        invitationId: ulid(1),
+        vendorId: ulid(2),
+        email: 'a@b.co',
+        token: 'x'.repeat(43),
+      }).success,
+    ).toBe(true);
+    expect(VendorInvitationCreatedEventSchema.safeParse({ invitationId: ulid(1) }).success).toBe(
+      false,
+    );
+    expect(
+      VendorStaffMemberSchema.safeParse({
+        userId: ulid(1),
+        name: 'A',
+        email: null,
+        role: 'CUSTOMER',
+        joinedAt: at,
+      }).success,
+    ).toBe(false);
   });
 });
 

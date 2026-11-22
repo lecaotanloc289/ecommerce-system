@@ -39,7 +39,7 @@ Read shapes use Money, ISO-datetime strings and branded ids. Input shapes never 
 - `catalog`: public catalog queries/reads — `CatalogLocale` (`vi|en`), `LocaleQuery`, `ProductListQuery`, `SearchQuery`, `VendorProductsQuery`, `CategoryTree`/`CategoryNode` (recursive), `CategoryDetail`, `ProductSummary`(+`Page`), `ProductDetail`, `VendorDetail`.
 - `platform-settings`: `PlatformSettingsPublic`, `PlatformSettings`, `PlatformSettingsUpdate` (partial, non-empty).
 - `wallet`: `Wallet`, `LedgerEntry` (signed `amount`). `refund`: `RefundCreate` (whole sub-order, reason only), `Refund`.
-- `vendor-invitation`: `VendorInvitationCreate` (email lowercased), `VendorInvitation`, `VendorInvitationAccept`.
+- `vendor-invitation`: `VendorInvitationCreate` (email lowercased), `VendorInvitation` (+ derived `status`: `VendorInvitationStatus`), `VendorInvitationPage`, `VendorInvitationAccept`, `VendorInvitationAcceptResult {vendorId}`, `VendorStaffMember`. Outbox `VendorInvitationCreatedEvent {invitationId, vendorId, email, token}` (`VENDOR_INVITATION_AGGREGATE_TYPE`) carries the raw token — the worker must scrub it after sending.
 - `product-admin`: `ProductUpsert` (both locales, variants, images by id-or-key, `categoryIds`), `VendorProductStatus` (no `BLOCKED`); vendor-side reads `VendorProduct` (raw vi + en translations, variants with `stockOnHand` / `stockReserved`, `status`, `blockedReason`), `VendorProductSummary` + `VendorProductPage`, `VendorProductQuery` (page + `status`), `VendorProductVariant`, `VariantStockUpdate` (absolute `stockOnHand`). `basePrice` in an upsert only carries the currency: the server stores MIN(variant price).
 
 Known gaps: `VendorApplicationCreate` has no shop `displayName`/`slug` (the application table has no column

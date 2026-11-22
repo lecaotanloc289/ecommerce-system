@@ -16,6 +16,7 @@ import { RedisModule } from './redis/redis.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { StorageModule } from './storage/storage.module';
 import { VendorApplicationsModule } from './vendor-applications/vendor-applications.module';
+import { VendorStaffModule } from './vendor-staff/vendor-staff.module';
 import { VendorModule } from './vendor/vendor.module';
 
 const isDev = process.env.NODE_ENV !== 'production';
@@ -44,6 +45,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     StorageModule,
     VendorApplicationsModule,
     VendorModule,
+    VendorStaffModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
