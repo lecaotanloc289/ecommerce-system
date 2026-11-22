@@ -5,13 +5,14 @@ Pure TypeScript + `zod` — runs in browser and Node. Never imports `@repo/db`, 
 
 ## Layout
 
-| Path            | Subpath export         | What                                                                                               |
-| --------------- | ---------------------- | -------------------------------------------------------------------------------------------------- |
-| `src/money/`    | `@repo/core/money`     | `of`, `zero`, `add`, `subtract`, `sum`, `multiply`, `applyBps`, `allocate`, `compare`, `equals`, … |
-| `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`         |
-| `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum      |
-| `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                           |
-| `src/schemas/*` | `@repo/core/schemas/*` | one file per area — see "Schemas" below                                                            |
+| Path            | Subpath export         | What                                                                                                                                        |
+| --------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/money/`    | `@repo/core/money`     | `of`, `zero`, `add`, `subtract`, `sum`, `multiply`, `applyBps`, `allocate`, `compare`, `equals`, …                                          |
+| `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`                                                  |
+| `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum                                               |
+| `src/pricing/`  | `@repo/core/pricing`   | `priceOrder`, `evaluateCoupon`, `couponDiscount`, `resolveCommissionBps`, `computePayoutPostings` — pure checkout/payout money math (D5-D8) |
+| `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                                                                    |
+| `src/schemas/*` | `@repo/core/schemas/*` | one file per area — see "Schemas" below                                                                                                     |
 
 The root export (`@repo/core`) re-exports everything; Money helpers are namespaced there:
 `const m: Money = Money.of(150_000, 'VND')`. Every export (root and subpaths) resolves to `dist/`, built
@@ -40,6 +41,18 @@ Read shapes use Money, ISO-datetime strings and branded ids. Input shapes never 
 
 Known gaps: `VendorApplicationCreate` has no shop `displayName`/`slug` (the application table has no column
 for them); there is no vendor-side read shape for raw translations/stock yet.
+
+## Pricing (`src/pricing`)
+
+Pure functions, no I/O, `now` passed in; same-currency only. Rules (D5-D8): coupons discount **item subtotals only**
+(never shipping); one vendor coupon per vendor, only on that vendor's sub-order; PERCENT floor-rounded, FIXED
+capped at base; platform coupons apply sequentially on the items total after vendor discounts, then split
+across sub-orders by `Money.allocate` over (subtotal − vendorDiscount); vendor + platform coupons ≤
+`maxCouponStack`. Commission is per line, **half-even**, on line total minus its pro-rata vendor discount
+(platform coupons never reduce it). `priceOrder` throws `DomainError` (`coupon.error.*`) on rejection;
+`evaluateCoupon` returns `{ ok } | { ok:false, code }`. Usage counts are inputs (caller loads them, locking the
+coupon row). Invariants asserted: `paid = subtotal + shipping − vendorDiscount − platformDiscount ≥ 0`,
+`net = subtotal + shipping − vendorDiscount − commission`, payout postings sum to 0.
 
 ## Rules specific to this package
 

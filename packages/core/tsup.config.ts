@@ -7,6 +7,7 @@ export default tsupPreset({
   entry: [
     'src/index.ts',
     'src/money/index.ts',
+    'src/pricing/index.ts',
     'src/errors/index.ts',
     'src/enums/index.ts',
     'src/ids/index.ts',
