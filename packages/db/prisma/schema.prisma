@@ -109,6 +109,50 @@ enum CouponScope {
   VENDOR
 }
 
+enum CrmMessageKind {
+  SERVICE
+  MARKETING
+}
+
+enum CrmChannel {
+  IN_APP
+  EMAIL
+}
+
+enum CrmAutomationKind {
+  THANK_YOU
+  REVIEW_REQUEST
+  REORDER_REMINDER
+}
+
+enum CrmCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  CANCELLED
+}
+
+enum CrmMessageStatus {
+  SCHEDULED
+  SENT
+  SKIPPED
+  FAILED
+}
+
+enum ConsentAction {
+  MARKETING_OPT_IN
+  MARKETING_OPT_OUT
+  SERVICE_OPT_OUT
+  SERVICE_OPT_IN
+}
+
+enum ConsentSource {
+  STOREFRONT
+  CHECKOUT
+  UNSUBSCRIBE_LINK
+}
+
 enum DiscountType {
   PERCENT
   FIXED
@@ -128,14 +172,22 @@ model User {
   addresses          Address[]
   cart               Cart?
   orders             Order[]
-  ownedVendors       Vendor[]            @relation("VendorOwner")
-  vendorApplications VendorApplication[] @relation("Applicant")
-  reviewedApps       VendorApplication[] @relation("Reviewer")
+  ownedVendors       Vendor[]                   @relation("VendorOwner")
+  vendorApplications VendorApplication[]        @relation("Applicant")
+  reviewedApps       VendorApplication[]        @relation("Reviewer")
   reviews            Review[]
   couponRedemptions  CouponRedemption[]
-  requestedRefunds   Refund[]            @relation("RefundRequester")
-  sentInvitations    VendorInvitation[]  @relation("InvitationInviter")
-  acceptedInvites    VendorInvitation[]  @relation("InvitationAcceptor")
+  requestedRefunds   Refund[]                   @relation("RefundRequester")
+  sentInvitations    VendorInvitation[]         @relation("InvitationInviter")
+  crmConsentEvents   CrmConsentEvent[]
+  acceptedInvites    VendorInvitation[]         @relation("InvitationAcceptor")
+  vendorCustomers    VendorCustomer[]
+  crmNotesAbout      VendorCustomerNote[]       @relation("CrmNoteCustomer")
+  crmNotesWritten    VendorCustomerNote[]       @relation("CrmNoteAuthor")
+  vendorPreferences  CustomerVendorPreference[]
+  crmCampaigns       CrmCampaign[]
+  crmMessages        CrmMessage[]
+  notifications      Notification[]
 
   @@map("users")
 }
@@ -206,15 +258,24 @@ model Vendor {
   createdAt             DateTime     @default(now()) @map("created_at")
   updatedAt             DateTime     @updatedAt @map("updated_at")
 
-  owner           User               @relation("VendorOwner", fields: [ownerId], references: [id])
-  staffRoles      UserRole[]
-  wallet          Wallet?
-  products        Product[]
-  shippingMethods ShippingMethod[]
-  subOrders       SubOrder[]
-  coupons         Coupon[]
-  ledgerEntries   LedgerEntry[]
-  invitations     VendorInvitation[]
+  owner            User               @relation("VendorOwner", fields: [ownerId], references: [id])
+  staffRoles       UserRole[]
+  wallet           Wallet?
+  products         Product[]
+  shippingMethods  ShippingMethod[]
+  subOrders        SubOrder[]
+  coupons          Coupon[]
+  ledgerEntries    LedgerEntry[]
+  invitations      VendorInvitation[]
+  crmConsentEvents CrmConsentEvent[]
+
+  customers           VendorCustomer[]
+  customerNotes       VendorCustomerNote[]
+  customerPreferences CustomerVendorPreference[]
+  crmAutomations      CrmAutomation[]
+  crmCampaigns        CrmCampaign[]
+  crmMessages         CrmMessage[]
+  notifications       Notification[]
 
   @@index([ownerId])
   @@map("vendors")
@@ -468,9 +529,11 @@ model SubOrder {
   couponRedemptions CouponRedemption[]
   reviews           Review[]
   refunds           Refund[]
+  crmMessages       CrmMessage[]
 
   @@index([orderId])
   @@index([vendorId])
+  @@index([vendorId, status])
   @@index([status])
   @@index([shippingMethodId])
   @@map("sub_orders")
@@ -583,8 +646,10 @@ model Coupon {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  vendor      Vendor?            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  redemptions CouponRedemption[]
+  vendor         Vendor?            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  redemptions    CouponRedemption[]
+  crmAutomations CrmAutomation[]
+  crmCampaigns   CrmCampaign[]
 
   @@unique([vendorId, code])
   @@index([scope])
@@ -633,16 +698,21 @@ model Review {
 }
 
 model PlatformSettings {
-  id                    String     @id
-  commissionBps         Int        @default(1000) @map("commission_bps")
-  holdPeriodDays        Int        @default(7) @map("hold_period_days")
-  refundWindowDays      Int        @default(7) @map("refund_window_days")
-  maxCouponStack        Int        @default(1) @map("max_coupon_stack")
-  paymentTimeoutMinutes Int        @default(30) @map("payment_timeout_minutes")
-  supportedCurrencies   Currency[] @map("supported_currencies")
-  defaultCurrency       Currency   @default(VND) @map("default_currency")
-  createdAt             DateTime   @default(now()) @map("created_at")
-  updatedAt             DateTime   @updatedAt @map("updated_at")
+  id                                String     @id
+  commissionBps                     Int        @default(1000) @map("commission_bps")
+  holdPeriodDays                    Int        @default(7) @map("hold_period_days")
+  refundWindowDays                  Int        @default(7) @map("refund_window_days")
+  maxCouponStack                    Int        @default(1) @map("max_coupon_stack")
+  paymentTimeoutMinutes             Int        @default(30) @map("payment_timeout_minutes")
+  supportedCurrencies               Currency[] @map("supported_currencies")
+  defaultCurrency                   Currency   @default(VND) @map("default_currency")
+  crmAtRiskAfterDays                Int        @default(60) @map("crm_at_risk_after_days")
+  crmLapsedAfterDays                Int        @default(180) @map("crm_lapsed_after_days")
+  crmVipMinOrders                   Int        @default(3) @map("crm_vip_min_orders")
+  crmMaxCampaignsPerWeek            Int        @default(2) @map("crm_max_campaigns_per_week")
+  crmMaxMarketingPerCustomerPerWeek Int        @default(2) @map("crm_max_marketing_per_customer_per_week")
+  createdAt                         DateTime   @default(now()) @map("created_at")
+  updatedAt                         DateTime   @updatedAt @map("updated_at")
 
   @@map("platform_settings")
 }
@@ -714,4 +784,184 @@ model VendorInvitation {
   @@index([invitedById])
   @@index([acceptedById])
   @@map("vendor_invitations")
+}
+
+// ---- Vendor CRM (docs/superpowers/plans/2026-11-23-vendor-crm.md) ----
+
+model VendorCustomer {
+  vendorId  String   @map("vendor_id")
+  userId    String   @map("user_id")
+  tags      String[] @default([])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([vendorId, userId])
+  @@index([userId])
+  @@index([tags], type: Gin)
+  @@map("vendor_customers")
+}
+
+model VendorCustomerNote {
+  id        String    @id
+  vendorId  String    @map("vendor_id")
+  userId    String    @map("user_id")
+  authorId  String?   @map("author_id")
+  body      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User   @relation("CrmNoteCustomer", fields: [userId], references: [id], onDelete: Cascade)
+  author User?  @relation("CrmNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([vendorId, userId, createdAt])
+  @@index([userId])
+  @@index([authorId])
+  @@map("vendor_customer_notes")
+}
+
+model CustomerVendorPreference {
+  userId               String         @map("user_id")
+  vendorId             String         @map("vendor_id")
+  marketingOptInAt     DateTime?      @map("marketing_opt_in_at")
+  marketingOptInSource ConsentSource? @map("marketing_opt_in_source")
+  marketingOptOutAt    DateTime?      @map("marketing_opt_out_at")
+  serviceOptOutAt      DateTime?      @map("service_opt_out_at")
+  /// sha256 of the 32-byte random unsubscribe token (the raw token only appears in emails).
+  unsubscribeTokenHash String         @unique @map("unsubscribe_token_hash")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@id([userId, vendorId])
+  @@index([vendorId])
+  @@map("customer_vendor_preferences")
+}
+
+model CrmAutomation {
+  id         String            @id
+  vendorId   String            @map("vendor_id")
+  kind       CrmAutomationKind
+  isEnabled  Boolean           @default(false) @map("is_enabled")
+  delayDays  Int               @map("delay_days")
+  templateVi String?           @map("template_vi")
+  templateEn String?           @map("template_en")
+  couponId   String?           @map("coupon_id")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  vendor Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  @@unique([vendorId, kind])
+  @@index([couponId])
+  @@map("crm_automations")
+}
+
+model CrmCampaign {
+  id             String            @id
+  vendorId       String            @map("vendor_id")
+  name           String
+  status         CrmCampaignStatus @default(DRAFT)
+  audience       Json
+  templateVi     String            @map("template_vi")
+  templateEn     String?           @map("template_en")
+  couponId       String?           @map("coupon_id")
+  scheduledAt    DateTime?         @map("scheduled_at")
+  startedAt      DateTime?         @map("started_at")
+  completedAt    DateTime?         @map("completed_at")
+  cancelledAt    DateTime?         @map("cancelled_at")
+  cancelReason   String?           @map("cancel_reason")
+  recipientCount Int               @default(0) @map("recipient_count")
+  createdById    String?           @map("created_by_id")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  vendor    Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  coupon    Coupon?      @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  createdBy User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  messages  CrmMessage[]
+
+  @@index([vendorId, status])
+  @@index([status, scheduledAt])
+  @@index([createdById])
+  @@index([couponId])
+  @@map("crm_campaigns")
+}
+
+model CrmMessage {
+  id             String             @id
+  vendorId       String             @map("vendor_id")
+  userId         String             @map("user_id")
+  kind           CrmMessageKind
+  automationKind CrmAutomationKind? @map("automation_kind")
+  campaignId     String?            @map("campaign_id")
+  subOrderId     String?            @map("sub_order_id")
+  channels       CrmChannel[]
+  status         CrmMessageStatus   @default(SCHEDULED)
+  skipReason     String?            @map("skip_reason")
+  scheduledFor   DateTime           @map("scheduled_for")
+  sentAt         DateTime?          @map("sent_at")
+  notificationId String?            @map("notification_id")
+  attempts       Int                @default(0)
+  lastError      String?            @map("last_error")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  vendor       Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign     CrmCampaign?  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subOrder     SubOrder?     @relation(fields: [subOrderId], references: [id], onDelete: Restrict)
+  notification Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, userId])
+  @@unique([automationKind, subOrderId])
+  @@index([userId])
+  @@index([subOrderId])
+  @@index([notificationId])
+  @@index([vendorId, userId, sentAt])
+  @@map("crm_messages")
+}
+
+model Notification {
+  id        String    @id
+  userId    String    @map("user_id")
+  vendorId  String?   @map("vendor_id")
+  title     String
+  body      String
+  linkPath  String?   @map("link_path")
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor      Vendor?      @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  crmMessages CrmMessage[]
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([vendorId])
+  @@map("notifications")
+}
+
+/// Append-only consent evidence (NĐ 13/2023): one row per consent change; never updated. Deleted only
+/// by customer/vendor erasure (cascade).
+model CrmConsentEvent {
+  id        String        @id
+  userId    String        @map("user_id")
+  vendorId  String        @map("vendor_id")
+  action    ConsentAction
+  source    ConsentSource
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([userId, vendorId, createdAt])
+  @@index([vendorId])
+  @@map("crm_consent_events")
 }

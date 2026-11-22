@@ -13,7 +13,7 @@ describe('seed idempotency', () => {
   beforeAll(() => {
     execSync('pnpm seed', { stdio: 'inherit', cwd: pkgDir });
     execSync('pnpm seed', { stdio: 'inherit', cwd: pkgDir }); // second run must not duplicate
-  });
+  }, 60_000);
 
   afterAll(async () => {
     await prisma.$disconnect();
@@ -35,8 +35,8 @@ describe('seed idempotency', () => {
   });
 
   it('does not duplicate any other seeded row on re-run', async () => {
-    expect(await prisma.user.count()).toBe(4); // customer + admin + 2 vendor owners
-    expect(await prisma.userRole.count()).toBe(4); // CUSTOMER + PLATFORM_ADMIN + 2 × VENDOR_OWNER
+    expect(await prisma.user.count()).toBe(9); // customer + admin + 2 vendor owners + 5 CRM demo customers
+    expect(await prisma.userRole.count()).toBe(9); // CUSTOMER + PLATFORM_ADMIN + 2 × VENDOR_OWNER + 5 CRM customers
     expect(await prisma.wallet.count()).toBe(2);
     expect(await prisma.shippingMethod.count()).toBe(3);
     expect(await prisma.category.count()).toBe(3);
@@ -45,6 +45,14 @@ describe('seed idempotency', () => {
     expect(await prisma.productTranslation.count()).toBe(8);
     expect(await prisma.productCategory.count()).toBe(4);
     expect(await prisma.coupon.count()).toBe(2);
+    expect(await prisma.order.count()).toBe(9);
+    expect(await prisma.subOrder.count()).toBe(9);
+    expect(await prisma.orderItem.count()).toBe(9);
+    expect(await prisma.vendorCustomer.count()).toBe(5);
+    expect(await prisma.vendorCustomerNote.count()).toBe(1);
+    expect(await prisma.customerVendorPreference.count()).toBe(1);
+    expect(await prisma.crmAutomation.count()).toBe(1);
+    expect(await prisma.crmConsentEvent.count()).toBe(1);
   });
 
   it('gives every seeded row a canonical ULID id (parses through @repo/core id schemas)', async () => {

@@ -23,5 +23,12 @@ export {
   LedgerEntryType,
   CouponScope,
   DiscountType,
+  CrmMessageKind,
+  CrmChannel,
+  CrmAutomationKind,
+  CrmCampaignStatus,
+  CrmMessageStatus,
+  ConsentSource,
+  ConsentAction,
 } from '@prisma/client';
 export type { Prisma } from '@prisma/client';
