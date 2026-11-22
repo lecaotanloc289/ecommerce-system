@@ -33,6 +33,22 @@ export const EnvSchema = z
     FACEBOOK_OAUTH_CLIENT_SECRET: z.string().min(1),
     FACEBOOK_OAUTH_CALLBACK_URL: z.url(),
 
+    /** S3-compatible storage (RustFS in docker-compose locally, Cloudflare R2 in prod). */
+    S3_ENDPOINT: z.url().default('http://localhost:9000'),
+    S3_REGION: z.string().min(1).default('us-east-1'),
+    S3_ACCESS_KEY_ID: z.string().min(1),
+    S3_SECRET_ACCESS_KEY: z.string().min(1),
+    S3_FORCE_PATH_STYLE: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
+    /** Private bucket for KYC documents (read only through short-lived presigned GETs). */
+    S3_BUCKET_KYC: z.string().min(1).default('kyc'),
+    /** Public-read bucket for product images and vendor logos. */
+    S3_BUCKET_MEDIA: z.string().min(1).default('media'),
+    /** Public base URL of the media bucket, no trailing slash needed (`<base>/<key>`). */
+    MEDIA_PUBLIC_BASE_URL: z.url().default('http://localhost:9000/media'),
+
     WEB_ORIGIN: z.url().default('http://localhost:3000'),
     ADMIN_ORIGIN: z.url().default('http://localhost:5173'),
     /** Where the browser lands after a successful/failed OAuth login (per app). */

@@ -9,6 +9,7 @@ import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { StorageModule } from './storage/storage.module';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -28,6 +29,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     HealthModule,
     AuthModule,
     IdempotencyModule,
+    StorageModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

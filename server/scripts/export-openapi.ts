@@ -25,6 +25,8 @@ const DUMMY_ENV: Record<string, string> = {
   FACEBOOK_OAUTH_CLIENT_ID: 'openapi-export',
   FACEBOOK_OAUTH_CLIENT_SECRET: 'openapi-export',
   FACEBOOK_OAUTH_CALLBACK_URL: 'http://localhost:3001/v1/auth/facebook/callback',
+  S3_ACCESS_KEY_ID: 'openapi-export',
+  S3_SECRET_ACCESS_KEY: 'openapi-export',
 };
 
 const OUTPUT_PATH = resolve(__dirname, '../../packages/sdk/openapi.json');
