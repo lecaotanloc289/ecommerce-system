@@ -205,7 +205,9 @@ describe('Cart', () => {
       imageUrl: null,
       unitPrice: vnd(199_000),
       quantity: 2,
+      lineTotal: vnd(398_000),
       stockAvailable: 12,
+      unavailable: false,
     };
     expect(CartLineSchema.parse(line)).toEqual(line);
     expect(CartLineSchema.safeParse({ ...line, unitPrice: vnd(-1) }).success).toBe(false);

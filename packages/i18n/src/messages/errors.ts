@@ -33,6 +33,7 @@ export const errorsEn: ErrorMessages = {
   'product.error.not-available': 'This product can’t be purchased right now.',
   'product.error.variant-not-found': 'This product option is no longer available.',
   'cart.error.quantity-exceeds-stock': 'Not enough stock for the quantity you chose.',
+  'cart.error.too-many-lines': 'Your cart has too many different items.',
   'checkout.error.empty-cart': 'Your cart is empty.',
   'checkout.error.out-of-stock': 'Some items are out of stock. Please review your cart.',
   'checkout.error.price-changed': 'Some prices have changed. Please review your order.',
@@ -98,6 +99,7 @@ export const errorsVi: ErrorMessages = {
   'product.error.not-available': 'Sản phẩm này hiện không thể mua.',
   'product.error.variant-not-found': 'Phân loại sản phẩm này không còn được bán.',
   'cart.error.quantity-exceeds-stock': 'Không đủ hàng cho số lượng bạn chọn.',
+  'cart.error.too-many-lines': 'Giỏ hàng có quá nhiều sản phẩm khác nhau.',
   'checkout.error.empty-cart': 'Giỏ hàng của bạn đang trống.',
   'checkout.error.out-of-stock': 'Một số sản phẩm đã hết hàng. Vui lòng kiểm tra lại giỏ hàng.',
   'checkout.error.price-changed':

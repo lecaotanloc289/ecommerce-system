@@ -41,6 +41,7 @@ export const ERROR_CODES = [
   'product.error.variant-not-found',
   // cart
   'cart.error.quantity-exceeds-stock',
+  'cart.error.too-many-lines',
   // checkout
   'checkout.error.empty-cart',
   'checkout.error.out-of-stock',
@@ -112,6 +113,7 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'product.error.not-available': 409,
   'product.error.variant-not-found': 404,
   'cart.error.quantity-exceeds-stock': 409,
+  'cart.error.too-many-lines': 422,
   'checkout.error.empty-cart': 422,
   'checkout.error.out-of-stock': 409,
   'checkout.error.price-changed': 409,
