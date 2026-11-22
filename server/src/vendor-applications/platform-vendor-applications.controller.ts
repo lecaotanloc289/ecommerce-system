@@ -53,8 +53,11 @@ export class PlatformVendorApplicationsController {
   })
   @ZodResponse({ status: 200, description: 'The application', type: VendorApplicationDetailDto })
   @Get(':id')
-  get(@Param() params: VendorApplicationParamsDto): Promise<VendorApplicationDetail> {
-    return this.applications.getForReview(params.id);
+  get(
+    @CurrentUser() user: AuthUser,
+    @Param() params: VendorApplicationParamsDto,
+  ): Promise<VendorApplicationDetail> {
+    return this.applications.getForReview(user.id, params.id);
   }
 
   @ApiOperation({

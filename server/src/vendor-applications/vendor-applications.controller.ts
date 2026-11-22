@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { VendorApplication, VendorApplicationMe } from '@repo/core';
+import type { VendorApplicationListItem, VendorApplicationMe } from '@repo/core';
 import { ZodResponse } from 'nestjs-zod';
 import type { AuthUser } from '../auth/auth.schemas';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -12,7 +12,7 @@ import { RateLimit } from '../common/rate-limit';
 import { BEARER_AUTH } from '../openapi/openapi';
 import {
   VendorApplicationCreateDto,
-  VendorApplicationDto,
+  VendorApplicationListItemDto,
   VendorApplicationMeDto,
 } from './vendor-applications.dto';
 import { VendorApplicationsService } from './vendor-applications.service';
@@ -35,14 +35,18 @@ export class VendorApplicationsController {
       '`common.error.conflict`. Re-applying after a rejection is allowed.',
   })
   @ApiHeader({ name: 'Idempotency-Key', required: true, description: 'Client-generated ULID.' })
-  @ZodResponse({ status: 201, description: 'The PENDING application', type: VendorApplicationDto })
+  @ZodResponse({
+    status: 201,
+    description: 'The PENDING application (KYC numbers masked)',
+    type: VendorApplicationListItemDto,
+  })
   @Post()
   @Idempotent()
   @RateLimit('strict')
   create(
     @CurrentUser() user: AuthUser,
     @Body() body: VendorApplicationCreateDto,
-  ): Promise<VendorApplication> {
+  ): Promise<VendorApplicationListItem> {
     return this.applications.create(user.id, body);
   }
 

@@ -4,18 +4,18 @@ import {
   VendorApplicationCreateSchema,
   VendorApplicationDetailSchema,
   VendorApplicationIdSchema,
+  VendorApplicationListItemSchema,
   VendorApplicationListPageSchema,
   VendorApplicationListQuerySchema,
   VendorApplicationMeSchema,
   VendorApplicationReviewResultSchema,
-  VendorApplicationSchema,
   VendorApproveSchema,
   VendorRejectSchema,
 } from '@repo/core';
 
 /** OpenAPI/request/response DTOs for the vendor-application controllers (schemas in `@repo/core`). */
 export class VendorApplicationCreateDto extends createZodDto(VendorApplicationCreateSchema) {}
-export class VendorApplicationDto extends createZodDto(VendorApplicationSchema) {}
+export class VendorApplicationListItemDto extends createZodDto(VendorApplicationListItemSchema) {}
 export class VendorApplicationMeDto extends createZodDto(VendorApplicationMeSchema) {}
 export class VendorApplicationListQueryDto extends createZodDto(VendorApplicationListQuerySchema) {}
 export class VendorApplicationListPageDto extends createZodDto(VendorApplicationListPageSchema) {}

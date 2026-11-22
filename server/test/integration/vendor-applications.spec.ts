@@ -214,6 +214,26 @@ describe('platform review', () => {
     expect(row.status).toBe('PENDING');
   });
 
+  it('forbids staff from reviewing their own application', async () => {
+    const reviewer = await makeUser(t.db, { roles: [Role.CUSTOMER, Role.PLATFORM_ADMIN] });
+    const created = await submit(reviewer);
+    const res = await call(
+      reviewer,
+      'POST',
+      `/platform/vendor-applications/${created.id}/approve`,
+      { slug: 'self-shop', displayName: 'Self' },
+    );
+    expect(res.status).toBe(403);
+    expect(await t.db.vendor.count()).toBe(0);
+  });
+
+  it('does not return KYC numbers when submitting (response is cached by idempotency)', async () => {
+    const user = await makeUser(t.db);
+    const res = await call(user, 'POST', '/vendor-applications', application(user.id));
+    expect(JSON.stringify(res.json)).not.toContain('0312345678');
+    expect(JSON.stringify(res.json)).not.toContain('0071001234567');
+  });
+
   it('validates the slug', async () => {
     const user = await makeUser(t.db);
     const created = await submit(user);

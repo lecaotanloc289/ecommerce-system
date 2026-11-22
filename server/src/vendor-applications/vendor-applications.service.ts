@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   DomainError,
   Role,
   VENDOR_APPLICATION_AGGREGATE_TYPE,
   type VendorApplication,
   type VendorApplicationCreate,
+  type VendorApplicationListItem,
+  VendorApplicationListItemSchema,
   type VendorApplicationDetail,
   VendorApplicationDetailSchema,
   type VendorApplicationListPage,
@@ -22,6 +24,7 @@ import {
 } from '@repo/core';
 import { ApplicationStatus, VendorStatus, type Prisma } from '@repo/db';
 import { ulid } from 'ulid';
+import type { z } from 'zod';
 import { cursorPageArgs, toPage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
@@ -38,7 +41,7 @@ type ApplicationRow = Prisma.VendorApplicationGetPayload<typeof WITH_APPLICANT>;
 
 /** Masks all but the last 4 characters (`*` fill); values of 4 characters or fewer are fully masked. */
 export function maskTail(value: string): string {
-  const visible = value.length > 4 ? value.slice(-4) : '';
+  const visible = value.slice(value.length - Math.min(4, Math.floor(value.length / 2)));
   return '*'.repeat(value.length - visible.length) + visible;
 }
 
@@ -65,7 +68,7 @@ function toApplication(row: Prisma.VendorApplicationGetPayload<object>): VendorA
   });
 }
 
-function toListItem(row: ApplicationRow) {
+function toListItem(row: ApplicationRow): z.input<typeof VendorApplicationListItemSchema> {
   return {
     id: row.id,
     applicantId: row.applicantId,
@@ -87,21 +90,26 @@ function toListItem(row: ApplicationRow) {
  */
 @Injectable()
 export class VendorApplicationsService {
+  private readonly logger = new Logger(VendorApplicationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
   ) {}
 
-  async create(userId: string, input: VendorApplicationCreate): Promise<VendorApplication> {
+  /** Returns the masked row: the response body is cached by `@Idempotent()` (Redis, 24h), so it must not hold KYC numbers. */
+  async create(userId: string, input: VendorApplicationCreate): Promise<VendorApplicationListItem> {
     // Keys must be ones this server issued for the caller (throws upload.error.invalid-key).
     const owner = { type: 'user', userId } as const;
     const businessLicenseKey = this.storage.assertOwnedKey(input.businessLicenseKey, owner);
     const nationalIdKey = this.storage.assertOwnedKey(input.nationalIdKey, owner);
 
+    if (businessLicenseKey === nationalIdKey) throw new DomainError('upload.error.invalid-key');
+
     return this.prisma.client.$transaction(async (tx) => {
       // Serialises the caller's applications so two concurrent submits cannot both be PENDING.
       const locked = await tx.$queryRaw<{ id: string }[]>`
-        SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+        SELECT id FROM users WHERE id = ${userId} FOR NO KEY UPDATE`;
       if (locked.length === 0) throw new DomainError('common.error.unauthorized');
 
       if (await tx.vendor.findFirst({ where: { ownerId: userId }, select: { id: true } })) {
@@ -113,6 +121,11 @@ export class VendorApplicationsService {
       });
       if (pending) throw new DomainError('vendor.error.application-already-pending');
 
+      const applicant = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { name: true },
+      });
+      const applicantName = applicant.name;
       const row = await tx.vendorApplication.create({
         data: {
           id: ulid(),
@@ -126,7 +139,9 @@ export class VendorApplicationsService {
           accountHolder: input.accountHolder,
         },
       });
-      return toApplication(row);
+      return VendorApplicationListItemSchema.parse(
+        toListItem({ ...row, applicant: { name: applicantName } }),
+      );
     });
   }
 
@@ -154,12 +169,14 @@ export class VendorApplicationsService {
     });
   }
 
-  async getForReview(id: string): Promise<VendorApplicationDetail> {
+  async getForReview(reviewerId: string, id: string): Promise<VendorApplicationDetail> {
     const row = await this.prisma.client.vendorApplication.findUnique({
       where: { id },
       ...WITH_APPLICANT,
     });
     if (!row) throw new DomainError('common.error.not-found');
+    // Audit trail for reads of full KYC data (ids only, never values).
+    this.logger.log({ reviewerId, applicationId: id }, 'vendor application KYC viewed');
     const [businessLicenseUrl, nationalIdUrl] = await Promise.all([
       this.storage.presignGet(row.businessLicenseUrl),
       this.storage.presignGet(row.nationalIdUrl),
@@ -186,7 +203,7 @@ export class VendorApplicationsService {
   ): Promise<VendorApplicationReviewResult> {
     try {
       return await this.prisma.client.$transaction(async (tx) => {
-        const row = await this.lockPending(tx, applicationId);
+        const row = await this.lockPending(tx, reviewerId, applicationId);
         const settings = await tx.platformSettings.findFirst({ orderBy: { createdAt: 'asc' } });
         if (!settings) throw new Error('PlatformSettings row is missing (run the seed)');
 
@@ -247,7 +264,7 @@ export class VendorApplicationsService {
     input: VendorReject,
   ): Promise<VendorApplicationReviewResult> {
     return this.prisma.client.$transaction(async (tx) => {
-      const row = await this.lockPending(tx, applicationId);
+      const row = await this.lockPending(tx, reviewerId, applicationId);
       const updated = await tx.vendorApplication.update({
         where: { id: applicationId },
         data: {
@@ -275,7 +292,11 @@ export class VendorApplicationsService {
   }
 
   /** `SELECT … FOR UPDATE` on the application; 404 if missing, 409 unless still PENDING. */
-  private async lockPending(tx: Tx, applicationId: string): Promise<{ applicantId: string }> {
+  private async lockPending(
+    tx: Tx,
+    reviewerId: string,
+    applicationId: string,
+  ): Promise<{ applicantId: string }> {
     const rows = await tx.$queryRaw<{ applicant_id: string; status: string }[]>`
       SELECT applicant_id, status::text AS status FROM vendor_applications
       WHERE id = ${applicationId} FOR UPDATE`;
@@ -284,6 +305,8 @@ export class VendorApplicationsService {
     if (row.status !== ApplicationStatus.PENDING) {
       throw new DomainError('vendor.error.application-not-pending');
     }
+    // Staff are also customers: they must not review their own application.
+    if (row.applicant_id === reviewerId) throw new DomainError('common.error.forbidden');
     return { applicantId: row.applicant_id };
   }
 }
