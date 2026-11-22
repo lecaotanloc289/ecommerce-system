@@ -135,7 +135,11 @@ export class AddressesService {
 }
 
 async function lockUser(tx: Tx, userId: string): Promise<void> {
-  await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+  const rows = await tx.$queryRaw<
+    { id: string }[]
+  >`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+  // Token still valid but the user is gone: answer 401 instead of a FK-violation 500.
+  if (rows.length === 0) throw new DomainError('common.error.unauthorized');
 }
 
 async function requireOwned(tx: Tx, userId: string, id: string): Promise<{ isDefault: boolean }> {
