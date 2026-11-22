@@ -314,4 +314,50 @@ export const vi: Messages = {
     emailPlaceholder: 'Địa chỉ email của bạn',
     subscribe: 'Đăng ký',
   },
+  email: {
+    greeting: 'Xin chào {name},',
+    signature: 'Đội ngũ Elma',
+    footer: 'Bạn nhận được email này vì có hoạt động trên tài khoản Elma của bạn.',
+    viewOrder: 'Xem đơn hàng',
+    orderCreated: {
+      subject: 'Chúng tôi đã nhận đơn hàng {orderId}',
+      intro: 'Cảm ơn bạn đã đặt hàng! Chúng tôi đã nhận được đơn hàng và đang chờ bạn thanh toán.',
+      total: 'Tổng đơn hàng: {total}',
+      deadline:
+        'Vui lòng hoàn tất thanh toán trước {deadline}, nếu không đơn hàng sẽ tự động bị huỷ.',
+    },
+    orderPaid: {
+      subject: 'Đã nhận thanh toán cho đơn hàng {orderId}',
+      intro:
+        'Chúng tôi đã nhận được khoản thanh toán {total}. Người bán sẽ bắt đầu chuẩn bị hàng cho bạn.',
+    },
+    orderCancelled: {
+      subject: 'Đơn hàng {orderId} đã bị huỷ',
+      byCustomer: 'Đơn hàng của bạn đã được huỷ theo yêu cầu.',
+      paymentExpired: 'Đơn hàng của bạn đã bị huỷ do chưa được thanh toán đúng hạn.',
+    },
+    subOrderShipped: {
+      subject: 'Một phần đơn hàng {orderId} đã được gửi đi',
+      intro: '{vendor} đã gửi hàng cho bạn.',
+      tracking: 'Đơn vị vận chuyển: {carrier}, mã vận đơn: {trackingNumber}',
+    },
+    vendorApplicationApproved: {
+      subject: 'Đơn đăng ký bán hàng của bạn đã được duyệt',
+      intro:
+        'Chúc mừng! Đơn đăng ký bán hàng trên Elma của bạn đã được duyệt. Bạn có thể đăng nhập vào cổng người bán ngay bây giờ.',
+      portal: 'Mở cổng người bán',
+    },
+    vendorApplicationRejected: {
+      subject: 'Đơn đăng ký bán hàng của bạn chưa được duyệt',
+      intro: 'Rất tiếc, đơn đăng ký bán hàng trên Elma của bạn chưa được duyệt.',
+      reason: 'Lý do: {reason}',
+    },
+    payoutReleased: {
+      subject: 'Đã chuyển tiền cho đơn hàng {orderId}',
+      intro: '{amount} của đơn hàng {orderId} đã được cộng vào ví của {vendor}.',
+    },
+  },
+  paymentSession: {
+    description: 'Thanh toán đơn hàng {orderId}',
+  },
 };

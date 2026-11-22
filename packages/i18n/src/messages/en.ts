@@ -315,6 +315,53 @@ export const en = {
     emailPlaceholder: 'Your email address',
     subscribe: 'Subscribe',
   },
+  /** Transactional emails rendered by the worker (`@workers/jobs`) in the recipient's locale. */
+  email: {
+    greeting: 'Hi {name},',
+    signature: 'The Elma team',
+    footer: 'You received this email because of activity on your Elma account.',
+    viewOrder: 'View your order',
+    orderCreated: {
+      subject: 'We received your order {orderId}',
+      intro: 'Thanks for your order! We have received it and are waiting for your payment.',
+      total: 'Order total: {total}',
+      deadline:
+        'Please complete the payment before {deadline}, otherwise the order is cancelled automatically.',
+    },
+    orderPaid: {
+      subject: 'Payment received for order {orderId}',
+      intro: 'We received your payment of {total}. The sellers will now prepare your items.',
+    },
+    orderCancelled: {
+      subject: 'Order {orderId} was cancelled',
+      byCustomer: 'Your order was cancelled at your request.',
+      paymentExpired: 'Your order was cancelled because the payment was not completed in time.',
+    },
+    subOrderShipped: {
+      subject: 'Part of your order {orderId} has shipped',
+      intro: '{vendor} has shipped your items.',
+      tracking: 'Carrier: {carrier}, tracking number: {trackingNumber}',
+    },
+    vendorApplicationApproved: {
+      subject: 'Your seller application was approved',
+      intro:
+        'Congratulations! Your application to sell on Elma has been approved. You can now sign in to the seller portal.',
+      portal: 'Open the seller portal',
+    },
+    vendorApplicationRejected: {
+      subject: 'Your seller application was not approved',
+      intro: 'Unfortunately, your application to sell on Elma was not approved.',
+      reason: 'Reason: {reason}',
+    },
+    payoutReleased: {
+      subject: 'Payout released for order {orderId}',
+      intro: '{amount} for order {orderId} has been added to the {vendor} wallet.',
+    },
+  },
+  /** Text sent to payment providers (VNPay strips diacritics). */
+  paymentSession: {
+    description: 'Payment for order {orderId}',
+  },
 } as const;
 
 /** Same shape as `en`, but every leaf widened to `string` so locale catalogues

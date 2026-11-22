@@ -36,6 +36,22 @@ export function formatDate(iso: string, locale: AppLocale): string {
   }).format(new Date(iso));
 }
 
+/**
+ * Format an ISO date-time with the time of day (e.g. deadlines in emails), same fixed
+ * `Asia/Ho_Chi_Minh` zone as `formatDate`, 24-hour clock.
+ */
+export function formatDateTime(iso: string, locale: AppLocale): string {
+  return new Intl.DateTimeFormat(intlLocale(locale), {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(new Date(iso));
+}
+
 /** Compact count for UI badges, e.g. 1200 → "1.2K" (en) / "1,2 N" (vi). */
 export function formatCompact(n: number, locale: AppLocale): string {
   return new Intl.NumberFormat(intlLocale(locale), {
