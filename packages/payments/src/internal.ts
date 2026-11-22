@@ -25,7 +25,7 @@ export function assertPositiveAmount(money: Money): void {
   }
 }
 
-/** First value of a header/query entry; `undefined` when absent. Repeated keys are rejected by callers. */
+/** The value of a single-valued header/query entry; `undefined` when absent or repeated (array). */
 export function single(value: string | readonly string[] | undefined): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }

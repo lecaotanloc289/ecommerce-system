@@ -207,7 +207,10 @@ export function createVnpayProvider(config: VnpayConfig): VnpayProvider {
     return new Promise((resolve) => resolve(buildSession(input)));
   }
 
-  /** Verifies an IPN call or browser return (both GET with the same signed query). */
+  /**
+   * Verifies an IPN call or browser return (both GET with the same signed query). Only the IPN
+   * (server-to-server) may change Payment state; the return URL is client-delivered — display only.
+   */
   function verifyWebhook(req: WebhookRequest): WebhookPaymentResult {
     const params: Record<string, string> = {};
     for (const [key, value] of Object.entries(req.query)) {
@@ -221,14 +224,24 @@ export function createVnpayProvider(config: VnpayConfig): VnpayProvider {
     if (received === undefined || received === '') throw invalidSignature('missing-hash');
     if (!safeEqualHex(sign(params), received)) throw invalidSignature('mismatch');
 
+    // Authentic is not enough: our own outbound pay URL is validly signed too. Only a payment
+    // result for our terminal (it carries the response/status codes) may change a Payment.
+    if (params.vnp_TmnCode !== config.tmnCode) throw invalidSignature('foreign-terminal');
+    const responseCode = params.vnp_ResponseCode;
+    const transactionStatus = params.vnp_TransactionStatus;
+    if (responseCode === undefined || transactionStatus === undefined) {
+      throw invalidSignature('not-a-result');
+    }
     const paymentId = params.vnp_TxnRef;
     if (paymentId === undefined || paymentId === '') throw invalidSignature('missing-txn-ref');
     const amount = fromVnpAmount(params.vnp_Amount);
-    const confirmed = params.vnp_ResponseCode === '00' && params.vnp_TransactionStatus === '00';
+    const providerTxnId = params.vnp_TransactionNo ?? '';
+    const confirmed = responseCode === '00' && transactionStatus === '00';
+    if (confirmed && providerTxnId === '') throw invalidSignature('missing-transaction-no');
     return {
       status: confirmed ? 'CONFIRMED' : 'FAILED',
       paymentId,
-      providerTxnId: params.vnp_TransactionNo ?? '',
+      providerTxnId,
       amount,
       raw: params,
     };
@@ -301,6 +314,10 @@ export function createVnpayProvider(config: VnpayConfig): VnpayProvider {
       const expected = hmacSha512(config.hashSecret, pipeData(REFUND_RESPONSE_HASH_FIELDS, body));
       if (!safeEqualHex(expected, body.vnp_SecureHash ?? '')) {
         throw invalidSignature('refund-response');
+      }
+      // A replayed signed success for another payment/amount must not complete this refund.
+      if (body.vnp_TxnRef !== request.vnp_TxnRef || body.vnp_Amount !== request.vnp_Amount) {
+        throw invalidSignature('refund-response-mismatch');
       }
       return {
         providerRefundId: body.vnp_TransactionNo || null,

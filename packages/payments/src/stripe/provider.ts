@@ -56,6 +56,19 @@ function unavailable(error: unknown): DomainError {
   });
 }
 
+/**
+ * Stripe refused the request itself (400 invalid request, 402 card/payment error, 404 unknown
+ * object): retrying the same request cannot succeed. 401/403 (key/config), 409 (conflict),
+ * 429, 5xx, network and idempotency errors are treated as transient.
+ */
+function isFinalRejection(error: unknown): error is InstanceType<typeof Stripe.errors.StripeError> {
+  return (
+    error instanceof Stripe.errors.StripeError &&
+    !(error instanceof Stripe.errors.StripeIdempotencyError) &&
+    (error.statusCode === 400 || error.statusCode === 402 || error.statusCode === 404)
+  );
+}
+
 /** Stripe amount + lower-case currency → Money; anything unexpected is an amount mismatch. */
 function toMoney(amount: number | null, currency: string | null): Money {
   const parsed = CurrencySchema.safeParse(currency?.toUpperCase());
@@ -108,7 +121,7 @@ export function createStripeProvider(config: StripeConfig): StripeProvider {
           mode: 'payment',
           client_reference_id: input.paymentId,
           metadata,
-          // Copied onto the PaymentIntent so `payment_intent.payment_failed` can be traced back.
+          // Copied onto the PaymentIntent so it can be traced back from the Stripe dashboard.
           payment_intent_data: { metadata },
           line_items: [
             {
@@ -125,10 +138,20 @@ export function createStripeProvider(config: StripeConfig): StripeProvider {
           locale: input.locale === 'VI' ? 'vi' : 'en',
           expires_at: expiresAt,
         },
-        // A worker retry for the same Payment gets the same session back instead of a second one.
-        { idempotencyKey: `checkout-session:${input.paymentId}` },
+        // No explicit idempotency key: `expires_at` changes on every worker retry, and Stripe
+        // rejects a reused key with different params. stripe-node still adds its own key to its
+        // internal network retries. A session orphaned by a lost response is harmless: nobody
+        // has its URL, and it expires.
       );
     } catch (error) {
+      if (isFinalRejection(error)) {
+        // Stripe will never accept this request (e.g. amount below its minimum): don't retry.
+        throw new DomainError('common.error.validation-failed', {
+          provider: 'STRIPE',
+          reason: error.type,
+          code: error.code ?? '',
+        });
+      }
       throw unavailable(error);
     }
     if (!session.url) {
@@ -151,8 +174,9 @@ export function createStripeProvider(config: StripeConfig): StripeProvider {
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(req.rawBody, header, config.webhookSecret, tolerance);
-    } catch {
-      throw invalidSignature('mismatch');
+    } catch (error) {
+      // Signature mismatch, stale timestamp (tolerance) or unparseable body. Never log the payload.
+      throw invalidSignature(error instanceof Stripe.errors.StripeError ? error.type : 'invalid');
     }
     const ignored: WebhookResult = { status: 'IGNORED', eventType: event.type, raw: event };
 
@@ -184,19 +208,10 @@ export function createStripeProvider(config: StripeConfig): StripeProvider {
           raw: event,
         };
       }
-      case 'payment_intent.payment_failed': {
-        const intent = event.data.object;
-        const paymentId = intent.metadata.paymentId;
-        if (paymentId === undefined || paymentId === '') return ignored;
-        return {
-          status: 'FAILED',
-          paymentId,
-          providerTxnId: intent.id,
-          amount: toMoney(intent.amount, intent.currency),
-          raw: event,
-        };
-      }
       default:
+        // Includes `payment_intent.payment_failed`: a declined card is NOT terminal for a Checkout
+        // Session — the customer can retry in the same session until it expires — so the
+        // terminal failure signal is `checkout.session.expired` / `async_payment_failed`.
         return ignored;
     }
   }
@@ -231,19 +246,13 @@ export function createStripeProvider(config: StripeConfig): StripeProvider {
         { idempotencyKey: `refund:${input.refundId}` },
       );
     } catch (error) {
-      // 4xx other than 429 = Stripe refused this refund (already refunded, bad intent, ...): final.
-      if (
-        error instanceof Stripe.errors.StripeError &&
-        error.statusCode !== undefined &&
-        error.statusCode >= 400 &&
-        error.statusCode < 500 &&
-        error.statusCode !== 429
-      ) {
+      // Stripe refused this refund (already refunded, unknown intent, ...): final.
+      if (isFinalRejection(error)) {
         return {
           providerRefundId: null,
           status: 'FAILED',
           failureCode: error.code ?? error.type,
-          raw: { type: error.type, code: error.code ?? null, statusCode: error.statusCode },
+          raw: { type: error.type, code: error.code ?? null, statusCode: error.statusCode ?? null },
         };
       }
       throw unavailable(error);

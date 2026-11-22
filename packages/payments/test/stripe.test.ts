@@ -81,7 +81,9 @@ describe('Stripe createSession', () => {
       typeof target === 'string' ? target : target instanceof URL ? target.href : target?.url;
     expect(targetUrl).toBe('https://api.stripe.com/v1/checkout/sessions');
     const { body, idempotencyKey } = sent(fetchMock);
-    expect(idempotencyKey).toBe(`checkout-session:${PAYMENT_ID}`);
+    // No per-payment key: params (expires_at) differ on every worker retry, so a fixed key would
+    // make Stripe reject the retry with an idempotency_error.
+    expect(idempotencyKey ?? '').not.toContain(PAYMENT_ID);
     expect(body.get('mode')).toBe('payment');
     expect(body.get('client_reference_id')).toBe(PAYMENT_ID);
     expect(body.get('metadata[paymentId]')).toBe(PAYMENT_ID);
@@ -129,14 +131,38 @@ describe('Stripe createSession', () => {
       'payment.error.provider-unavailable',
     );
   });
+
+  it('maps a request Stripe refuses (400) to a non-retryable validation error', async () => {
+    const { provider } = setup(() =>
+      Promise.resolve(
+        jsonResponse(
+          {
+            error: {
+              type: 'invalid_request_error',
+              code: 'amount_too_small',
+              message: 'too small',
+            },
+          },
+          400,
+        ),
+      ),
+    );
+    expect(await asyncCodeOf(provider.createSession(sessionInput))).toBe(
+      'common.error.validation-failed',
+    );
+  });
 });
 
 describe('Stripe verifyWebhook', () => {
   const { provider, client } = setup(notCalled);
 
-  function signed(event: Record<string, unknown>, secret = WEBHOOK_SECRET) {
+  function signed(event: Record<string, unknown>, secret = WEBHOOK_SECRET, timestamp?: number) {
     const payload = JSON.stringify({ id: 'evt_1', object: 'event', ...event });
-    const header = client.webhooks.generateTestHeaderString({ payload, secret });
+    const header = client.webhooks.generateTestHeaderString({
+      payload,
+      secret,
+      ...(timestamp === undefined ? {} : { timestamp }),
+    });
     return { headers: { 'stripe-signature': header }, rawBody: payload, query: {} };
   }
 
@@ -171,6 +197,37 @@ describe('Stripe verifyWebhook', () => {
     expect(codeOf(() => provider.verifyWebhook({ ...req, headers: {} }))).toBe(
       'payment.error.signature-invalid',
     );
+    const header = req.headers['stripe-signature'];
+    expect(
+      codeOf(() =>
+        provider.verifyWebhook({ ...req, headers: { 'stripe-signature': [header, header] } }),
+      ),
+    ).toBe('payment.error.signature-invalid');
+  });
+
+  it('rejects a correctly signed event replayed outside the tolerance window', () => {
+    const stale = signed(
+      { type: 'checkout.session.completed', data: { object: checkoutSession() } },
+      WEBHOOK_SECRET,
+      Math.floor(Date.now() / 1000) - 301,
+    );
+    expect(codeOf(() => provider.verifyWebhook(stale))).toBe('payment.error.signature-invalid');
+  });
+
+  it('maps async payment outcomes of delayed payment methods', () => {
+    const succeeded = signed({
+      type: 'checkout.session.async_payment_succeeded',
+      data: { object: checkoutSession() },
+    });
+    expect(provider.verifyWebhook(succeeded).status).toBe('CONFIRMED');
+    const failed = signed({
+      type: 'checkout.session.async_payment_failed',
+      data: { object: checkoutSession({ payment_status: 'unpaid' }) },
+    });
+    expect(provider.verifyWebhook(failed)).toMatchObject({
+      status: 'FAILED',
+      paymentId: PAYMENT_ID,
+    });
   });
 
   it('ignores a completed session that is not paid yet (delayed payment methods)', () => {
@@ -189,7 +246,7 @@ describe('Stripe verifyWebhook', () => {
     });
   });
 
-  it('maps payment_intent.payment_failed to FAILED via the intent metadata', () => {
+  it('ignores payment_intent.payment_failed: the customer can still retry in the same session', () => {
     const req = signed({
       type: 'payment_intent.payment_failed',
       data: {
@@ -203,10 +260,8 @@ describe('Stripe verifyWebhook', () => {
       },
     });
     expect(provider.verifyWebhook(req)).toMatchObject({
-      status: 'FAILED',
-      paymentId: PAYMENT_ID,
-      providerTxnId: 'pi_test_2',
-      amount: { amount: 1999, currency: 'USD' },
+      status: 'IGNORED',
+      eventType: 'payment_intent.payment_failed',
     });
   });
 
@@ -266,7 +321,7 @@ describe('Stripe refund', () => {
     expect((await provider.refund(refundInput)).status).toBe('PENDING');
   });
 
-  it('maps a 4xx refusal to FAILED and a 5xx to provider-unavailable', async () => {
+  it('maps a 400 refusal to FAILED and 401/409/429/5xx to provider-unavailable', async () => {
     const refused = setup(() =>
       Promise.resolve(
         jsonResponse(
@@ -286,12 +341,20 @@ describe('Stripe refund', () => {
       failureCode: 'charge_already_refunded',
       providerRefundId: null,
     });
-    const down = setup(() =>
-      Promise.resolve(jsonResponse({ error: { type: 'api_error', message: 'boom' } }, 502)),
-    );
-    expect(await asyncCodeOf(down.provider.refund(refundInput))).toBe(
-      'payment.error.provider-unavailable',
-    );
+    const transient: [number, string][] = [
+      [502, 'api_error'],
+      [401, 'authentication_error'], // bad/revoked key: fix config and retry, not a final refusal
+      [409, 'invalid_request_error'],
+      [429, 'rate_limit_error'],
+    ];
+    for (const [status, type] of transient) {
+      const { provider } = setup(() =>
+        Promise.resolve(jsonResponse({ error: { type, message: 'x' } }, status)),
+      );
+      expect(await asyncCodeOf(provider.refund(refundInput))).toBe(
+        'payment.error.provider-unavailable',
+      );
+    }
   });
 
   it('refuses to refund more than was paid', async () => {

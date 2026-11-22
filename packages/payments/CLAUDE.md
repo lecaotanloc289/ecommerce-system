@@ -52,13 +52,19 @@ type WebhookResult =
   as Money; **the server compares `paymentId` + `amount` against the `Payment` row** (and raises
   `payment.error.amount-mismatch` itself).
 - `providerRef` from `createSession` must be persisted with the Payment: VNPay's refund needs it.
-- Errors are `DomainError`s: `payment.error.signature-invalid` (bad/missing signature),
-  `payment.error.amount-mismatch` (unparseable amount, refund > paid), `payment.error.provider-unavailable`
-  (network, 5xx, malformed reply — retry with backoff), `money.error.currency-mismatch` (currency the
-  adapter isn't configured for), `money.error.invalid-operand` (amount ≤ 0).
+- Errors are `DomainError`s: `payment.error.signature-invalid` (bad/missing signature, or an authentic
+  message that is not a payment result for us), `payment.error.amount-mismatch` (unparseable amount,
+  refund > paid), `payment.error.provider-unavailable` (network, 401/403/409/429/5xx, malformed reply —
+  retry with backoff), `common.error.validation-failed` (the provider refused the request itself, e.g.
+  Stripe 400 on createSession, or VNPay refund without `providerRef` — don't retry),
+  `money.error.currency-mismatch` (currency the adapter isn't configured for), `money.error.invalid-operand`
+  (amount ≤ 0).
 - `refund` returns `FAILED` when the provider refuses (don't retry), `PENDING` when the refund is in flight
-  or was already requested (reconcile manually for now), and throws `provider-unavailable` on transient
-  failures.
+  or was already requested, and throws `provider-unavailable` on transient failures. `PENDING` is not
+  resolved automatically yet: it needs a follow-up (VNPay `querydr`, Stripe `refund.updated` webhook) or a
+  manual reconcile.
+- `raw` is the full verified provider payload (Stripe events include customer email/address). Store only
+  what you need in `Payment.rawPayload`.
 
 ## VNPay (`createVnpayProvider`) — API v2.1.0, VND only
 
@@ -76,6 +82,11 @@ serverIpAddr = '127.0.0.1', fetch?, now? }`.
 - `vnp_CreateDate` / `vnp_ExpireDate` are `yyyyMMddHHmmss` in GMT+7. `vnp_TxnRef` = `paymentId`.
 - `vnp_OrderInfo` is sanitized: diacritics stripped (đ → d), only `A-Za-z0-9 .-_:` kept, max 255.
 - Success = `vnp_ResponseCode === '00'` **and** `vnp_TransactionStatus === '00'`; anything else is `FAILED`.
+  A validly signed query is still rejected (`signature-invalid`) unless `vnp_TmnCode` is ours and both
+  codes are present — otherwise our own outbound pay URL could be replayed to the IPN route as a `FAILED`
+  result. `CONFIRMED` also requires a `vnp_TransactionNo`.
+- The same `verifyWebhook` serves the IPN and the browser return URL, but **only the IPN may change
+  Payment state**: the return URL is delivered by the client, so the return route displays/redirects only.
 - **IPN reply**: VNPay expects HTTP 200 + JSON `{ RspCode, Message }` — use `VNPAY_IPN_RESPONSE`
   (`success` 00, `orderNotFound` 01, `alreadyConfirmed` 02, `invalidAmount` 04, `invalidSignature` 97,
   `unknownError` 99). 00/02 end VNPay's retries; the others make it retry (up to 10×, 5 min apart).
@@ -85,7 +96,8 @@ serverIpAddr = '127.0.0.1', fetch?, now? }`.
   `vnp_CreateBy` = `initiatedBy`, `vnp_IpAddr` = `serverIpAddr`. Checksum = HMAC-SHA512 of the values
   joined with `|` in `REFUND_REQUEST_HASH_FIELDS` order (RequestId|Version|Command|TmnCode|TransactionType|
   TxnRef|Amount|TransactionNo|TransactionDate|CreateBy|CreateDate|IpAddr|OrderInfo). A `00` reply must carry
-  a valid checksum over `REFUND_RESPONSE_HASH_FIELDS`. Codes: `00` → SUCCEEDED, `94` (duplicate) → PENDING,
+  a valid checksum over `REFUND_RESPONSE_HASH_FIELDS` and echo this request's `vnp_TxnRef` + `vnp_Amount`
+  (a replayed signed success is rejected). Codes: `00` → SUCCEEDED, `94` (duplicate) → PENDING,
   `02/03/91/95/97` → FAILED, `99`/other/HTTP error → throws `provider-unavailable`.
 
 ## Stripe (`createStripeProvider`) — USD + VND
@@ -95,19 +107,21 @@ webhookToleranceSeconds = 300, now? }`.
 
 - Checkout Session, `mode: 'payment'`, one line item, `client_reference_id` + `metadata.paymentId` =
   `paymentId` (also on `payment_intent_data.metadata`), `success_url` = `cancel_url` = `returnUrl`,
-  `expires_at` = now + TTL (Stripe allows 30 min..24 h), idempotency key `checkout-session:<paymentId>`.
+  `expires_at` = now + TTL (Stripe allows 30 min..24 h). No explicit idempotency key: `expires_at` differs
+  per worker retry and Stripe rejects a reused key with different params (stripe-node still keys its own
+  network retries). A session orphaned by a lost response is harmless — nobody has its URL; it expires.
 - Amounts pass through unchanged: our Money is cents for USD and đồng for VND, which Stripe treats as
   zero-decimal.
 - Webhook: `stripe.webhooks.constructEvent(rawBody, stripe-signature header, webhookSecret)` — needs the
   **exact raw body bytes**. Mapping: `checkout.session.completed` / `async_payment_succeeded` with
   `payment_status: 'paid'` → CONFIRMED (`providerTxnId` = PaymentIntent id); `checkout.session.expired` /
-  `async_payment_failed` / `payment_intent.payment_failed` → FAILED; everything else (and sessions without
-  our `paymentId`) → IGNORED. Note `payment_intent.payment_failed` is not terminal for a Checkout
-  Session — the customer can retry the card in the same session, so a later CONFIRMED for the same
-  `paymentId` must still be accepted.
-- Refund: `refunds.create({ payment_intent: providerTxnId, amount })`, idempotency key `refund:<refundId>`.
-  `succeeded` → SUCCEEDED, `pending`/`requires_action` → PENDING, `failed`/`canceled` or a 4xx refusal →
-  FAILED; 429/5xx/network → throws `provider-unavailable`.
+  `async_payment_failed` → FAILED; everything else (and sessions without our `paymentId`) → IGNORED.
+  `payment_intent.payment_failed` is deliberately IGNORED: a declined card is not terminal for a Checkout
+  Session (the customer can retry in the same session until it expires).
+- Refund: `refunds.create({ payment_intent: providerTxnId, amount })`, idempotency key `refund:<refundId>`
+  (params are deterministic per refund). `succeeded` → SUCCEEDED, `pending`/`requires_action` → PENDING,
+  `failed`/`canceled` or a 400/402/404 refusal → FAILED; 401/403/409/429/5xx/network/idempotency errors →
+  throws `provider-unavailable`.
 
 ## Wiring (server / workers)
 

@@ -5,6 +5,7 @@ import {
   createVnpayProvider,
   formatVnpDate,
   hmacSha512,
+  REFUND_RESPONSE_HASH_FIELDS,
   sanitizeOrderInfo,
   vnpEncode,
   type VnpayConfig,
@@ -127,16 +128,20 @@ describe('VNPay createSession', () => {
     expect(query.get('vnp_ExpireDate')).toBe('20261123110111');
   });
 
-  it('round-trips: the URL it builds verifies as authentic', async () => {
+  it('round-trips: the URL it builds decodes back to a validly signed query', async () => {
     const { redirectUrl } = await provider().createSession(sessionInput);
     const query = Object.fromEntries(new URL(redirectUrl).searchParams);
     expect(query.vnp_OrderInfo).toBe('Thanh toan don hang 01JABC');
-    // No vnp_ResponseCode on the outbound URL → authentic but not a success.
-    expect(provider().verifyWebhook(ipn(query))).toMatchObject({
-      status: 'FAILED',
-      paymentId: PAYMENT_ID,
-      amount: { amount: 150_000, currency: 'VND' },
-    });
+    const { vnp_SecureHash: hash, ...params } = query;
+    expect(hmacSha512(SECRET, buildSignData(params))).toBe(hash);
+  });
+
+  it('refuses to treat the outbound pay URL as a payment result (replay to the IPN route)', async () => {
+    const { redirectUrl } = await provider().createSession(sessionInput);
+    const query = Object.fromEntries(new URL(redirectUrl).searchParams);
+    expect(codeOf(() => provider().verifyWebhook(ipn(query)))).toBe(
+      'payment.error.signature-invalid',
+    );
   });
 
   it('rejects USD (VNPay is VND-only) and non-positive amounts', async () => {
@@ -212,6 +217,15 @@ describe('VNPay verifyWebhook (IPN / return)', () => {
     );
   });
 
+  it('rejects a signed result for another terminal or a success without a transaction number', () => {
+    expect(codeOf(() => provider().verifyWebhook(ipn(ipnQuery({ vnp_TmnCode: 'OTHERTMN' }))))).toBe(
+      'payment.error.signature-invalid',
+    );
+    expect(codeOf(() => provider().verifyWebhook(ipn(ipnQuery({ vnp_TransactionNo: '' }))))).toBe(
+      'payment.error.signature-invalid',
+    );
+  });
+
   it('maps a response code other than 00 to FAILED', () => {
     const cancelled = provider().verifyWebhook(
       ipn(ipnQuery({ vnp_ResponseCode: '24', vnp_TransactionStatus: '02' })),
@@ -264,6 +278,13 @@ describe('VNPay refund', () => {
     return provider({ fetch: fetchImpl, now: () => REFUND_AT, serverIpAddr: '10.0.0.5' });
   }
 
+  /** `okResponse` with fields overridden and re-signed (pinned field order, already proven above). */
+  function signedResponse(overrides: Record<string, string>): Record<string, string> {
+    const body: Record<string, string> = { ...okResponse, ...overrides };
+    const data = REFUND_RESPONSE_HASH_FIELDS.map((field) => body[field] ?? '').join('|');
+    return { ...body, vnp_SecureHash: hmacSha512(SECRET, data) };
+  }
+
   it('POSTs the JSON payload with the pipe-ordered checksum and maps 00 to SUCCEEDED', async () => {
     const fetchMock = vi.fn<FetchLike>(() => Promise.resolve(jsonResponse(okResponse)));
     const result = await refundProvider(fetchMock).refund(refundInput);
@@ -300,12 +321,29 @@ describe('VNPay refund', () => {
   });
 
   it('uses transaction type 02 for a full refund', async () => {
-    const fetchMock = vi.fn<FetchLike>(() => Promise.resolve(jsonResponse(okResponse)));
-    await refundProvider(fetchMock)
-      .refund({ ...refundInput, amount: refundInput.paymentAmount })
-      .catch(() => undefined); // response hash no longer matches the request; only the payload matters here
+    const fetchMock = vi.fn<FetchLike>(() =>
+      Promise.resolve(
+        jsonResponse(signedResponse({ vnp_Amount: '15000000', vnp_TransactionType: '02' })),
+      ),
+    );
+    const result = await refundProvider(fetchMock).refund({
+      ...refundInput,
+      amount: refundInput.paymentAmount,
+    });
     const sent: unknown = JSON.parse(bodyText(fetchMock.mock.calls[0]?.[1]));
     expect(sent).toMatchObject({ vnp_TransactionType: '02', vnp_Amount: '15000000' });
+    expect(result.status).toBe('SUCCEEDED');
+  });
+
+  it('refuses a validly signed "00" that belongs to another payment or amount (replay)', async () => {
+    for (const other of [{ vnp_TxnRef: '01JD0000000000000000000001' }, { vnp_Amount: '100' }]) {
+      const fetchMock = vi.fn<FetchLike>(() =>
+        Promise.resolve(jsonResponse(signedResponse(other))),
+      );
+      expect(await asyncCodeOf(refundProvider(fetchMock).refund(refundInput))).toBe(
+        'payment.error.signature-invalid',
+      );
+    }
   });
 
   it('refuses a "00" response with a forged checksum', async () => {
