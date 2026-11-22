@@ -9,7 +9,7 @@ import {
   UseFilters,
   UseGuards,
 } from '@nestjs/common';
-import { DomainError } from '@repo/core';
+import { DomainError, type MeResponse, type TokenResponse } from '@repo/core';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ENV } from '../config/config.module';
 import type { Env } from '../config/env';
@@ -20,7 +20,7 @@ import {
   readRefreshCookie,
   setRefreshCookie,
 } from './auth.http';
-import type { AuthUser, MeResponse, OAuthProfile, TokenResponse } from './auth.schemas';
+import type { AuthUser, OAuthProfile } from './auth.schemas';
 import { AuthService } from './auth.service';
 import { CurrentOAuthProfile, CurrentUser } from './decorators/current-user.decorator';
 import { ALL_ROLES, Roles } from './decorators/roles.decorator';

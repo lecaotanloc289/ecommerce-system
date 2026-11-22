@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { DomainError, Role } from '@repo/core';
+import { DomainError, type MeResponse, MeResponseSchema, Role } from '@repo/core';
 import { ulid } from 'ulid';
 import { PrismaService } from '../prisma/prisma.service';
-import { type MeResponse, MeResponseSchema, type OAuthProfile } from './auth.schemas';
+import type { OAuthProfile } from './auth.schemas';
 import { buildClaims, TokenService } from './token.service';
 
 /** Prisma unique-constraint violation (concurrent first login racing on the same identity/email). */
