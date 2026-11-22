@@ -27,13 +27,14 @@ Dependency rule: `apps/* → packages/*` and `server → packages/*` only. `apps
 
 ## Current state (2026-05-21)
 
-| Workspace                                     | Status                                                                                                       |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `server`                                      | NestJS 11 + Fastify bootstrap with `GET /v1/health`; helmet + cors + cookie + pino                           |
-| `apps/web`                                    | Next 15 App Router scaffold + `/design-system` showcase, Tailwind v4                                         |
-| `apps/admin`                                  | Vite 6 + React 19 scaffold, Tailwind v4 (no routes yet)                                                      |
-| `packages/ui`                                 | 20 base components (Button, Input, Select, Dialog, Drawer, Table, Pagination, Toast…) wired to design tokens |
-| `packages/{core,db,sdk,payments,i18n,config}` | Placeholders only — empty `src/index.ts`                                                                     |
+| Workspace                                 | Status                                                                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `server`                                  | NestJS 11 + Fastify bootstrap with `GET /v1/health`; helmet + cors + cookie + pino                           |
+| `apps/web`                                | Next 15 App Router scaffold + `/design-system` showcase, Tailwind v4                                         |
+| `apps/admin`                              | Vite 6 + React 19 scaffold, Tailwind v4 (no routes yet)                                                      |
+| `packages/ui`                             | 20 base components (Button, Input, Select, Dialog, Drawer, Table, Pagination, Toast…) wired to design tokens |
+| `packages/sdk`                            | `openapi-fetch` client generated from the server's OpenAPI (`pnpm sdk:generate`)                             |
+| `packages/{core,db,payments,i18n,config}` | Placeholders only — empty `src/index.ts`                                                                     |
 
 Design tokens (`packages/ui/src/styles/tokens.css`) hold the **authoritative** values pulled from the Figma "Elma eCommerce UI Kit" style guide:
 
@@ -110,6 +111,15 @@ pnpm db:migrate             # migrate dev — creates a new migration
 pnpm db:reset               # drop + reapply + seed   — LOCAL ONLY
 pnpm db:seed                # idempotent seed
 ```
+
+## API client (`@repo/sdk`)
+
+```bash
+pnpm sdk:generate           # export OpenAPI from the server -> packages/sdk/openapi.json -> types -> build SDK
+```
+
+Run it after changing a controller or a schema it uses and commit the result; CI fails on drift. No
+database/Redis needed. See [`packages/sdk/CLAUDE.md`](./packages/sdk/CLAUDE.md).
 
 Migrations are **forward-only**. Destructive changes (drop column, rename) require a two-phase migration — see [`CLAUDE.md` §9](./CLAUDE.md#9-database-migration).
 

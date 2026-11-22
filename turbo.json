@@ -24,6 +24,14 @@
     },
     "@repo/db#generate": {
       "cache": false
+    },
+    "@server/api#openapi:export": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "@repo/sdk#generate": {
+      "dependsOn": ["@server/api#openapi:export"],
+      "cache": false
     }
   }
 }
