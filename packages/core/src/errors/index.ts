@@ -84,6 +84,10 @@ export const ERROR_CODES = [
   'payment.error.session-not-ready',
   'payment.error.retry-not-allowed',
   'payment.error.provider-currency-unsupported',
+  // zalo notifications
+  'zalo.error.account-not-connected',
+  'zalo.error.login-not-found',
+  'zalo.error.unknown-placeholder',
 ] as const;
 
 export const ErrorCodeSchema = z.enum(ERROR_CODES);
@@ -153,6 +157,9 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'payment.error.session-not-ready': 409,
   'payment.error.retry-not-allowed': 409,
   'payment.error.provider-currency-unsupported': 422,
+  'zalo.error.account-not-connected': 404,
+  'zalo.error.login-not-found': 404,
+  'zalo.error.unknown-placeholder': 422,
 };
 
 /** Interpolation values for the translated message (e.g. `{ sku, available }`). */

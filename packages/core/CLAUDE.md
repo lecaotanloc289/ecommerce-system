@@ -40,6 +40,7 @@ Read shapes use Money, ISO-datetime strings and branded ids. Input shapes never 
 - `platform-settings`: `PlatformSettingsPublic`, `PlatformSettings`, `PlatformSettingsUpdate` (partial, non-empty).
 - `wallet`: `Wallet`, `LedgerEntry` (signed `amount`). `refund`: `RefundCreate` (whole sub-order, reason only), `Refund`.
 - `vendor-invitation`: `VendorInvitationCreate` (email lowercased), `VendorInvitation`, `VendorInvitationAccept`.
+- `zalo`: automated Zalo messages — `ZALO_TEMPLATE_PLACEHOLDERS` + `findUnknownZaloPlaceholder` / `renderZaloTemplate` (`{{name}}`, unknown left verbatim), `formatOrderCode` (`#` + last 8 of the order id), `ZALO_STATUS_EVENTS` / `zaloEventForSubOrderStatus`; `ZaloTemplateUpsert` / `ZaloTemplate` / `ZaloTemplateList` / `ZaloTemplateParams`; `ZaloAccount(Response)`; QR login `ZaloLoginStart` / `ZaloLoginParams` / `ZaloLoginState` (PENDING → QR_READY → SCANNED → SUCCESS | EXPIRED | DECLINED | FAILED) and the API↔worker Redis contract `ZaloLoginRecord`, `ZALO_LOGIN_QUEUE_KEY`, `zaloLoginKey`, `ZALO_LOGIN_TTL_SECONDS`; message log `ZaloMessage` / `ZaloMessagePage` / `ZaloMessageListQuery`, `ZaloSkipReason`. `Checkout.zaloOptIn` (default false).
 - `product-admin`: `ProductUpsert` (both locales, variants, images by id-or-key, `categoryIds`), `VendorProductStatus` (no `BLOCKED`).
 
 Known gaps: `VendorApplicationCreate` has no shop `displayName`/`slug` (the application table has no column
