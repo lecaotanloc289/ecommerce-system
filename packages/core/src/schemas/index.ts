@@ -20,4 +20,5 @@ export * from './refund';
 export * from './vendor-invitation';
 export * from './product-admin';
 export * from './catalog';
+export * from './platform-admin';
 export * from './zalo';

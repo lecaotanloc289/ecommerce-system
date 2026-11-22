@@ -75,6 +75,12 @@ export const errorsEn: ErrorMessages = {
     'You can’t start a new payment for this order right now. Please refresh the order.',
   'payment.error.provider-currency-unsupported':
     'This payment method doesn’t support the order’s currency. Please choose another one.',
+  'product.error.not-publishable':
+    'This product can’t be published yet. Add a Vietnamese name and at least one variant with a price above zero.',
+  'product.error.variant-in-use':
+    'This variant already appears in orders or carts and can’t be removed. Set its stock to 0 instead.',
+  'product.error.stock-below-reserved':
+    'Stock can’t be lower than the quantity already reserved by pending orders.',
   'zalo.error.account-not-connected': 'No Zalo account is connected to this shop.',
   'zalo.error.login-not-found': 'This Zalo login request has expired. Please start a new one.',
   'zalo.error.unknown-placeholder':
@@ -150,6 +156,12 @@ export const errorsVi: ErrorMessages = {
     'Hiện chưa thể tạo lần thanh toán mới cho đơn hàng này. Vui lòng tải lại đơn hàng.',
   'payment.error.provider-currency-unsupported':
     'Phương thức thanh toán này không hỗ trợ loại tiền của đơn hàng. Vui lòng chọn phương thức khác.',
+  'product.error.not-publishable':
+    'Chưa thể đăng bán sản phẩm này. Hãy thêm tên tiếng Việt và ít nhất một biến thể có giá lớn hơn 0.',
+  'product.error.variant-in-use':
+    'Biến thể này đã có trong đơn hàng hoặc giỏ hàng nên không thể xóa. Hãy đặt tồn kho về 0.',
+  'product.error.stock-below-reserved':
+    'Tồn kho không thể thấp hơn số lượng đang được giữ cho các đơn chờ xử lý.',
   'zalo.error.account-not-connected': 'Cửa hàng chưa kết nối tài khoản Zalo.',
   'zalo.error.login-not-found': 'Yêu cầu đăng nhập Zalo đã hết hạn. Vui lòng thử lại.',
   'zalo.error.unknown-placeholder':

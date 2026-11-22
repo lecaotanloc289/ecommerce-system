@@ -14,7 +14,7 @@ import {
   VendorIdSchema,
 } from '../ids';
 import { AddressSchema } from './address';
-import { HttpUrlSchema, PageSchema } from './common';
+import { HttpUrlSchema, PageQuerySchema, PageSchema } from './common';
 import { IsoDateTimeSchema } from './datetime';
 import { NonNegativeMoneySchema } from './money';
 import { VariantAttributesSchema } from './product';
@@ -71,6 +71,26 @@ export const VendorSubOrderSchema = SubOrderSchema.extend({
   net: NonNegativeMoneySchema,
 });
 export type VendorSubOrder = z.infer<typeof VendorSubOrderSchema>;
+
+/**
+ * Sub-order statuses a vendor can see: only sub-orders that were paid. AWAITING_PAYMENT and
+ * CANCELLED (only ever reached from AWAITING_PAYMENT) are hidden from vendor reads (404 / absent).
+ */
+export const VendorSubOrderStatusSchema = SubOrderStatusSchema.exclude([
+  'AWAITING_PAYMENT',
+  'CANCELLED',
+]);
+export type VendorSubOrderStatus = z.infer<typeof VendorSubOrderStatusSchema>;
+
+/** Query of `GET /v1/vendor/sub-orders` (newest first, optional status filter). */
+export const VendorSubOrderQuerySchema = PageQuerySchema.extend({
+  status: VendorSubOrderStatusSchema.optional(),
+});
+export type VendorSubOrderQuery = z.infer<typeof VendorSubOrderQuerySchema>;
+
+/** Page of `GET /v1/vendor/sub-orders`. */
+export const VendorSubOrderPageSchema = PageSchema(VendorSubOrderSchema);
+export type VendorSubOrderPage = z.infer<typeof VendorSubOrderPageSchema>;
 
 /** Order aggregate root (customer-facing). `status` is derived from the sub-orders. */
 export const OrderSchema = z.object({

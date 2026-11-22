@@ -18,6 +18,12 @@ export function testEnv(overrides: Record<string, string> = {}): Env {
     FACEBOOK_OAUTH_CLIENT_ID: 'facebook-id',
     FACEBOOK_OAUTH_CLIENT_SECRET: 'facebook-secret',
     FACEBOOK_OAUTH_CALLBACK_URL: 'http://localhost:3001/v1/auth/facebook/callback',
+    S3_ACCESS_KEY_ID: 'test-s3-key',
+    S3_SECRET_ACCESS_KEY: 'test-s3-secret',
+    VNPAY_TMN_CODE: 'TESTTMN1',
+    VNPAY_HASH_SECRET: 'test-vnpay-hash-secret',
+    STRIPE_SECRET_KEY: 'sk_test_dummy',
+    STRIPE_WEBHOOK_SECRET: 'whsec_test_secret',
     ...overrides,
   });
 }

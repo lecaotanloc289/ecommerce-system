@@ -17,7 +17,9 @@ import {
   RatingSummarySchema,
   RefundCreateSchema,
   RefundSchema,
+  ReviewCreateBodySchema,
   ReviewCreateSchema,
+  ReviewPageSchema,
   ReviewSchema,
   ShippingMethodInputSchema,
   ShippingMethodSchema,
@@ -27,8 +29,13 @@ import {
   UploadKeySchema,
   VendorApplicationCreateSchema,
   VendorApplicationSchema,
+  VendorApproveSchema,
+  VendorApplicationListQuerySchema,
+  VendorApplicationApprovedEventSchema,
   VendorInvitationAcceptSchema,
   VendorInvitationCreateSchema,
+  VendorInvitationCreatedEventSchema,
+  VendorStaffMemberSchema,
   VendorInvitationSchema,
   VendorPublicSchema,
   VendorRejectSchema,
@@ -142,6 +149,28 @@ describe('vendor', () => {
     expect(VendorPublicSchema.safeParse({ ...pub, slug: 'Shop A' }).success).toBe(false);
     expect(VendorRejectSchema.safeParse({ reason: 'Blurry ID' }).success).toBe(true);
     expect(VendorRejectSchema.safeParse({ reason: '' }).success).toBe(false);
+  });
+
+  it('approve body, review list query, approved event', () => {
+    expect(VendorApproveSchema.safeParse({ slug: 'my-shop', displayName: 'My Shop' }).success).toBe(
+      true,
+    );
+    expect(VendorApproveSchema.safeParse({ slug: 'My Shop', displayName: 'x' }).success).toBe(
+      false,
+    );
+    expect(VendorApproveSchema.safeParse({ slug: '', displayName: 'x' }).success).toBe(false);
+    expect(VendorApplicationListQuerySchema.safeParse({ status: 'PENDING' }).success).toBe(true);
+    expect(VendorApplicationListQuerySchema.safeParse({ status: 'NOPE' }).success).toBe(false);
+    expect(
+      VendorApplicationApprovedEventSchema.safeParse({
+        applicationId: ulid(1),
+        vendorId: ulid(2),
+        userId: ulid(3),
+      }).success,
+    ).toBe(true);
+    expect(VendorApplicationApprovedEventSchema.safeParse({ applicationId: ulid(1) }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -336,6 +365,24 @@ describe('review', () => {
     ).toBe(false);
   });
 
+  it('create body: trims, caps length, rejects out-of-range rating', () => {
+    const ok = ReviewCreateBodySchema.parse({ subOrderId: ulid(1), rating: 3, body: '  good  ' });
+    expect(ok.body).toBe('good');
+    expect(ReviewCreateBodySchema.safeParse({ subOrderId: ulid(1), rating: 0 }).success).toBe(
+      false,
+    );
+    expect(
+      ReviewCreateBodySchema.safeParse({ subOrderId: ulid(1), rating: 5, body: 'x'.repeat(2001) })
+        .success,
+    ).toBe(false);
+  });
+
+  it('page: items + nextCursor + summary', () => {
+    const summary = { average: null, count: 0, distribution: [0, 0, 0, 0, 0] };
+    expect(ReviewPageSchema.safeParse({ items: [], nextCursor: null, summary }).success).toBe(true);
+    expect(ReviewPageSchema.safeParse({ items: [], nextCursor: null }).success).toBe(false);
+  });
+
   it('read + summary', () => {
     expect(
       ReviewSchema.safeParse({
@@ -464,12 +511,36 @@ describe('vendor invitation', () => {
         id: ulid(1),
         vendorId: ulid(2),
         email: 'a@b.co',
+        status: 'PENDING',
         expiresAt: later,
         acceptedAt: null,
         revokedAt: null,
         createdAt: at,
       }).success,
     ).toBe(true);
+  });
+
+  it('validates the created event payload and a staff member', () => {
+    expect(
+      VendorInvitationCreatedEventSchema.safeParse({
+        invitationId: ulid(1),
+        vendorId: ulid(2),
+        email: 'a@b.co',
+        token: 'x'.repeat(43),
+      }).success,
+    ).toBe(true);
+    expect(VendorInvitationCreatedEventSchema.safeParse({ invitationId: ulid(1) }).success).toBe(
+      false,
+    );
+    expect(
+      VendorStaffMemberSchema.safeParse({
+        userId: ulid(1),
+        name: 'A',
+        email: null,
+        role: 'CUSTOMER',
+        joinedAt: at,
+      }).success,
+    ).toBe(false);
   });
 });
 

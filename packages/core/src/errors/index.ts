@@ -84,6 +84,10 @@ export const ERROR_CODES = [
   'payment.error.session-not-ready',
   'payment.error.retry-not-allowed',
   'payment.error.provider-currency-unsupported',
+  // vendor catalog
+  'product.error.not-publishable',
+  'product.error.variant-in-use',
+  'product.error.stock-below-reserved',
   // zalo notifications
   'zalo.error.account-not-connected',
   'zalo.error.login-not-found',
@@ -157,6 +161,9 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'payment.error.session-not-ready': 409,
   'payment.error.retry-not-allowed': 409,
   'payment.error.provider-currency-unsupported': 422,
+  'product.error.not-publishable': 422,
+  'product.error.variant-in-use': 409,
+  'product.error.stock-below-reserved': 409,
   'zalo.error.account-not-connected': 404,
   'zalo.error.login-not-found': 404,
   'zalo.error.unknown-placeholder': 422,

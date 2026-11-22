@@ -1,24 +1,31 @@
 import { z } from 'zod';
 import { ProductIdSchema, ReviewIdSchema, SubOrderIdSchema } from '../ids';
+import { PageSchema } from './common';
 import { IsoDateTimeSchema } from './datetime';
 
 const RatingSchema = z.number().int().min(1).max(5);
 
+export const REVIEW_BODY_MAX_LENGTH = 2000;
+
 /**
- * Body of `POST /v1/reviews`. The author comes from the token; the server checks the sub-order
- * belongs to the caller, is DELIVERED/COMPLETED and contains the product.
+ * Body of `POST /v1/products/:id/reviews` (the product comes from the path). The author comes
+ * from the token; the server checks the sub-order belongs to the caller, is DELIVERED/COMPLETED
+ * and contains the product. `body` is trimmed; blank becomes `undefined`.
  */
-export const ReviewCreateSchema = z.object({
+export const ReviewCreateBodySchema = z.object({
   subOrderId: SubOrderIdSchema,
-  productId: ProductIdSchema,
   rating: RatingSchema,
   body: z
     .string()
     .trim()
-    .max(2000)
+    .max(REVIEW_BODY_MAX_LENGTH)
     .optional()
     .transform((v) => (v === '' ? undefined : v)),
 });
+export type ReviewCreateBody = z.infer<typeof ReviewCreateBodySchema>;
+
+/** Body + product id: the full input of the review use case. */
+export const ReviewCreateSchema = ReviewCreateBodySchema.extend({ productId: ProductIdSchema });
 export type ReviewCreate = z.infer<typeof ReviewCreateSchema>;
 
 export const ReviewSchema = z.object({
@@ -45,3 +52,7 @@ export const RatingSummarySchema = z.object({
   ]),
 });
 export type RatingSummary = z.infer<typeof RatingSummarySchema>;
+
+/** `GET /v1/products/:id/reviews`: newest first, with the product's aggregate. */
+export const ReviewPageSchema = PageSchema(ReviewSchema).extend({ summary: RatingSummarySchema });
+export type ReviewPage = z.infer<typeof ReviewPageSchema>;

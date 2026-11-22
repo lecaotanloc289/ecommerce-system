@@ -60,7 +60,7 @@ pnpm install
 # 3. Env
 cp .env.example .env  # fill in OAuth client IDs, JWT secrets, etc.
 
-# 4. Local infra (Postgres + Redis + MinIO + Mailhog)
+# 4. Local infra (Postgres + Redis + RustFS S3 + Mailhog)
 pnpm services:up
 
 # 5. Dev (all workspaces in parallel via Turbo)
@@ -134,7 +134,7 @@ Migrations are **forward-only**. Destructive changes (drop column, rename) requi
 | `@apps/admin` | 5173        | Vite dev server                      |
 | Postgres      | 5432        | DBs: `ecommerce`, `ecommerce_shadow` |
 | Redis         | 6379        | Cache + BullMQ                       |
-| MinIO         | 9000 / 9001 | S3 API / web console                 |
+| RustFS (S3)   | 9000 / 9001 | S3 API / web console                 |
 | Mailhog       | 1025 / 8025 | SMTP / web UI                        |
 
 ---
