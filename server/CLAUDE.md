@@ -54,6 +54,9 @@ pnpm --filter @server/api test                  # Jest (unit + HTTP + Testcontai
 pnpm --filter @server/api test -- token.service.spec.ts   # one test file
 pnpm --filter @server/api test -- --watch
 pnpm --filter @server/api typecheck             # src + test (tsconfig.spec.json)
+pnpm --filter @server/api lint                  # ESLint (type-checked @repo/config base), 0 warnings allowed
 ```
+
+ESLint: `eslint.config.mjs` extends `@repo/config/eslint`; the project service lints `src/` with `tsconfig.json` and `test/` with `test/tsconfig.json` (extends `tsconfig.spec.json`). Under `test/**` only the `no-unsafe-*` and `unbound-method` rules are off (Jest mocks are `any`, `expect(obj.method)` is idiomatic). `tsconfig.json` extends `../packages/config/...` by relative path — typescript-eslint does not realpath the `@repo/config` symlink, so the package-name form breaks the `extends` chain.
 
 Tests live in `server/test/` (excluded from the build): `auth/` unit (guards, decorators, strategies, OAuth user resolution, rotation/reuse/logout), `http/` in-process Fastify `inject` flow, `integration/` real Redis via Testcontainers (needs Docker; CI runners have it). Planned integration coverage (Postgres): transaction rollback, idempotency replay, outbox publishing, ownership.

@@ -21,10 +21,11 @@ function verifierReturning(
   result: AccessTokenClaimsInput | Error,
 ): Pick<TokenService, 'verifyAccessToken'> {
   return {
-    verifyAccessToken: jest.fn(async () => {
-      if (result instanceof Error) throw result;
-      return AccessTokenClaimsSchema.parse(result);
-    }),
+    verifyAccessToken: jest.fn(() =>
+      result instanceof Error
+        ? Promise.reject(result)
+        : Promise.resolve(AccessTokenClaimsSchema.parse(result)),
+    ),
   };
 }
 
@@ -167,10 +168,10 @@ describe('@CurrentUser / @CurrentOAuthProfile factories', () => {
 });
 
 describe('OAuth state (login-CSRF) guards', () => {
-  it('start guard binds a random state + app to an HttpOnly cookie and passes it to Passport', async () => {
+  it('start guard binds a random state + app to an HttpOnly cookie and passes it to Passport', () => {
     const guard = new (OAuthStartGuard('google'))();
     const reply = fakeReply();
-    const options = await guard.getAuthenticateOptions(
+    const options = guard.getAuthenticateOptions(
       httpContext(fakeRequest({ query: { app: 'admin' } }), reply),
     );
 
@@ -182,10 +183,10 @@ describe('OAuth state (login-CSRF) guards', () => {
     );
   });
 
-  it('start guard falls back to app=web for an unknown app', async () => {
+  it('start guard falls back to app=web for an unknown app', () => {
     const guard = new (OAuthStartGuard('facebook'))();
     const reply = fakeReply();
-    const options = await guard.getAuthenticateOptions(
+    const options = guard.getAuthenticateOptions(
       httpContext(fakeRequest({ query: { app: 'evil' } }), reply),
     );
     expect(reply.setCookie.mock.calls[0][1]).toBe(`${options?.state}.web`);

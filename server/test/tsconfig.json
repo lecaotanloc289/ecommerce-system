@@ -1,0 +1,4 @@
+{
+  "//": "Lets ESLint's project service find test files (nearest tsconfig.json); same program as tsconfig.spec.json.",
+  "extends": "../tsconfig.spec.json"
+}

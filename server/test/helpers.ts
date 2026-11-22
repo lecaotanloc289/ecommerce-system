@@ -39,16 +39,16 @@ export class InMemoryRefreshTokenStore implements Pick<
   /** Test clock; advance past REFRESH_REUSE_GRACE_MS to make a replay count as reuse. */
   now: () => number = () => Date.now();
 
-  async createFamily(familyId: string, userId: string, tokenHash: string, ttl: number) {
+  createFamily(familyId: string, userId: string, tokenHash: string, ttl: number): Promise<void> {
     this.families.set(familyId, { userId, current: tokenHash, ttl });
+    return Promise.resolve();
   }
 
-  async rotate(
-    familyId: string,
-    presented: string,
-    next: string,
-    ttl: number,
-  ): Promise<RotateResult> {
+  rotate(familyId: string, presented: string, next: string, ttl: number): Promise<RotateResult> {
+    return Promise.resolve(this.rotateSync(familyId, presented, next, ttl));
+  }
+
+  private rotateSync(familyId: string, presented: string, next: string, ttl: number): RotateResult {
     const family = this.families.get(familyId);
     if (!family) return 'missing';
     const now = this.now();
@@ -73,8 +73,9 @@ export class InMemoryRefreshTokenStore implements Pick<
     return 'reused';
   }
 
-  async revokeFamily(familyId: string) {
+  revokeFamily(familyId: string): Promise<void> {
     this.families.delete(familyId);
+    return Promise.resolve();
   }
 
   /** Move the clock past the grace window. */
