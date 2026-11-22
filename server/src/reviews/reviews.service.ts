@@ -30,7 +30,7 @@ function toReview(row: ReviewRow): Review {
     id: row.id,
     productId: row.productId,
     // Display name only: the author's email never leaves the server.
-    authorName: row.author.name,
+    authorName: row.author.name.trim() || '*',
     rating: row.rating,
     body: row.body,
     createdAt: row.createdAt.toISOString(),

@@ -8,6 +8,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Idempotent } from '../common/idempotency/idempotent.decorator';
+import { RateLimit } from '../common/rate-limit';
 import { BEARER_AUTH } from '../openapi/openapi';
 import {
   ReviewCreateBodyDto,
@@ -52,6 +53,7 @@ export class ReviewsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('CUSTOMER')
   @Idempotent()
+  @RateLimit('strict')
   create(
     @CurrentUser() user: AuthUser,
     @Param() params: ReviewProductParamsDto,
