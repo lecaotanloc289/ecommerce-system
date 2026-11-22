@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
+import { SkipRateLimit } from '../common/rate-limit';
 import { PrismaService } from '../prisma/prisma.service';
 import { HealthReadyResponseDto, HealthResponseDto } from './health.dto';
 
@@ -12,6 +13,7 @@ export class HealthController {
   @ApiOperation({ summary: 'Liveness probe' })
   @ZodResponse({ status: 200, description: 'Service is up', type: HealthResponseDto })
   @Get()
+  @SkipRateLimit()
   check() {
     return {
       status: 'ok' as const,
@@ -23,6 +25,7 @@ export class HealthController {
   @ApiOperation({ summary: 'Readiness probe (checks the database)' })
   @ZodResponse({ status: 200, description: 'Database reachable', type: HealthReadyResponseDto })
   @Get('ready')
+  @SkipRateLimit()
   async ready() {
     await this.prisma.client.$queryRaw`SELECT 1`;
     return { status: 'ok' as const, db: 'up' as const };

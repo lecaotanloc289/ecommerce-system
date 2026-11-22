@@ -21,6 +21,7 @@ import {
 import { DomainError, type MeResponse, type TokenResponse } from '@repo/core';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ZodResponse } from 'nestjs-zod';
+import { RateLimit } from '../common/rate-limit';
 import { ENV } from '../config/config.module';
 import type { Env } from '../config/env';
 import { BEARER_AUTH, REFRESH_COOKIE_AUTH } from '../openapi/openapi';
@@ -60,6 +61,7 @@ export class AuthController {
   @ApiQuery({ name: 'app', enum: ['web', 'admin'], required: false })
   @ApiResponse({ status: 302, description: 'Redirect to Google' })
   @Get('google')
+  @RateLimit('strict')
   @UseGuards(OAuthStartGuard('google'))
   googleStart(): void {
     // OAuthStartGuard redirects to Google; never reached.
@@ -71,6 +73,7 @@ export class AuthController {
     description: 'Sets the refresh cookie and redirects to the app (`?error=...` on failure)',
   })
   @Get('google/callback')
+  @RateLimit('strict')
   @UseGuards(OAuthCallbackGuard('google'))
   @UseFilters(OAuthCallbackFilter)
   googleCallback(
@@ -85,6 +88,7 @@ export class AuthController {
   @ApiQuery({ name: 'app', enum: ['web', 'admin'], required: false })
   @ApiResponse({ status: 302, description: 'Redirect to Facebook' })
   @Get('facebook')
+  @RateLimit('strict')
   @UseGuards(OAuthStartGuard('facebook'))
   facebookStart(): void {
     // OAuthStartGuard redirects to Facebook; never reached.
@@ -96,6 +100,7 @@ export class AuthController {
     description: 'Sets the refresh cookie and redirects to the app (`?error=...` on failure)',
   })
   @Get('facebook/callback')
+  @RateLimit('strict')
   @UseGuards(OAuthCallbackGuard('facebook'))
   @UseFilters(OAuthCallbackFilter)
   facebookCallback(
@@ -111,6 +116,7 @@ export class AuthController {
   @ApiCookieAuth(REFRESH_COOKIE_AUTH)
   @ZodResponse({ status: 200, description: 'New access token', type: TokenResponseDto })
   @Post('refresh')
+  @RateLimit('strict')
   async refresh(
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -133,6 +139,7 @@ export class AuthController {
   @ApiCookieAuth(REFRESH_COOKIE_AUTH)
   @ApiNoContentResponse({ description: 'Session revoked (idempotent)' })
   @Post('logout')
+  @RateLimit('strict')
   @HttpCode(204)
   async logout(
     @Req() request: FastifyRequest,

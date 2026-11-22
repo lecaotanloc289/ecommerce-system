@@ -1,25 +1,21 @@
-import { RedisContainer, type StartedRedisContainer } from '@testcontainers/redis';
 import Redis from 'ioredis';
 import { REFRESH_REUSE_GRACE_MS, RefreshTokenStore } from '../../src/auth/refresh-token.store';
 
-/** Real Redis (Testcontainers) — exercises the atomic Lua rotation script. Requires Docker. */
+/** Real Redis (harness container, this worker's DB) — exercises the atomic Lua rotation script. */
 describe('RefreshTokenStore (Redis)', () => {
-  let container: StartedRedisContainer;
   let redis: Redis;
   let store: RefreshTokenStore;
 
-  beforeAll(async () => {
-    container = await new RedisContainer('redis:7-alpine').start();
-    redis = new Redis(container.getConnectionUrl());
+  beforeAll(() => {
+    redis = new Redis(process.env.REDIS_URL ?? '');
     store = new RefreshTokenStore(redis);
   });
 
   afterAll(async () => {
     await redis?.quit();
-    await container?.stop();
   });
 
-  beforeEach(() => redis.flushall());
+  beforeEach(() => redis.flushdb());
 
   it('creates a family with hash + userId and a TTL', async () => {
     await store.createFamily('fam1', 'user1', 'hash-a', 3600);

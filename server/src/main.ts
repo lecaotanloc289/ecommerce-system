@@ -7,6 +7,7 @@ import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import { AppModule } from './app.module';
+import { registerRateLimit } from './common/rate-limit';
 import { ENV } from './config/config.module';
 import type { Env } from './config/env';
 import { buildOpenApiDocument } from './openapi/openapi';
@@ -28,6 +29,7 @@ async function bootstrap() {
     origin: [env.WEB_ORIGIN, env.ADMIN_ORIGIN],
     credentials: true,
   });
+  await registerRateLimit(app);
 
   // Swagger UI + raw spec only when NODE_ENV=development (the committed spec is
   // packages/sdk/openapi.json); staging/prod never expose it.

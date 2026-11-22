@@ -38,6 +38,16 @@ export const EnvSchema = z
     /** Where the browser lands after a successful/failed OAuth login (per app). */
     AUTH_REDIRECT_URL_WEB: z.url().default('http://localhost:3000/auth/callback'),
     AUTH_REDIRECT_URL_ADMIN: z.url().default('http://localhost:5173/auth/callback'),
+
+    /** Requests per client IP per RATE_LIMIT_WINDOW: default bucket / `@RateLimit('strict')` routes. */
+    RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+    RATE_LIMIT_STRICT_MAX: z.coerce.number().int().positive().default(20),
+    RATE_LIMIT_WINDOW: DurationSchema.default(60),
+    /**
+     * Reverse proxies in front of the API that append to X-Forwarded-For (Fly.io edge = 1).
+     * Decides which entry is the client IP for rate limiting; 0 = use the socket peer.
+     */
+    TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).default(1),
   })
   .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {
     message: 'JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must differ',

@@ -16,6 +16,22 @@ describe('parseEnv', () => {
     expect(() => testEnv({ JWT_ACCESS_TTL: '15 minutes' })).toThrow(/JWT_ACCESS_TTL/);
   });
 
+  it('defaults rate limits to 100 / 20 requests per minute and validates them', () => {
+    expect(testEnv()).toMatchObject({
+      RATE_LIMIT_MAX: 100,
+      RATE_LIMIT_STRICT_MAX: 20,
+      RATE_LIMIT_WINDOW: 60,
+      TRUSTED_PROXY_HOPS: 1,
+    });
+    expect(testEnv({ TRUSTED_PROXY_HOPS: '0' }).TRUSTED_PROXY_HOPS).toBe(0);
+    expect(() => testEnv({ TRUSTED_PROXY_HOPS: '-1' })).toThrow(/TRUSTED_PROXY_HOPS/);
+    expect(testEnv({ RATE_LIMIT_MAX: '500', RATE_LIMIT_WINDOW: '10s' })).toMatchObject({
+      RATE_LIMIT_MAX: 500,
+      RATE_LIMIT_WINDOW: 10,
+    });
+    expect(() => testEnv({ RATE_LIMIT_STRICT_MAX: '0' })).toThrow(/RATE_LIMIT_STRICT_MAX/);
+  });
+
   it('treats empty values as missing and lists every bad key', () => {
     expect(() => testEnv({ GOOGLE_OAUTH_CLIENT_ID: '', REDIS_URL: 'nope' })).toThrow(
       /GOOGLE_OAUTH_CLIENT_ID[\s\S]*REDIS_URL|REDIS_URL[\s\S]*GOOGLE_OAUTH_CLIENT_ID/,
