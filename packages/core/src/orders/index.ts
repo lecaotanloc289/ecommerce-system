@@ -41,3 +41,5 @@ export function deriveOrderStatus(subOrderStatuses: readonly SubOrderStatus[]): 
   if (live.length > 0 && live.every((s) => s === 'COMPLETED')) return 'COMPLETED';
   return 'PAID';
 }
+
+export * from './sub-order-state';

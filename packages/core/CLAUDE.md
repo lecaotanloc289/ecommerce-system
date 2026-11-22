@@ -11,7 +11,7 @@ Pure TypeScript + `zod` — runs in browser and Node. Never imports `@repo/db`, 
 | `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`                                                  |
 | `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum                                               |
 | `src/pricing/`  | `@repo/core/pricing`   | `priceOrder`, `evaluateCoupon`, `couponDiscount`, `resolveCommissionBps`, `computePayoutPostings` — pure checkout/payout money math (D5-D8) |
-| `src/orders/`   | `@repo/core/orders`    | `deriveOrderStatus(subOrderStatuses)` — Order status from its sub-orders (D11); shared by checkout, webhook, fulfilment, refunds            |
+| `src/orders/`   | `@repo/core/orders`    | `deriveOrderStatus` (Order status from its sub-orders, D11); sub-order state machine `canTransition` / `assertTransition`                   |
 | `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                                                                    |
 | `src/schemas/*` | `@repo/core/schemas/*` | one file per area — see "Schemas" below                                                                                                     |
 
@@ -31,14 +31,14 @@ Read shapes use Money, ISO-datetime strings and branded ids. Input shapes never 
 - `me`: `TokenResponse`, `MeResponse` (moved from the server), `ProfileUpdate`.
 - `upload`: `UploadPurpose`, `UploadKey`, `PresignRequest`, `PresignResponse`. Clients send upload **keys**, never URLs (D13).
 - `vendor`: `VendorPublic`, `VendorApplicationCreate`, `VendorApplication`, `VendorReject`, `VendorApprove {slug, displayName}`, `VendorApplicationMe {latest, history}`, `VendorApplicationListQuery` (+ `status`), `VendorApplicationListItem` / `ListPage` (KYC numbers masked: `taxIdMasked`, …), `VendorApplicationDetail` (full + presigned document URLs), `VendorApplicationReviewResult` (list item + `vendorId`). Document keys map to DB `businessLicenseUrl` / `nationalIdUrl`.
-- `order`: `Order`, `SubOrder`, `VendorSubOrder` (adds commission + net), `OrderItem`, `OrderSummary` + `OrderSummaryPage`, `ShippingAddressSnapshot`, `PaymentSession` (`redirectUrl` null until the worker creates the session), `PaymentRetry` (`{ provider? }` body of a new payment attempt), `SubOrderShip`.
-- `outbox`: payload schemas of `outbox_events` rows (ids only; `aggregateType` = `ORDER_AGGREGATE_TYPE` `'order'`, `aggregateId` = orderId) — `OrderCreatedEvent {orderId, customerId}`, `PaymentRequestedEvent {orderId, paymentId, provider, attemptNo}`, `OrderCancelledEvent {orderId, customerId, reason: OrderCancelReason}` (`CUSTOMER` / `PAYMENT_EXPIRED`), `VendorApplicationApprovedEvent {applicationId, vendorId, userId}`, `VendorApplicationRejectedEvent {applicationId, userId}` (`aggregateType` = `VENDOR_APPLICATION_AGGREGATE_TYPE` `'vendor-application'`, `aggregateId` = applicationId); `OUTBOX_EVENT_SCHEMAS` maps event type → schema for the worker. Add new event types here.
+- `order`: `Order`, `SubOrder`, `VendorSubOrder` (adds commission + net), `OrderItem`, `OrderSummary` + `OrderSummaryPage`, `ShippingAddressSnapshot`, `PaymentSession` (`redirectUrl` null until the worker creates the session), `PaymentRetry` (`{ provider? }` body of a new payment attempt), `SubOrderShip`; vendor fulfilment reads `VendorSubOrderStatus` (statuses a vendor may see: PAID..COMPLETED + REFUNDED), `VendorSubOrderQuery` (page + `status`), `VendorSubOrderPage`.
+- `outbox`: payload schemas of `outbox_events` rows (ids only; `aggregateType` = `ORDER_AGGREGATE_TYPE` `'order'`, `aggregateId` = orderId) — `OrderCreatedEvent {orderId, customerId}`, `PaymentRequestedEvent {orderId, paymentId, provider, attemptNo}`, `OrderCancelledEvent {orderId, customerId, reason: OrderCancelReason}` (`CUSTOMER` / `PAYMENT_EXPIRED`), `SubOrderShippedEvent` / `SubOrderDeliveredEvent {orderId, subOrderId, customerId}`, `SubOrderCompletedEvent {orderId, subOrderId, vendorId}` (`sub-order.shipped` / `.delivered` / `.completed`, order aggregate), `VendorApplicationApprovedEvent {applicationId, vendorId, userId}`, `VendorApplicationRejectedEvent {applicationId, userId}` (`aggregateType` = `VENDOR_APPLICATION_AGGREGATE_TYPE` `'vendor-application'`, `aggregateId` = applicationId); `OUTBOX_EVENT_SCHEMAS` maps event type → schema for the worker. Add new event types here.
 - `shipping-method`: `ShippingMethod`, `ShippingMethodInput`.
 - `coupon`: `CouponInput`, `Coupon` — a union on `discountType`: FIXED carries `discount: Money`, PERCENT carries `discountBps` (basis points, 1..10000). Scope comes from the endpoint, not the body.
 - `review`: `ReviewCreate`, `Review`, `RatingSummary` (`average` is null when there are no reviews).
 - `catalog`: public catalog queries/reads — `CatalogLocale` (`vi|en`), `LocaleQuery`, `ProductListQuery`, `SearchQuery`, `VendorProductsQuery`, `CategoryTree`/`CategoryNode` (recursive), `CategoryDetail`, `ProductSummary`(+`Page`), `ProductDetail`, `VendorDetail`.
 - `platform-settings`: `PlatformSettingsPublic`, `PlatformSettings`, `PlatformSettingsUpdate` (partial, non-empty).
-- `wallet`: `Wallet`, `LedgerEntry` (signed `amount`). `refund`: `RefundCreate` (whole sub-order, reason only), `Refund`.
+- `wallet`: `Wallet`, `LedgerEntry` (signed `amount`), `LedgerEntryPage`, `VendorWallet` (`Wallet` + `pending: Money[]`, one per currency). `refund`: `RefundCreate` (whole sub-order, reason only), `Refund`.
 - `vendor-invitation`: `VendorInvitationCreate` (email lowercased), `VendorInvitation`, `VendorInvitationAccept`.
 - `product-admin`: `ProductUpsert` (both locales, variants, images by id-or-key, `categoryIds`), `VendorProductStatus` (no `BLOCKED`); vendor-side reads `VendorProduct` (raw vi + en translations, variants with `stockOnHand` / `stockReserved`, `status`, `blockedReason`), `VendorProductSummary` + `VendorProductPage`, `VendorProductQuery` (page + `status`), `VendorProductVariant`, `VariantStockUpdate` (absolute `stockOnHand`). `basePrice` in an upsert only carries the currency: the server stores MIN(variant price).
 
@@ -68,6 +68,14 @@ coupon row). Invariants asserted: `paid = subtotal + shipping − vendorDiscount
 AWAITING_PAYMENT; all REFUNDED → REFUNDED; any REFUNDED → PARTIALLY_REFUNDED; all COMPLETED ignoring
 REFUNDED/CANCELLED (≥ 1 COMPLETED) → COMPLETED; otherwise PAID. Empty input throws `common.error.internal`.
 Every writer of `SubOrder.status` must recompute `Order.status` with it in the same transaction.
+
+`sub-order-state.ts` — the sub-order state machine (D11), the one table of legal moves: `SUB_ORDER_TRANSITIONS`
+(from → `[{ to, actors }]`), `canTransition(from, to, actor)`, `assertTransition` (throws 409
+`order.error.invalid-status-transition {from, to}`), `transitionSources(to, actor)`. Actors (`SubOrderActor`):
+`CUSTOMER`, `VENDOR`, `PLATFORM` (admin refund), `SYSTEM` (webhook / jobs). Edges: AWAITING_PAYMENT → PAID
+(SYSTEM) | CANCELLED (CUSTOMER, SYSTEM); PAID → PROCESSING (VENDOR); PROCESSING → SHIPPED (VENDOR); SHIPPED →
+DELIVERED (VENDOR) | COMPLETED (CUSTOMER); DELIVERED → COMPLETED (CUSTOMER, SYSTEM); PAID..DELIVERED → REFUNDED
+(PLATFORM). COMPLETED / REFUNDED / CANCELLED are terminal. Every writer of `SubOrder.status` checks it.
 
 `PROVIDER_CURRENCIES` / `providerSupportsCurrency(provider, currency)`: VNPay charges VND only, Stripe VND + USD.
 Checked at checkout and payment retry (`payment.error.provider-currency-unsupported`).

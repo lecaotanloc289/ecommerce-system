@@ -3,6 +3,7 @@ import { PaymentProviderSchema } from '../enums';
 import {
   OrderIdSchema,
   PaymentIdSchema,
+  SubOrderIdSchema,
   UserIdSchema,
   VendorApplicationIdSchema,
   VendorIdSchema,
@@ -47,6 +48,30 @@ export const OrderCancelledEventSchema = z.object({
 });
 export type OrderCancelledEvent = z.infer<typeof OrderCancelledEventSchema>;
 
+/** `sub-order.shipped` — vendor entered carrier + tracking (customer email: "on its way"). */
+export const SubOrderShippedEventSchema = z.object({
+  orderId: OrderIdSchema,
+  subOrderId: SubOrderIdSchema,
+  customerId: UserIdSchema,
+});
+export type SubOrderShippedEvent = z.infer<typeof SubOrderShippedEventSchema>;
+
+/** `sub-order.delivered` — vendor marked the parcel delivered (customer: "confirm or report"). */
+export const SubOrderDeliveredEventSchema = z.object({
+  orderId: OrderIdSchema,
+  subOrderId: SubOrderIdSchema,
+  customerId: UserIdSchema,
+});
+export type SubOrderDeliveredEvent = z.infer<typeof SubOrderDeliveredEventSchema>;
+
+/** `sub-order.completed` — customer confirmed receipt or auto-complete; the payout hold starts. */
+export const SubOrderCompletedEventSchema = z.object({
+  orderId: OrderIdSchema,
+  subOrderId: SubOrderIdSchema,
+  vendorId: VendorIdSchema,
+});
+export type SubOrderCompletedEvent = z.infer<typeof SubOrderCompletedEventSchema>;
+
 export const VENDOR_APPLICATION_AGGREGATE_TYPE = 'vendor-application';
 
 /** `vendor.application.approved` — vendor + wallet + VENDOR_OWNER role created (aggregateId = applicationId). */
@@ -69,6 +94,9 @@ export const OUTBOX_EVENT_SCHEMAS = {
   'order.created': OrderCreatedEventSchema,
   'payment.requested': PaymentRequestedEventSchema,
   'order.cancelled': OrderCancelledEventSchema,
+  'sub-order.shipped': SubOrderShippedEventSchema,
+  'sub-order.delivered': SubOrderDeliveredEventSchema,
+  'sub-order.completed': SubOrderCompletedEventSchema,
   'vendor.application.approved': VendorApplicationApprovedEventSchema,
   'vendor.application.rejected': VendorApplicationRejectedEventSchema,
 } as const;
