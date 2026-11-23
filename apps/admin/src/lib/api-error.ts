@@ -1,5 +1,5 @@
 import { ErrorParamsSchema, type ErrorParams } from '@repo/core';
-import { createTranslator, translateError, type AppLocale } from '@repo/i18n';
+import { createTranslator, translateError, type AppLocale, type MessageKey } from '@repo/i18n';
 
 /**
  * A non-2xx API response. `errorCode` stays a plain string: a server newer than this bundle may
@@ -65,12 +65,39 @@ export function retryTransient(failureCount: number, error: unknown): boolean {
   return failureCount < 2 && isTransientError(error);
 }
 
+/** `refund.error.not-refundable` `params.reason` → extra explanation. */
+const REFUND_REASON_KEYS: Readonly<Record<string, MessageKey>> = {
+  status: 'admin.platform.refundReason.status',
+  'payout-released': 'admin.platform.refundReason.payoutReleased',
+  'no-confirmed-payment': 'admin.platform.refundReason.noConfirmedPayment',
+  'refund-exists': 'admin.platform.refundReason.refundExists',
+};
+
+/** `params.reason` of the platform role endpoints → replaces the generic forbidden / conflict text. */
+const ROLE_REASON_KEYS: Readonly<Record<string, MessageKey>> = {
+  'last-platform-admin': 'admin.platform.users.lastAdmin',
+  'self-demotion': 'admin.platform.users.selfDemotion',
+  'not-platform-admin': 'admin.platform.users.notPlatformAdmin',
+};
+
 /**
  * User-facing text for anything a query or mutation can throw: an `ApiError` is translated from
  * its `errorCode` + `params`; a `fetch` rejection (offline, CORS, DNS) gets the network message.
  */
 export function errorMessage(locale: AppLocale, error: unknown): string {
-  if (error instanceof ApiError) return translateError(locale, error.errorCode, error.params);
+  if (error instanceof ApiError) {
+    const base = translateError(locale, error.errorCode, error.params);
+    const reason = error.params['reason'];
+    if (typeof reason !== 'string') return base;
+    const t = createTranslator(locale);
+    // Platform console: a more specific message for `params.reason` of a few codes.
+    if (error.errorCode === 'refund.error.not-refundable') {
+      const key = REFUND_REASON_KEYS[reason];
+      return key ? `${base} ${t(key)}` : base;
+    }
+    const key = ROLE_REASON_KEYS[reason];
+    return key ? t(key) : base;
+  }
   if (error instanceof TypeError) return createTranslator(locale)('admin.error.network');
   return translateError(locale, 'common.error.internal');
 }
