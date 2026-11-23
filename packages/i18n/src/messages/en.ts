@@ -315,6 +315,41 @@ export const en = {
     emailPlaceholder: 'Your email address',
     subscribe: 'Subscribe',
   },
+  crm: {
+    defaultTemplates: {
+      thankYou:
+        'Hi {customerName}, thank you for shopping at {shopName}! We hope you enjoy your purchase.',
+      reviewRequest:
+        'Hi {customerName}, how do you like your recent purchase from {shopName}? Please share your review to help other buyers.',
+      reorderReminder:
+        "Hi {customerName}, it's been a while since your last order at {shopName}. We'd love to see you again!",
+    },
+    notificationTitle: {
+      thankYou: '{shopName} sent you a thank-you',
+      reviewRequest: '{shopName} would love your review',
+      reorderReminder: 'Time to reorder from {shopName}',
+      campaign: 'New message from {shopName}',
+    },
+    email: {
+      footerReason: 'You receive this email because you bought from {shopName} on Elma.',
+      unsubscribeMarketing: 'Unsubscribe from marketing emails',
+      unsubscribeAll: 'Unsubscribe from all emails from this shop',
+      viewShop: 'Visit shop',
+      writeReview: 'Write a review',
+      useCoupon: 'Use voucher',
+    },
+    unsubscribe: {
+      title: 'Unsubscribe',
+      marketingDone: 'You will no longer receive marketing emails from {shopName}.',
+      allDone: 'You will no longer receive emails from {shopName}.',
+      invalid: 'This unsubscribe link is invalid or has expired.',
+    },
+    preferences: {
+      title: 'Email preferences',
+      marketingOptIn: 'Receive promotions and offers from shops',
+      serviceOptOut: 'Opt out of order and service emails',
+    },
+  },
 } as const;
 
 /** Same shape as `en`, but every leaf widened to `string` so locale catalogues

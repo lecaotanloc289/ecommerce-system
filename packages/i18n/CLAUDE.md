@@ -30,6 +30,9 @@ Root export only (`@repo/i18n`), built by tsup to `dist/`.
 - **Money:** `formatMoney` takes core `Money` (integer minor units), throws on non-integers, and divides
   USD cents by 100 only at the `Intl` boundary. Do money math with `@repo/core/money`, not here.
 - Existing catalog keys are camelCase leaves (`common.addToCart`); keep that style within the tree.
+- **`crm.*` namespace:** platform default CRM templates (each must pass core `assertCrmTemplate`, and none may
+  contain `{couponCode}`; tested in `test/crm-templates.test.ts`), notification titles, and the email /
+  unsubscribe / preferences strings.
 
 ## Commands
 

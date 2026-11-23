@@ -314,4 +314,39 @@ export const vi: Messages = {
     emailPlaceholder: 'Địa chỉ email của bạn',
     subscribe: 'Đăng ký',
   },
+  crm: {
+    defaultTemplates: {
+      thankYou:
+        'Chào {customerName}, cảm ơn bạn đã mua hàng tại {shopName}! Chúc bạn hài lòng với sản phẩm.',
+      reviewRequest:
+        'Chào {customerName}, bạn thấy sản phẩm đã mua tại {shopName} thế nào? Hãy chia sẻ đánh giá để giúp những người mua khác nhé.',
+      reorderReminder:
+        'Chào {customerName}, đã lâu rồi bạn chưa đặt hàng tại {shopName}. Rất mong được phục vụ bạn lần nữa!',
+    },
+    notificationTitle: {
+      thankYou: '{shopName} gửi lời cảm ơn',
+      reviewRequest: '{shopName} mong nhận được đánh giá của bạn',
+      reorderReminder: '{shopName} nhắc bạn đặt hàng lại',
+      campaign: 'Tin mới từ {shopName}',
+    },
+    email: {
+      footerReason: 'Bạn nhận email này vì đã mua hàng tại {shopName} trên Elma.',
+      unsubscribeMarketing: 'Hủy nhận email khuyến mãi',
+      unsubscribeAll: 'Hủy nhận mọi email từ cửa hàng này',
+      viewShop: 'Xem cửa hàng',
+      writeReview: 'Viết đánh giá',
+      useCoupon: 'Dùng mã giảm giá',
+    },
+    unsubscribe: {
+      title: 'Hủy đăng ký',
+      marketingDone: 'Bạn sẽ không còn nhận email khuyến mãi từ {shopName}.',
+      allDone: 'Bạn sẽ không còn nhận email từ {shopName}.',
+      invalid: 'Liên kết hủy đăng ký không hợp lệ hoặc đã hết hạn.',
+    },
+    preferences: {
+      title: 'Tùy chọn email',
+      marketingOptIn: 'Nhận khuyến mãi và ưu đãi từ cửa hàng',
+      serviceOptOut: 'Không nhận email về đơn hàng và dịch vụ',
+    },
+  },
 };
