@@ -51,6 +51,13 @@ function signInAs(roles: Role[]) {
   authStore.setState({ status: 'authenticated', accessToken: 'token', user: makeUser(roles) });
 }
 
+/** The i-th recorded request; fails the test (instead of `!`) when it was never sent. */
+function nth(list: Request[], index: number): Request {
+  const request = list[index];
+  if (!request) throw new Error(`request #${index} was not sent`);
+  return request;
+}
+
 const ui = () => userEvent.setup({ pointerEventsCheck: 0 });
 
 beforeEach(() => {
@@ -152,14 +159,16 @@ describe('applications: detail, approve, reject', () => {
       expect(screen.queryByRole('dialog', { name: 'Approve application' })).toBeNull(),
     );
 
-    const [first, second] = api.posts('POST /v1/platform/vendor-applications/APP1/approve');
-    expect(JSON.parse(await first!.text())).toEqual({
+    const sent = api.posts('POST /v1/platform/vendor-applications/APP1/approve');
+    const first = nth(sent, 0);
+    const second = nth(sent, 1);
+    expect(JSON.parse(await first.text())).toEqual({
       slug: 'nguyen-van-an',
       displayName: 'Nguyễn Văn An',
     });
-    const key = first!.headers.get('Idempotency-Key');
+    const key = first.headers.get('Idempotency-Key');
     expect(key).toMatch(/^[0-9A-Z]{26}$/);
-    expect(second!.headers.get('Idempotency-Key')).toBe(key);
+    expect(second.headers.get('Idempotency-Key')).toBe(key);
   });
 
   it('requires a reason to reject and translates a server error', async () => {
@@ -184,8 +193,8 @@ describe('applications: detail, approve, reject', () => {
         errorMessage('en', new ApiError(403, 'common.error.forbidden')),
       ),
     ).toBeTruthy();
-    const [post] = api.posts('POST /v1/platform/vendor-applications/APP1/reject');
-    expect(JSON.parse(await post!.text())).toEqual({ reason: 'Blurry licence' });
+    const post = nth(api.posts('POST /v1/platform/vendor-applications/APP1/reject'), 0);
+    expect(JSON.parse(await post.text())).toEqual({ reason: 'Blurry licence' });
   });
 });
 
@@ -279,9 +288,9 @@ describe('ADMIN-only gating for PLATFORM_STAFF', () => {
     await user.type(within(dialog).getByLabelText('Reason'), 'Customer request');
     await user.click(within(dialog).getByRole('button', { name: 'Refund' }));
     expect(await within(dialog).findByText(/payout was already released/)).toBeTruthy();
-    const [post] = api.posts('POST /v1/platform/sub-orders/SUB1/refund');
-    expect(JSON.parse(await post!.text())).toEqual({ reason: 'Customer request' });
-    expect(post!.headers.get('Idempotency-Key')).toMatch(/^[0-9A-Z]{26}$/);
+    const post = nth(api.posts('POST /v1/platform/sub-orders/SUB1/refund'), 0);
+    expect(JSON.parse(await post.text())).toEqual({ reason: 'Customer request' });
+    expect(post.headers.get('Idempotency-Key')).toMatch(/^[0-9A-Z]{26}$/);
   });
 });
 
@@ -335,13 +344,13 @@ describe('settings page', () => {
     await user.click(screen.getByRole('button', { name: 'Save settings' }));
 
     await waitFor(() => expect(api.posts('PATCH /v1/platform/settings')).toHaveLength(1));
-    const [patch] = api.posts('PATCH /v1/platform/settings');
-    expect(JSON.parse(await patch!.text())).toMatchObject({
+    const patch = nth(api.posts('PATCH /v1/platform/settings'), 0);
+    expect(JSON.parse(await patch.text())).toMatchObject({
       commissionBps: 1234,
       holdPeriodDays: 7,
       defaultCurrency: 'VND',
     });
-    expect(patch!.headers.get('Idempotency-Key')).toMatch(/^[0-9A-Z]{26}$/);
+    expect(patch.headers.get('Idempotency-Key')).toMatch(/^[0-9A-Z]{26}$/);
   });
 });
 
@@ -388,9 +397,9 @@ describe('users page: role changes', () => {
     expect(row).not.toBeNull();
     await user.click(within(row as HTMLElement).getByRole('button', { name: 'Make staff' }));
     await waitFor(() => expect(api.posts('POST /v1/platform/users/U3/roles')).toHaveLength(1));
-    const [post] = api.posts('POST /v1/platform/users/U3/roles');
-    expect(JSON.parse(await post!.text())).toEqual({ role: 'PLATFORM_STAFF' });
-    expect(post!.headers.get('Idempotency-Key')).toMatch(/^[0-9A-Z]{26}$/);
+    const post = nth(api.posts('POST /v1/platform/users/U3/roles'), 0);
+    expect(JSON.parse(await post.text())).toEqual({ role: 'PLATFORM_STAFF' });
+    expect(post.headers.get('Idempotency-Key')).toMatch(/^[0-9A-Z]{26}$/);
   });
 });
 
