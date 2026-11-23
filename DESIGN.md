@@ -116,11 +116,13 @@
 Toggle dark mode:
 
 ```js
-// đọc lựa chọn đã lưu hoặc theo hệ điều hành
-const theme =
-  localStorage.theme ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-document.documentElement.classList.toggle('dark', theme === 'dark');
-// khi user bấm nút: toggle class 'dark' + lưu localStorage.theme
+// chế độ lưu trong localStorage.appearance.mode = 'light' | 'dark' | 'system' (mặc định 'system')
+// ('theme' cũ = 'light' | 'dark' vẫn được đọc nếu chưa có 'appearance')
+const mode = JSON.parse(localStorage.appearance ?? '{}').mode ?? localStorage.theme ?? 'system';
+const dark =
+  mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+document.documentElement.classList.toggle('dark', dark);
+// storefront: AppearanceProvider + script no-flash trong app/layout.tsx; các preset khác ở mục 12
 ```
 
 ---
@@ -288,3 +290,35 @@ Mapping ngữ nghĩa: primary = indigo · info = blue · success = green · warn
 - [ ] Heading = Rubik, body = Roboto, đúng scale mục 4
 - [ ] Contrast AA: đặc biệt text trên yellow/teal, text muted trên bg-subtle
 - [ ] Radius/shadow lấy từ token, spacing chia hết cho 4
+
+---
+
+## 12. Giao diện tùy biến & theo mùa (appearance presets)
+
+Runtime: `packages/ui/src/styles/themes.css` (import **sau** `tokens.css`). Mọi preset là attribute trên `<html>`, không thêm màu mới — chỉ trỏ lại các scale có sẵn trong kit (mục 3).
+
+| Attribute         | Giá trị                                                 | Mặc định (không có attribute) |
+| ----------------- | ------------------------------------------------------- | ----------------------------- |
+| `data-accent`     | `red` · `orange` · `green` · `teal` · `blue` · `purple` | indigo Elma                   |
+| `data-radius`     | `sharp` · `round`                                       | radius kit (mục 5)            |
+| `data-font-scale` | `sm` (93.75%) · `lg` (112.5%)                           | 100% — type scale là rem      |
+
+**Accent** = trỏ `--color-indigo-1…12` + `--color-indigo-deep` sang scale khác, nên mọi semantic token dựng trên indigo (brand-solid/soft/text, link, focus ring, `--primary`, `--ring`, shadow CTA) đổi theo. Step "solid" được dời để chữ trắng trên `brand-solid` luôn đạt AA:
+
+| Accent | Scale kit | `brand-solid` (step 9) ← | Contrast chữ trắng    |
+| ------ | --------- | ------------------------ | --------------------- |
+| indigo | indigo    | indigo-9 `#5C6AC4`       | 4.87                  |
+| red    | danger    | danger-9 `#DE3618`       | 4.52                  |
+| blue   | info      | info-9 `#006FBB`         | 5.26                  |
+| purple | purple    | purple-10 `#8456C2`      | 5.13 (step 9: 3.80 ✗) |
+| orange | orange    | orange-11 `#A95A1F`      | 5.04 (step 9: 2.31 ✗) |
+| green  | success   | success-11 `#357825`     | 5.43 (step 9: 2.54 ✗) |
+| teal   | teal      | teal-11 `#1F7B7A`        | 5.03 (step 9: 2.18 ✗) |
+
+- Dark mode: chỉ đổi hue cho 3 tint derived `--color-brand-soft` / `-soft-hover` / `--color-brand-disabled` (tokens.css cố định hue 280 = indigo).
+- `--color-accent-swatch-indigo` = bản ghim của indigo-9, chỉ để vẽ ô màu "Indigo" trong bộ chọn (vì `--color-indigo-9` chính là thứ accent ghi đè).
+- Component **không** tham chiếu `data-accent` — cứ dùng semantic token như bình thường.
+
+**Theo mùa (storefront):** lịch sự kiện (ngày dương / âm lịch / thứ n trong tháng, cửa sổ hiển thị, độ ưu tiên) nằm ở `@repo/core/calendar`; mỗi sự kiện gán 1 accent + 3 motif + danh mục gợi ý trong `apps/client/src/lib/seasonal-themes.ts`. Khi accent người dùng = "Theo mùa", accent của sự kiện đang chạy được áp dụng.
+
+**Minh họa sự kiện** (`apps/client/src/components/seasonal/`): motif SVG tự vẽ trên lưới 64×64, tô bằng utility token (`fill-danger-9`, `stroke-warning-10`…), giữ màu riêng của motif (đèn lồng luôn đỏ/vàng) bất kể accent. Hiệu ứng rơi/bay: `aria-hidden`, `pointer-events: none`, tắt khi `prefers-reduced-motion` hoặc người dùng tắt.

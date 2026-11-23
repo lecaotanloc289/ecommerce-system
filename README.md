@@ -134,6 +134,7 @@ Migrations are **forward-only**. Destructive changes (drop column, rename) requi
 - [`CLAUDE.md`](./CLAUDE.md) — constitution: golden rules, never-do list, naming, data flow, business domain.
 - [`docs/design-spec.md`](./docs/design-spec.md) — Figma → code design contract (tokens, components, interactions, layout).
 - [`packages/ui/src/styles/tokens.css`](./packages/ui/src/styles/tokens.css) — runtime design tokens (`@theme` block).
+- [`packages/ui/src/styles/themes.css`](./packages/ui/src/styles/themes.css) — appearance presets (accent / corner radius / text size) layered on the tokens; see `DESIGN.md` §12.
 
 ---
 
