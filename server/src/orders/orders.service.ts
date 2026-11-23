@@ -61,10 +61,13 @@ export class OrdersService {
   async get(userId: string, orderId: string): Promise<Order> {
     const row = await this.prisma.client.order.findFirst({
       where: { id: orderId, customerId: userId },
-      ...ORDER_DETAIL_ARGS,
+      include: {
+        ...ORDER_DETAIL_ARGS.include,
+        customer: { select: { primaryLocale: true } },
+      },
     });
     if (!row) throw new DomainError('order.error.not-found');
-    return toOrder(row);
+    return toOrder(row, row.customer.primaryLocale);
   }
 
   /** Session of the latest payment attempt (clients poll this after checkout, roadmap D2). */

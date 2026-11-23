@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   DomainError,
   ReviewSchema,
+  maskAuthorName,
   type PageQuery,
   type Review,
   type ReviewCreateBody,
@@ -29,8 +30,8 @@ function toReview(row: ReviewRow): Review {
   return ReviewSchema.parse({
     id: row.id,
     productId: row.productId,
-    // Display name only: the author's email never leaves the server.
-    authorName: row.author.name.trim() || '*',
+    // Display name only (masked: first word + last initial); the email never leaves the server.
+    authorName: maskAuthorName(row.author.name),
     rating: row.rating,
     body: row.body,
     createdAt: row.createdAt.toISOString(),

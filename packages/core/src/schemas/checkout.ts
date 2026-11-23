@@ -10,9 +10,11 @@ const MAX_COUPON_CODES = 20;
 
 const isUnique = (values: readonly string[]): boolean => new Set(values).size === values.length;
 
+/** Codes are case-insensitive: normalised (trim + uppercase) so `welcome10` matches `WELCOME10`. */
 export const CouponCodeSchema = z
   .string()
   .trim()
+  .toUpperCase()
   .min(1)
   .max(64)
   .regex(/^\S+$/, { message: 'Coupon code cannot contain spaces' });

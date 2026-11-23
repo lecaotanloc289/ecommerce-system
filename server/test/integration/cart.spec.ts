@@ -263,6 +263,47 @@ describe('cart API (Testcontainers)', () => {
     expect((await mutate('PUT', `/v1/cart/items/${ids[0]}`, { quantity: 2 })).statusCode).toBe(200);
   });
 
+  it('never exceeds the line cap under concurrent PUTs of new lines', async () => {
+    const { vendor } = await makeVendor(t.db);
+    const p = await makeProduct(t.db, {
+      vendorId: vendor.id,
+      variants: Array.from({ length: 103 }, () => ({ stockOnHand: 5 })),
+    });
+    const ids = p.variants.map((v) => v.id);
+    await t.db.cart.create({
+      data: {
+        id: ulid(),
+        userId,
+        items: {
+          create: ids.slice(0, 98).map((variantId) => ({ id: ulid(), variantId, quantity: 1 })),
+        },
+      },
+    });
+    const results = await Promise.all(
+      ids.slice(98).map((id) => mutate('PUT', `/v1/cart/items/${id}`, { quantity: 1 })),
+    );
+    expect(results.filter((r) => r.statusCode === 200)).toHaveLength(2);
+    expect(results.filter((r) => r.statusCode === 422)).toHaveLength(3);
+    expect(await t.db.cartItem.count()).toBe(100);
+  });
+
+  it('keeps a line whose product has no translation, named by its SKU, and removable', async () => {
+    const { vendor } = await makeVendor(t.db);
+    const p = await makeProduct(t.db, { vendorId: vendor.id });
+    const [v] = p.variants;
+    if (!v) throw new Error('seed');
+    await mutate('PUT', `/v1/cart/items/${v.id}`, { quantity: 1 });
+    await t.db.productTranslation.deleteMany({ where: { productId: p.id } });
+
+    const res = await getCart();
+    expect(res.statusCode).toBe(200);
+    const line = res.json<CartBody>().groups[0]?.lines[0];
+    expect(line?.variantId).toBe(v.id);
+    expect(line?.productName).toBe(v.sku);
+    const del = await mutate('DELETE', `/v1/cart/items/${v.id}`);
+    expect(del.json<CartBody>().groups).toHaveLength(0);
+  });
+
   describe('POST /v1/cart/merge', () => {
     it('adds exactly once per request under concurrent merges', async () => {
       const { pb } = await seed();

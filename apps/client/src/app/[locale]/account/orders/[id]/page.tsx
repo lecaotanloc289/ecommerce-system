@@ -36,7 +36,7 @@ import { useLocale } from '@/i18n/use-locale';
 import { cancelOrder, confirmReceived, fetchOrder } from '@/lib/api/commerce';
 import { describeError } from '@/lib/api/error-message';
 import { attributesLabel } from '@/lib/cart';
-import { canCancelOrder, canConfirmReceived, canPayOrder } from '@/lib/order-status';
+import { canCancelOrder, canConfirmReceived, canPayOrder, reviewHref } from '@/lib/order-status';
 import { useAuth } from '@/store/auth-provider';
 
 function SubOrderCard({
@@ -97,6 +97,14 @@ function SubOrderCard({
                 {item.productTitle}
               </p>
               <p className="text-body-s text-text-muted">{attributesLabel(item.attributes)}</p>
+              {reviewHref(subOrder, item) ? (
+                <Link
+                  href={reviewHref(subOrder, item) ?? '/'}
+                  className="text-body-s font-medium text-brand-text hover:underline"
+                >
+                  {t('orders.writeReview')}
+                </Link>
+              ) : null}
             </div>
             <span className="text-body-s text-text-muted">×{item.quantity}</span>
             <span className="text-body-m font-semibold text-text-price">

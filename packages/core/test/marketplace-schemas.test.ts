@@ -189,6 +189,7 @@ describe('order', () => {
     id: ulid(10),
     variantId: ulid(11),
     productId: ulid(12),
+    productSlug: 'tee',
     productTitle: 'Tee',
     attributes: { size: 'M' },
     unitPrice: vnd(100_000),

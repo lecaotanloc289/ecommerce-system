@@ -1,4 +1,5 @@
 import {
+  type Locale,
   type Order,
   OrderSchema,
   type OrderSummary,
@@ -22,7 +23,14 @@ export const SUB_ORDER_DETAIL_ARGS = {
     shippingMethod: { select: { name: true } },
     items: {
       orderBy: { id: 'asc' },
-      include: { variant: { select: { productId: true } } },
+      include: {
+        variant: {
+          select: {
+            productId: true,
+            product: { select: { translations: { select: { locale: true, slug: true } } } },
+          },
+        },
+      },
     },
   },
 } satisfies Prisma.SubOrderDefaultArgs;
@@ -43,7 +51,7 @@ export const ORDER_SUMMARY_ARGS = {
 
 export type OrderSummaryRow = Prisma.OrderGetPayload<typeof ORDER_SUMMARY_ARGS>;
 
-export function toOrder(row: OrderDetailRow): Order {
+export function toOrder(row: OrderDetailRow, locale: Locale = 'VI'): Order {
   const money = (amount: bigint) => toMoney(amount, row.currency);
   return OrderSchema.parse({
     id: row.id,
@@ -54,12 +62,12 @@ export function toOrder(row: OrderDetailRow): Order {
     grandTotal: money(row.grandTotalAmount),
     paymentDeadlineAt: row.paymentDeadlineAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
-    subOrders: row.subOrders.map(toSubOrder),
+    subOrders: row.subOrders.map((so) => toSubOrder(so, locale)),
   });
 }
 
 /** Customer view of one sub-order (no commission); `paid_i` as `total`. */
-export function toSubOrder(so: SubOrderDetailRow): SubOrder {
+export function toSubOrder(so: SubOrderDetailRow, locale: Locale = 'VI'): SubOrder {
   const subtotal = toMoney(so.subtotalAmount, so.currency);
   const shipping = toMoney(so.shippingAmount, so.currency);
   const vendorDiscount = toMoney(so.discountAmount, so.currency);
@@ -92,6 +100,7 @@ export function toSubOrder(so: SubOrderDetailRow): SubOrder {
       id: item.id,
       variantId: item.variantId,
       productId: item.variant.productId,
+      productSlug: pickSlug(item.variant.product.translations, locale),
       productTitle: item.productTitleSnapshot,
       attributes: parseAttributes(item.variantAttributesSnapshot),
       unitPrice: toMoney(item.unitPriceAmount, item.currency),
@@ -133,4 +142,13 @@ export function parseAttributes(
 ): Order['subOrders'][number]['items'][number]['attributes'] {
   const parsed = VariantAttributesSchema.safeParse(value);
   return parsed.success ? parsed.data : {};
+}
+
+/** Slug in the wanted locale, else vi, else any translation; null when the product has none. */
+export function pickSlug(
+  translations: readonly { locale: Locale; slug: string }[],
+  locale: Locale,
+): string | null {
+  const pick = (l: Locale) => translations.find((t) => t.locale === l)?.slug;
+  return pick(locale) ?? pick('VI') ?? translations[0]?.slug ?? null;
 }

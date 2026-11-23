@@ -237,6 +237,16 @@ describe('Checkout', () => {
     ]);
   });
 
+  it('normalises coupon codes to uppercase (case-insensitive)', () => {
+    expect(CheckoutSchema.parse({ ...request, couponCodes: [' welcome10 '] }).couponCodes).toEqual([
+      'WELCOME10',
+    ]);
+    expect(CouponCodeSchema.parse('Sale-10')).toBe('SALE-10');
+    expect(
+      CheckoutSchema.safeParse({ ...request, couponCodes: ['sale10', 'SALE10'] }).success,
+    ).toBe(false);
+  });
+
   it.each([
     ['empty items', { ...request, items: [] }],
     ['duplicate variant', { ...request, items: [request.items[0], request.items[0]] }],
