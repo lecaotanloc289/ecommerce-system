@@ -17,8 +17,10 @@ import { usePaymentFlow } from '@/components/checkout/use-payment-flow';
 import { ProductImage } from '@/components/product/product-image';
 import { useLocale } from '@/i18n/use-locale';
 import { formatMoney } from '@repo/i18n';
-import { fetchAddresses, placeOrder } from '@/lib/api/commerce';
-import { describeError, thrownErrorCode, ApiError } from '@/lib/api/errors';
+import { placeOrder } from '@/lib/api/commerce';
+import { listAddresses } from '@/lib/api/account';
+import { ApiError } from '@/lib/api/errors';
+import { describeError, errorCodeOfThrown } from '@/lib/api/error-message';
 import { attributesLabel, lineTotal, payableLines } from '@/lib/cart';
 import {
   buildCheckoutBody,
@@ -28,7 +30,7 @@ import {
   vendorIdsOf,
 } from '@/lib/checkout';
 import { STEP_PATH, stepForError } from '@/lib/checkout-errors';
-import { newUlid } from '@/lib/ulid';
+import { newIdempotencyKey as newUlid } from '@/lib/idempotency';
 import { useCart } from '@/store/cart-store';
 import { useCheckout, useOrderTotals } from '@/store/checkout-store';
 
@@ -94,7 +96,7 @@ export default function CheckoutReviewPage() {
   React.useEffect(() => {
     if (!ready || !choices.addressId) return;
     let cancelled = false;
-    void fetchAddresses().then(
+    void listAddresses().then(
       (list) => {
         if (!cancelled) setAddress(list.find((a) => a.id === choices.addressId) ?? null);
       },
@@ -127,7 +129,7 @@ export default function CheckoutReviewPage() {
       void refresh(locale);
       void flow.follow(order.id);
     } catch (e) {
-      const code = thrownErrorCode(e);
+      const code = errorCodeOfThrown(e);
       const step = stepForError(code);
       if (step && step !== 'review' && code) {
         setNotice({

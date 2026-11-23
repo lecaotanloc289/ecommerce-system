@@ -13,7 +13,7 @@ import { PaymentForm } from '@/components/checkout/payment-form';
 import { usePaymentFlow } from '@/components/checkout/use-payment-flow';
 import { useLocale } from '@/i18n/use-locale';
 import { cancelOrder, fetchOrder } from '@/lib/api/commerce';
-import { describeError } from '@/lib/api/errors';
+import { describeError } from '@/lib/api/error-message';
 import { resolveProvider } from '@/lib/checkout';
 import { canCancelOrder, canPayOrder } from '@/lib/order-status';
 

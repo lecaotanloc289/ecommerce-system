@@ -1,5 +1,5 @@
 import type { CartLineInput, CartMergeAdjustment, CartMergeResult } from '@repo/core';
-import { newUlid } from './ulid';
+import { newIdempotencyKey as newUlid } from './idempotency';
 
 /** The pending merge's idempotency key, bound to the lines it was generated for. */
 export interface PendingMerge {

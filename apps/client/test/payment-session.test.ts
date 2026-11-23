@@ -7,7 +7,7 @@ import {
 } from '../src/lib/payment-session';
 import { waitForOrderPayment } from '../src/lib/order-poll';
 import { poll } from '../src/lib/poll';
-import { newUlid } from '../src/lib/ulid';
+import { newIdempotencyKey as newUlid } from '../src/lib/idempotency';
 import { OrderSchema } from '@repo/core';
 
 const reply = (httpStatus: number, body: Record<string, unknown>): PaymentSessionReply => ({

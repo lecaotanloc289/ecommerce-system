@@ -31,3 +31,19 @@ export function serverApiOrigin(): string {
   // `||`: an empty API_URL (set but blank) falls back too.
   return resolve(process.env.API_URL || process.env.NEXT_PUBLIC_API_URL, 'API_URL');
 }
+
+/** Local admin app origin (`pnpm --filter @apps/admin dev`), used when unset outside production. */
+const DEV_ADMIN_ORIGIN = 'http://localhost:5173';
+
+/**
+ * Seller portal entry (`<admin origin>/vendor`) for an approved vendor, or null when the admin
+ * origin isn't configured in production (the link is then hidden). `value` defaults to the
+ * literal `process.env.NEXT_PUBLIC_ADMIN_URL`, which Next inlines at build time.
+ */
+export function vendorPortalUrl(
+  value: string | undefined = process.env.NEXT_PUBLIC_ADMIN_URL,
+): string | null {
+  const configured = value?.trim().replace(/\/+$/, '');
+  if (configured) return `${configured}/vendor`;
+  return process.env.NODE_ENV !== 'production' ? `${DEV_ADMIN_ORIGIN}/vendor` : null;
+}

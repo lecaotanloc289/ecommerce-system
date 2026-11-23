@@ -30,7 +30,7 @@ import { createCartMerger, summarizeAdjustments, type PendingMerge } from '../li
 import { cartToViews } from '../lib/server-cart';
 import { fetchProduct } from '../lib/api/browser';
 import { deleteCartItem, fetchCart, mergeCart, putCartItem } from '../lib/api/commerce';
-import { describeError } from '../lib/api/errors';
+import { describeError } from '../lib/api/error-message';
 import { useAuth } from './auth-provider';
 import { readStored, removeStored, writeStored } from './persisted';
 

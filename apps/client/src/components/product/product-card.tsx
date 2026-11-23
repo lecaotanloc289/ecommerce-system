@@ -6,7 +6,7 @@ import { Check, ShoppingCart } from 'lucide-react';
 import { Button } from '@repo/ui';
 import type { ProductSummary } from '@repo/core';
 import { formatMoney, translateError } from '@repo/i18n';
-import { describeError } from '../../lib/api/errors';
+import { describeError } from '../../lib/api/error-message';
 import { StarRating } from './star-rating';
 import { ProductImage } from './product-image';
 import { useLocale } from '../../i18n/use-locale';

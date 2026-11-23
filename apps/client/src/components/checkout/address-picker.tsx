@@ -4,7 +4,7 @@ import * as React from 'react';
 import { RadioGroup, RadioGroupItem } from '@repo/ui';
 import type { Address } from '@repo/core';
 import { useLocale } from '../../i18n/use-locale';
-import { fetchAddresses } from '../../lib/api/commerce';
+import { listAddresses } from '../../lib/api/account';
 import { AddAddressDialog } from '../address/add-address-dialog';
 import { AddressLines } from '../address/address-lines';
 import { useCheckout } from '../../store/checkout-store';
@@ -34,7 +34,7 @@ export function AddressPicker() {
   React.useEffect(() => {
     if (!hydrated) return;
     let cancelled = false;
-    fetchAddresses().then(
+    listAddresses().then(
       (list) => {
         if (cancelled) return;
         setAddresses(list);

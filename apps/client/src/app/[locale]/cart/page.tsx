@@ -13,7 +13,7 @@ import { QuantityStepper } from '@/components/checkout/quantity-stepper';
 import { ProductImage } from '@/components/product/product-image';
 import { useLocale } from '@/i18n/use-locale';
 import { formatMoney } from '@repo/i18n';
-import { describeError } from '@/lib/api/errors';
+import { describeError } from '@/lib/api/error-message';
 import { attributesLabel, payableLines } from '@/lib/cart';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/store/auth-provider';

@@ -1,5 +1,4 @@
 import { ErrorParamsSchema, type ErrorParams } from '@repo/core';
-import { translateError, type AppLocale } from '@repo/i18n';
 
 /**
  * A non-2xx API reply. `errorCode` / `params` are the server's `{ errorCode, params }`
@@ -57,17 +56,4 @@ export function parseResult<T>(result: FetchResult, schema: ResponseSchema<T>): 
     );
   }
   return schema.parse(result.data);
-}
-
-/** The `errorCode` of a thrown value: an `ApiError`'s code, else null. */
-export function thrownErrorCode(error: unknown): string | null {
-  return error instanceof ApiError ? error.errorCode : null;
-}
-
-/** User-facing text for anything thrown by an API call (unknown / network errors → generic). */
-export function describeError(locale: AppLocale, error: unknown): string {
-  if (error instanceof ApiError) {
-    return translateError(locale, error.errorCode ?? 'common.error.internal', error.params);
-  }
-  return translateError(locale, 'common.error.internal');
 }

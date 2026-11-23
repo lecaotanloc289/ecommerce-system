@@ -34,7 +34,7 @@ import { ProductImage } from '@/components/product/product-image';
 import { Link } from '@/i18n/navigation';
 import { useLocale } from '@/i18n/use-locale';
 import { cancelOrder, confirmReceived, fetchOrder } from '@/lib/api/commerce';
-import { describeError } from '@/lib/api/errors';
+import { describeError } from '@/lib/api/error-message';
 import { attributesLabel } from '@/lib/cart';
 import { canCancelOrder, canConfirmReceived, canPayOrder } from '@/lib/order-status';
 import { useAuth } from '@/store/auth-provider';

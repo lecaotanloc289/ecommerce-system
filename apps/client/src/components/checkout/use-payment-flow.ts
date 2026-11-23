@@ -9,7 +9,7 @@ import {
   waitForPaymentSession,
   type PaymentSessionOutcome,
 } from '../../lib/payment-session';
-import { newUlid } from '../../lib/ulid';
+import { newIdempotencyKey as newUlid } from '../../lib/idempotency';
 
 export type PaymentFlowState =
   | { phase: 'idle' }

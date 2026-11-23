@@ -214,4 +214,29 @@ describe('auth store', () => {
     expect(store.oauthStartUrl('google')).toBe(`${BASE}/v1/auth/google?app=web`);
     expect(store.oauthStartUrl('facebook')).toBe(`${BASE}/v1/auth/facebook?app=web`);
   });
+
+  it('reload() forces a new refresh + /me even when signed in (role granted after approval)', async () => {
+    const api = fakeApi({ refreshTokens: ['t1', 't2'], validTokens: ['t1', 't2'] });
+    const store = createAuthStore({ baseUrl: BASE, fetch: api.fetch });
+    await store.restore();
+    expect(api.count('/v1/auth/refresh')).toBe(1);
+
+    const state = await store.reload();
+
+    expect(api.count('/v1/auth/refresh')).toBe(2);
+    expect(state.status).toBe('authenticated');
+    expect(api.seen.at(-1)).toMatchObject({ path: '/v1/auth/me', auth: 'Bearer t2' });
+  });
+
+  it('reload() keeps the current session when the forced refresh fails', async () => {
+    const api = fakeApi({ refreshTokens: ['t1'], validTokens: ['t1'] });
+    const store = createAuthStore({ baseUrl: BASE, fetch: api.fetch });
+    await store.restore();
+
+    const state = await store.reload(); // refresh tokens exhausted → 401
+
+    expect(state.status).toBe('authenticated');
+    expect(store.getState().user?.name).toBe('Ana');
+    expect(await store.getAccessToken()).toBe('t1');
+  });
 });

@@ -12,7 +12,7 @@ import { RequireAuth } from '@/components/auth/require-auth';
 import { shortOrderId } from '@/components/order/status-badge';
 import { useLocale } from '@/i18n/use-locale';
 import { fetchOrder } from '@/lib/api/commerce';
-import { describeError } from '@/lib/api/errors';
+import { describeError } from '@/lib/api/error-message';
 import { waitForOrderPayment } from '@/lib/order-poll';
 import { paymentOutcome } from '@/lib/order-status';
 

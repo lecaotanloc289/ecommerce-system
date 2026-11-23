@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 import {
+  Alert,
+  AlertDescription,
   Button,
   Checkbox,
-  Input,
   Label,
   Select,
   SelectContent,
@@ -12,159 +13,143 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui';
-import { AddressInputSchema, type AddressInput } from '@repo/core';
-import { useLocale, type MessageKey } from '../../i18n/use-locale';
-import { cn } from '../../lib/utils';
+import type { Address } from '@repo/core';
+import { createAddress, updateAddress } from '@/lib/api/account';
+import { describeError } from '@/lib/api/error-message';
+import {
+  addressToFormValues,
+  EMPTY_ADDRESS_FORM,
+  validateAddressEdit,
+  validateNewAddress,
+  type AddressField,
+  type AddressFormValues,
+} from '@/lib/addresses';
+import type { FieldErrors } from '@/lib/form-errors';
+import { newIdempotencyKey } from '@/lib/idempotency';
+import { useLocale } from '@/i18n/use-locale';
+import { cn } from '@/lib/utils';
+import { TextField } from '../common/text-field';
 
 /** ISO 3166-1 alpha-2; display names come from Intl so they follow the locale. */
 const COUNTRY_CODES = ['VN', 'US', 'SG', 'JP', 'DE'] as const;
 
-type TextField = 'recipientName' | 'phone' | 'line1' | 'line2' | 'ward' | 'district' | 'city';
-
-const FIELDS: { name: TextField; label: MessageKey; wide?: boolean; type?: string }[] = [
-  { name: 'recipientName', label: 'addressForm.recipientName' },
-  { name: 'phone', label: 'addressForm.phone', type: 'tel' },
-  { name: 'line1', label: 'addressForm.line1', wide: true },
-  { name: 'line2', label: 'addressForm.line2', wide: true },
-  { name: 'ward', label: 'addressForm.ward' },
-  { name: 'district', label: 'addressForm.district' },
-  { name: 'city', label: 'addressForm.city' },
-];
-
-interface FormValues {
-  recipientName: string;
-  phone: string;
-  line1: string;
-  line2: string;
-  ward: string;
-  district: string;
-  city: string;
-  country: string;
-  isDefault: boolean;
-}
-
-const EMPTY: FormValues = {
-  recipientName: '',
-  phone: '',
-  line1: '',
-  line2: '',
-  ward: '',
-  district: '',
-  city: '',
-  country: 'VN',
-  isDefault: false,
-};
-
-type FieldErrors = Partial<Record<TextField | 'country', MessageKey>>;
-
 /**
- * Validate the form against the core `AddressInputSchema` (the same schema the API parses).
- * Returns the parsed input or per-field translated-key errors (schema texts are English, so we
- * map issues to catalog keys instead of showing them).
- */
-export function validateAddress(
-  values: FormValues,
-): { ok: true; data: AddressInput } | { ok: false; errors: FieldErrors } {
-  const parsed = AddressInputSchema.safeParse(values);
-  if (parsed.success) return { ok: true, data: parsed.data };
-  const errors: FieldErrors = {};
-  for (const issue of parsed.error.issues) {
-    const field = issue.path[0];
-    if (typeof field !== 'string' || !(field === 'country' || FIELDS.some((f) => f.name === field)))
-      continue;
-    const key = field as TextField | 'country';
-    if (errors[key]) continue;
-    errors[key] =
-      key === 'phone'
-        ? 'addressForm.error.phone'
-        : issue.code === 'too_big'
-          ? 'addressForm.error.tooLong'
-          : 'addressForm.error.required';
-  }
-  return { ok: false, errors };
-}
-
-/**
- * Customer address form (shared by checkout and the account address book). Controlled state +
- * the core schema — no form library. `onSubmit` receives the parsed `AddressInput`; the caller
- * does the API call and passes `submitting` / `error`.
+ * Customer address form for `POST /v1/me/addresses` (no `initial`) or `PATCH …/:id` (`initial`).
+ * Validated with the core `AddressInput` / `AddressUpdate` schemas before any request; server
+ * errors are shown translated. Reusable from checkout: it persists the address itself and
+ * reports the stored row through `onSaved`.
  */
 export function AddressForm({
-  onSubmit,
+  initial,
+  onSaved,
   onCancel,
-  submitting = false,
-  error = null,
-  showDefaultToggle = true,
   className,
 }: {
-  onSubmit: (input: AddressInput) => void | Promise<void>;
+  initial?: Address;
+  onSaved: (address: Address) => void;
   onCancel?: () => void;
-  submitting?: boolean;
-  error?: string | null;
-  showDefaultToggle?: boolean;
   className?: string;
 }) {
   const { locale, t } = useLocale();
-  const [values, setValues] = React.useState<FormValues>(EMPTY);
-  const [errors, setErrors] = React.useState<FieldErrors>({});
-  const idPrefix = React.useId();
-  const regionNames = new Intl.DisplayNames([locale === 'vi' ? 'vi-VN' : 'en-US'], {
-    type: 'region',
-  });
+  const [values, setValues] = React.useState<AddressFormValues>(() =>
+    initial ? addressToFormValues(initial) : EMPTY_ADDRESS_FORM,
+  );
+  const [errors, setErrors] = React.useState<FieldErrors<AddressField>>({});
+  const [serverError, setServerError] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState(false);
+  // One key per form state: retrying an unchanged submit replays the first response.
+  const keyRef = React.useRef<string | null>(null);
 
-  const set = <K extends keyof FormValues>(key: K, value: FormValues[K]) =>
-    setValues((v) => ({ ...v, [key]: value }));
+  const regionNames = React.useMemo(
+    () => new Intl.DisplayNames([locale === 'vi' ? 'vi-VN' : 'en-US'], { type: 'region' }),
+    [locale],
+  );
 
-  const submit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const result = validateAddress(values);
-    if (!result.ok) {
-      setErrors(result.errors);
-      return;
+  // An existing address may use a country outside the short list: keep it selectable.
+  const countryOptions: readonly string[] = COUNTRY_CODES.includes(
+    values.country as (typeof COUNTRY_CODES)[number],
+  )
+    ? COUNTRY_CODES
+    : [values.country, ...COUNTRY_CODES];
+
+  const set = <K extends keyof AddressFormValues>(field: K, value: AddressFormValues[K]) => {
+    setValues((prev) => ({ ...prev, [field]: value }));
+    keyRef.current = null;
+  };
+
+  const text = (
+    field: Exclude<AddressField, 'country'>,
+    label: Parameters<typeof t>[0],
+    extra?: {
+      type?: string;
+      autoComplete?: string;
+      className?: string;
+    },
+  ) => (
+    <TextField
+      name={field}
+      label={t(label)}
+      value={values[field]}
+      error={errors[field]}
+      onChange={(e) => set(field, e.target.value)}
+      {...extra}
+    />
+  );
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setServerError(null);
+    try {
+      if (initial) {
+        const checked = validateAddressEdit(initial, values);
+        if (!checked.ok) return setErrors(checked.errors);
+        setErrors({});
+        if (checked.value === null) return onSaved(initial);
+        setBusy(true);
+        keyRef.current ??= newIdempotencyKey();
+        onSaved(await updateAddress(initial.id, checked.value, keyRef.current));
+      } else {
+        const checked = validateNewAddress(values);
+        if (!checked.ok) return setErrors(checked.errors);
+        setErrors({});
+        setBusy(true);
+        keyRef.current ??= newIdempotencyKey();
+        onSaved(await createAddress(checked.value, keyRef.current));
+      }
+    } catch (error) {
+      setServerError(describeError(locale, error));
+    } finally {
+      setBusy(false);
     }
-    setErrors({});
-    void onSubmit(result.data);
   };
 
   return (
     <form
+      onSubmit={(e) => void submit(e)}
       noValidate
-      onSubmit={submit}
       className={cn('grid gap-4 sm:grid-cols-2', className)}
-      aria-busy={submitting}
     >
-      {FIELDS.map((f) => {
-        const id = `${idPrefix}-${f.name}`;
-        const errorKey = errors[f.name];
-        return (
-          <div key={f.name} className={cn('flex flex-col gap-1.5', f.wide && 'sm:col-span-2')}>
-            <Label htmlFor={id}>{t(f.label)}</Label>
-            <Input
-              id={id}
-              name={f.name}
-              type={f.type ?? 'text'}
-              value={values[f.name]}
-              invalid={errorKey ? true : undefined}
-              aria-invalid={errorKey ? true : undefined}
-              aria-describedby={errorKey ? `${id}-error` : undefined}
-              onChange={(e) => set(f.name, e.target.value)}
-            />
-            {errorKey ? (
-              <p id={`${id}-error`} className="text-body-s text-danger-fg">
-                {t(errorKey)}
-              </p>
-            ) : null}
-          </div>
-        );
+      {text('recipientName', 'addr.recipientName', { autoComplete: 'name' })}
+      {text('phone', 'addr.phone', { type: 'tel', autoComplete: 'tel' })}
+      {text('line1', 'addr.line1', {
+        autoComplete: 'address-line1',
+        className: 'sm:col-span-2',
       })}
+      {text('line2', 'addr.line2', {
+        autoComplete: 'address-line2',
+        className: 'sm:col-span-2',
+      })}
+      {text('ward', 'addr.ward')}
+      {text('district', 'addr.district')}
+      {text('city', 'addr.city', { autoComplete: 'address-level1' })}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor={`${idPrefix}-country`}>{t('addressForm.country')}</Label>
+        <Label htmlFor="address-country">{t('addr.country')}</Label>
         <Select value={values.country} onValueChange={(v) => set('country', v)}>
-          <SelectTrigger id={`${idPrefix}-country`}>
+          <SelectTrigger id="address-country">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {COUNTRY_CODES.map((c) => (
+            {countryOptions.map((c) => (
               <SelectItem key={c} value={c}>
                 {regionNames.of(c) ?? c}
               </SelectItem>
@@ -172,29 +157,29 @@ export function AddressForm({
           </SelectContent>
         </Select>
       </div>
-      {showDefaultToggle ? (
+      {initial ? null : (
         <label className="flex items-center gap-2.5 text-body-m text-text-body sm:col-span-2">
           <Checkbox
             checked={values.isDefault}
             onCheckedChange={(checked) => set('isDefault', checked === true)}
           />
-          {t('addressForm.isDefault')}
+          {t('addr.makeDefault')}
         </label>
+      )}
+      {serverError ? (
+        <Alert variant="danger" className="sm:col-span-2">
+          <AlertDescription>{serverError}</AlertDescription>
+        </Alert>
       ) : null}
-      {error ? (
-        <p role="alert" className="text-body-s text-danger-fg sm:col-span-2">
-          {error}
-        </p>
-      ) : null}
-      <div className="flex flex-wrap justify-end gap-3 sm:col-span-2">
+      <div className="flex gap-3 sm:col-span-2">
+        <Button type="submit" loading={busy}>
+          {busy ? t('addr.saving') : t('addr.save')}
+        </Button>
         {onCancel ? (
-          <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>
-            {t('addressForm.cancel')}
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={busy}>
+            {t('addr.cancel')}
           </Button>
         ) : null}
-        <Button type="submit" disabled={submitting}>
-          {submitting ? t('addressForm.saving') : t('addressForm.submit')}
-        </Button>
       </div>
     </form>
   );

@@ -1,13 +1,10 @@
 import {
-  AddressSchema,
   CartMergeResultSchema,
   CartSchema,
   CartShippingOptionsSchema,
   OrderSchema,
   OrderSummaryPageSchema,
   PaymentSessionSchema,
-  type Address,
-  type AddressInput,
   type Cart,
   type CartLineInput,
   type CartMergeResult,
@@ -19,7 +16,7 @@ import {
   type PaymentProvider,
 } from '@repo/core';
 import type { PaymentSessionReply } from '../payment-session';
-import { newUlid } from '../ulid';
+import { newIdempotencyKey as newUlid } from '../idempotency';
 import { browserApi } from './browser';
 import { parseResult } from './errors';
 
@@ -81,20 +78,6 @@ export async function fetchShippingOptions(): Promise<CartShippingOptions> {
   return parseResult(
     await browserApi().GET('/v1/cart/shipping-options'),
     CartShippingOptionsSchema,
-  );
-}
-
-export async function fetchAddresses(): Promise<Address[]> {
-  return parseResult(await browserApi().GET('/v1/me/addresses'), AddressSchema.array());
-}
-
-export async function createAddress(input: AddressInput): Promise<Address> {
-  const { line2, ...rest } = input;
-  return parseResult(
-    await browserApi().POST('/v1/me/addresses', {
-      body: line2 === undefined ? rest : { ...rest, line2 },
-    }),
-    AddressSchema,
   );
 }
 
