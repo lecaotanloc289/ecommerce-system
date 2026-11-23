@@ -2,7 +2,7 @@
   "name": "@workers/jobs",
   "version": "0.0.0",
   "private": true,
-  "description": "Background worker: outbox dispatcher (payment sessions, transactional email). See CLAUDE.md.",
+  "description": "Background worker: outbox dispatcher (payment sessions, refunds, transactional email) + scheduled jobs. See CLAUDE.md.",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -11,6 +11,7 @@
     "build": "tsup",
     "dev": "tsup --watch --onSuccess \"node --enable-source-maps dist/main.js\"",
     "start": "node --enable-source-maps dist/main.js",
+    "run-job": "node --enable-source-maps dist/run-job.js",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test",
     "test": "vitest run"
@@ -25,6 +26,7 @@
     "nodemailer": "10.6.0",
     "pino": "^10.3.1",
     "stripe": "23.1.0",
+    "ulid": "^3.0.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -35,7 +37,6 @@
     "testcontainers": "^12.2.1",
     "tsup": "^8.5.1",
     "typescript": "^5.7.0",
-    "ulid": "^3.0.2",
     "vitest": "^4.1.8"
   }
 }

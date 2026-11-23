@@ -20,7 +20,7 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 - `apps/client` — storefront UI for all `SCREENS.md` screens, on mock data (see `apps/client/CLAUDE.md`).
 - `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), `@Idempotent()` interceptor, Redis-backed rate limit (`@RateLimit('strict')`), cursor pagination helper, Zod-validated env, ESLint, Jest with a Testcontainers integration harness + factories; me/addresses, cart, public catalog, checkout + customer orders (see `server/CLAUDE.md`).
 - `apps/admin` — scaffold only.
-- `workers/jobs` (`@workers/jobs`) — outbox dispatcher (claims only event types it has a handler for, `FOR UPDATE SKIP LOCKED`, exponential backoff, dead-letter after 10 attempts) with handlers for `payment.requested` (provider session via `@repo/payments`) and transactional emails (nodemailer, vi/en via `@repo/i18n`); Vitest + Testcontainers; own Dockerfile / Fly app `elma-worker-{env}` (see `workers/jobs/CLAUDE.md`).
+- `workers/jobs` (`@workers/jobs`) — outbox dispatcher (claims only event types it has a handler for, `FOR UPDATE SKIP LOCKED`, exponential backoff, dead-letter after 10 attempts) with handlers for `payment.requested` (provider session via `@repo/payments`, or the zero-amount confirmation), `refund.requested` (provider refund → Refund SUCCEEDED / FAILED / PENDING, Payment REFUNDED when fully refunded) and transactional emails (nodemailer, vi/en via `@repo/i18n`); BullMQ repeatable jobs `expire-unpaid-orders`, `auto-complete-sub-orders`, `release-payouts` (D7 payout ledger + wallet credit), `outbox-retention`, plus `run-job` for one-off runs; Vitest + Testcontainers; own Dockerfile / Fly app `elma-worker-{env}` (see `workers/jobs/CLAUDE.md`).
 - `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
 - `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
 - `packages/sdk` — OpenAPI pipeline + `createApiClient` (openapi-fetch; Bearer, auto Idempotency-Key, single-flight 401 refresh); `pnpm sdk:generate` (see `packages/sdk/CLAUDE.md`).
@@ -76,8 +76,8 @@ ecommerce-system/
 │                                   Versioned /v1, OpenAPI exposed. Code in `server/src/`.
 │                                   Async work lives OUTSIDE this workspace, in `workers/`.
 ├── workers/                       Background processes (no HTTP); never import from server/ or apps/.
-│   └── jobs/                      `@workers/jobs`: outbox dispatcher → payment sessions + emails;
-│                                  scheduled jobs (payment expiry, payouts) join it in T3.2.
+│   └── jobs/                      `@workers/jobs`: outbox dispatcher → payment sessions, refunds,
+│                                  emails; scheduled jobs (payment expiry, auto-complete, payouts).
 ├── packages/                      Shared libraries
 │   ├── core/                      Domain layer: Zod schemas, types (z.infer), enums, error codes,
 │   │                              Money utility, ID brands, shared constants.
@@ -374,7 +374,7 @@ Never rename or drop in a single migration:
 | `VENDOR_OWNER`, `VENDOR_STAFF`     | `apps/admin` → `/vendor/*` routes   |
 | `PLATFORM_STAFF`, `PLATFORM_ADMIN` | `apps/admin` → `/platform/*` routes |
 
-`server/` (HTTP, package `@server/api`) serves all roles via REST; webhooks (payment, OAuth callback) terminate here. Async work (outbox dispatch, emails, payment sessions; later payout cron) runs in `workers/jobs` (`@workers/jobs`) — not nested inside `server/`.
+`server/` (HTTP, package `@server/api`) serves all roles via REST; webhooks (payment, OAuth callback) terminate here. Async work (outbox dispatch, emails, payment sessions, provider refunds; scheduled payment expiry, auto-complete and payouts) runs in `workers/jobs` (`@workers/jobs`) — not nested inside `server/`.
 
 ### Customer journey (features in scope for MVP)
 
@@ -467,7 +467,7 @@ pnpm dev                            # all workspaces in parallel via Turbo
 pnpm --filter @apps/web dev         # storefront only       → http://localhost:3000
 pnpm --filter @apps/admin dev       # admin only            → http://localhost:5173
 pnpm --filter @server/api dev       # API only              → http://localhost:3001
-pnpm --filter @workers/jobs dev     # outbox worker (no HTTP; needs DATABASE_URL + REDIS_URL, SMTP → Mailhog)
+pnpm --filter @workers/jobs dev     # outbox worker + scheduled jobs (no HTTP; needs DATABASE_URL + REDIS_URL, SMTP → Mailhog)
 ```
 
 ### Build / lint / typecheck / test

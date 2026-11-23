@@ -343,6 +343,12 @@ export const en = {
       intro: '{vendor} has shipped your items.',
       tracking: 'Carrier: {carrier}, tracking number: {trackingNumber}',
     },
+    subOrderDelivered: {
+      subject: 'Part of your order {orderId} was delivered',
+      intro: '{vendor} marked your items as delivered.',
+      confirm:
+        'Received everything in good condition? Confirm receipt on the order page. If something is wrong, contact us before the order is completed automatically.',
+    },
     vendorApplicationApproved: {
       subject: 'Your seller application was approved',
       intro:

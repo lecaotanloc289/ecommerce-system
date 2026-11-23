@@ -342,6 +342,12 @@ export const vi: Messages = {
       intro: '{vendor} đã gửi hàng cho bạn.',
       tracking: 'Đơn vị vận chuyển: {carrier}, mã vận đơn: {trackingNumber}',
     },
+    subOrderDelivered: {
+      subject: 'Một phần đơn hàng {orderId} đã được giao',
+      intro: '{vendor} đã xác nhận giao hàng cho bạn.',
+      confirm:
+        'Bạn đã nhận đủ hàng và hàng còn nguyên vẹn? Hãy xác nhận đã nhận hàng trên trang đơn hàng. Nếu có vấn đề, vui lòng liên hệ chúng tôi trước khi đơn hàng tự động hoàn tất.',
+    },
     vendorApplicationApproved: {
       subject: 'Đơn đăng ký bán hàng của bạn đã được duyệt',
       intro:

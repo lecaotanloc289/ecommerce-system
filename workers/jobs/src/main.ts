@@ -2,12 +2,17 @@ import { prisma } from '@repo/db';
 import { createSmtpMailer } from './email/mailer';
 import { parseEnv } from './env';
 import { createHandlers } from './handlers';
+import { createJobs } from './jobs';
+import { JobScheduler } from './jobs/scheduler';
 import { createLogger, describeError } from './logger';
 import { OutboxDispatcher } from './outbox/dispatcher';
 import { createProviders } from './payments/providers';
 import { connectRedis } from './redis';
 
-/** Worker entry: validate env, wire dependencies, run the outbox dispatcher until SIGTERM/SIGINT. */
+/**
+ * Worker entry: validate env, wire dependencies, start the scheduled jobs and run the outbox
+ * dispatcher until SIGTERM/SIGINT.
+ */
 async function main(): Promise<void> {
   const env = parseEnv(process.env);
   const log = createLogger(env.LOG_LEVEL);
@@ -39,17 +44,48 @@ async function main(): Promise<void> {
     },
   );
 
+  const jobs = createJobs(
+    { batchSize: env.JOB_BATCH_SIZE, outboxRetentionDays: env.OUTBOX_RETENTION_DAYS },
+    log,
+  );
+  const scheduler = new JobScheduler(
+    redis,
+    {
+      'expire-unpaid-orders': {
+        everyMs: env.JOB_EXPIRE_UNPAID_ORDERS_EVERY_MS,
+        run: jobs['expire-unpaid-orders'],
+      },
+      'auto-complete-sub-orders': {
+        everyMs: env.JOB_AUTO_COMPLETE_SUB_ORDERS_EVERY_MS,
+        run: jobs['auto-complete-sub-orders'],
+      },
+      'release-payouts': {
+        everyMs: env.JOB_RELEASE_PAYOUTS_EVERY_MS,
+        run: jobs['release-payouts'],
+      },
+      'outbox-retention': {
+        everyMs: env.JOB_OUTBOX_RETENTION_EVERY_MS,
+        run: jobs['outbox-retention'],
+      },
+    } satisfies Record<keyof typeof jobs, unknown>,
+    log,
+  );
+
   const shutdown = new AbortController();
   for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     process.once(signal, () => {
-      log.info({ signal }, 'shutting down after the in-flight batch');
+      log.info({ signal }, 'shutting down after the in-flight batch / job row');
       shutdown.abort();
+      // In parallel with the dispatcher drain: the running job stops after its current row.
+      void scheduler.close();
     });
   }
 
   try {
+    await scheduler.start();
     await dispatcher.run(shutdown.signal);
   } finally {
+    await scheduler.close(); // idempotent; waits for the running job (stopped between rows)
     mailer.close();
     await redis.quit();
     await prisma.$disconnect();

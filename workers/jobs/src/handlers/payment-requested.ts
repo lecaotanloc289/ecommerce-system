@@ -1,8 +1,10 @@
-import { DomainError, OUTBOX_EVENT_SCHEMAS, type ErrorCode } from '@repo/core';
+import { DomainError, OUTBOX_EVENT_SCHEMAS } from '@repo/core';
 import { toMoney } from '@repo/db';
 import { createTranslator, fromCoreLocale } from '@repo/i18n';
+import { confirmZeroAmountPayment } from '../domain/zero-amount';
 import { PermanentError } from '../outbox/errors';
 import { defineHandler } from '../outbox/handler';
+import { PERMANENT_PROVIDER_ERRORS } from '../payments/provider-errors';
 import type { Providers } from '../payments/providers';
 
 export interface PaymentRequestedDeps {
@@ -12,14 +14,6 @@ export interface PaymentRequestedDeps {
   /** Public API origin: VNPay returns to `{API_PUBLIC_URL}/v1/payments/return/vnpay`. */
   apiPublicUrl: string;
 }
-
-/** Provider errors that a retry cannot fix (see packages/payments/CLAUDE.md). */
-const PERMANENT_PROVIDER_ERRORS: ReadonlySet<ErrorCode> = new Set<ErrorCode>([
-  'common.error.validation-failed',
-  'money.error.currency-mismatch',
-  'money.error.invalid-operand',
-  'payment.error.amount-mismatch',
-]);
 
 /** Used when the Payment predates `client_ip` (VNPay requires some address). */
 const FALLBACK_CLIENT_IP = '127.0.0.1';
@@ -33,8 +27,9 @@ const FALLBACK_CLIENT_IP = '127.0.0.1';
  * between `createSession` and commit re-creates the session on redelivery; the orphaned one is never
  * shown to anyone and expires at the provider.
  *
- * Zero amount (free order): no provider session (providers reject 0). Logged and marked processed
- * for now — T3.2 replaces this branch with the zero-amount confirmation (see workers/jobs/CLAUDE.md).
+ * Zero amount (free order): no provider session (providers reject 0) — the payment is confirmed
+ * here instead, in this event's transaction (`confirmZeroAmountPayment`, mirror of the API's
+ * `confirmZeroAmount`): order PAID, stock committed, `order.paid`.
  */
 export function paymentRequestedHandler(deps: PaymentRequestedDeps) {
   return defineHandler(OUTBOX_EVENT_SCHEMAS['payment.requested'], async (event, ctx) => {
@@ -65,7 +60,8 @@ export function paymentRequestedHandler(deps: PaymentRequestedDeps) {
       return;
     }
     if (payment.amount === 0n) {
-      log.info('zero-amount payment; no provider session (confirmation not implemented yet, T3.2)');
+      const outcome = await confirmZeroAmountPayment(ctx.tx, payment.id, log);
+      log.info({ outcome }, 'zero-amount payment handled without a provider session');
       return;
     }
 
