@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import '@repo/ui/styles/tokens.css';
+/* Appearance presets (accent / radius / text size) — must come after tokens. */
+@import '@repo/ui/styles/themes.css';
 
 /* Tailwind v4 scans this file's tree by default.
  * Add @repo/ui source so utility classes used in shared components
@@ -24,6 +26,31 @@ html[lang='vi'] {
   }
   to {
     opacity: 1;
+  }
+}
+
+/* Seasonal decorations (components/seasonal/seasonal-effects.tsx): petals/snow fall,
+ * lanterns/balloons rise, with a gentle sideways sway. */
+@keyframes seasonFall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(2.5rem, 50vh, 0) rotate(160deg);
+  }
+  100% {
+    transform: translate3d(0, 112vh, 0) rotate(320deg);
+  }
+}
+@keyframes seasonRise {
+  0% {
+    transform: translate3d(0, 112vh, 0);
+  }
+  50% {
+    transform: translate3d(1.5rem, 50vh, 0);
+  }
+  100% {
+    transform: translate3d(0, -12vh, 0);
   }
 }
 

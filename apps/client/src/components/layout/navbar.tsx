@@ -17,6 +17,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from 
 import { Container } from './container';
 import { LocaleToggle } from './locale-toggle';
 import { ThemeToggle } from './theme-toggle';
+import { AppearancePanel } from './appearance-panel';
 import { useT, type MessageKey } from '../../i18n/locale-provider';
 import { categories } from '../../mocks/categories';
 import { useCart } from '../../store/cart-store';
@@ -27,6 +28,7 @@ const menuLinks: { key: MessageKey; href?: string }[] = [
   { key: 'nav.home', href: '/' },
   { key: 'nav.categories', href: '/categories' },
   { key: 'nav.shop', href: '/search' },
+  { key: 'seasonal.navEvents', href: '/events' },
   { key: 'nav.blog' },
   { key: 'nav.pages' },
 ];
@@ -68,6 +70,9 @@ export function Navbar() {
             ))}
           </div>
           <div className="flex items-center gap-4">
+            <Link href="/events" className="hover:text-brand-text">
+              {t('seasonal.navEvents')}
+            </Link>
             <Link href="/order/track" className="hover:text-brand-text">
               {t('track.title')}
             </Link>
@@ -180,6 +185,7 @@ export function Navbar() {
             <IconLink href="/search" label={t('common.search')} className="md:hidden">
               <Search className="size-5" />
             </IconLink>
+            <AppearancePanel />
             <IconLink href="/cart" label={t('nav.cart')}>
               <span className="relative">
                 <ShoppingCart className="size-5" />

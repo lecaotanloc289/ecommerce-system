@@ -4,6 +4,8 @@ import { LocaleProvider } from '../i18n/locale-provider';
 import { en } from '@repo/i18n';
 import { CartProvider } from '../store/cart-store';
 import { CheckoutProvider } from '../store/checkout-store';
+import { AppearanceProvider } from '../store/appearance-store';
+import { SeasonalRibbon } from '../components/seasonal/seasonal-ribbon';
 import { Navbar } from '../components/layout/navbar';
 import { Footer } from '../components/layout/footer';
 
@@ -13,8 +15,13 @@ export const metadata = {
   description: en.meta.description,
 };
 
-/** Set theme + lang before first paint to avoid a flash (DESIGN.md §2). */
-const noFlashScript = `(function(){try{var t=localStorage.theme;var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);var l=localStorage.locale;if(l==='vi'||l==='en')document.documentElement.lang=l;}catch(e){}})();`;
+/**
+ * Apply appearance (mode, accent, corners, text size) + lang before first paint to avoid a
+ * flash (DESIGN.md §2). Mirrors AppearanceProvider (store/appearance-store.tsx): reads the
+ * `appearance` prefs, legacy `theme`, and the `appearance-accent` cache an `auto` accent
+ * resolved to for a running event (honoured until its last day, Vietnam time = UTC+7).
+ */
+const noFlashScript = `(function(){try{var s=localStorage,r=document.documentElement,p={};try{p=JSON.parse(s.getItem('appearance')||'{}')||{}}catch(e){}var m=p.mode||s.getItem('theme')||'system';r.classList.toggle('dark',m==='dark'||(m!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches));var A=['red','orange','green','teal','blue','purple'],a=p.accent;if(a!=='indigo'&&A.indexOf(a)<0){a=null;try{var c=JSON.parse(s.getItem('appearance-accent')||'null');var n=new Date(Date.now()+252e5).toISOString().slice(0,10);if(c&&c.until>=n)a=c.accent}catch(e){}}if(A.indexOf(a)>=0)r.setAttribute('data-accent',a);if(p.radius==='sharp'||p.radius==='round')r.setAttribute('data-radius',p.radius);if(p.fontScale==='sm'||p.fontScale==='lg')r.setAttribute('data-font-scale',p.fontScale);var l=s.getItem('locale');if(l==='vi'||l==='en')r.lang=l;}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -33,13 +40,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className="flex min-h-screen flex-col bg-bg-page text-text-body antialiased">
         <LocaleProvider>
-          <CartProvider>
-            <CheckoutProvider>
-              <Navbar />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </CheckoutProvider>
-          </CartProvider>
+          <AppearanceProvider>
+            <CartProvider>
+              <CheckoutProvider>
+                <Navbar />
+                <SeasonalRibbon />
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </CheckoutProvider>
+            </CartProvider>
+          </AppearanceProvider>
         </LocaleProvider>
       </body>
     </html>

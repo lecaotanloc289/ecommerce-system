@@ -16,6 +16,10 @@ import { formatMoney } from '@repo/i18n';
 import { getProduct, products } from '../mocks/products';
 import { categories } from '../mocks/categories';
 import { cn } from '../lib/utils';
+import { useAppearance } from '../store/appearance-store';
+import { SeasonalHero } from '../components/seasonal/seasonal-hero';
+import { SeasonalPicks } from '../components/seasonal/seasonal-picks';
+import { SeasonalEffects } from '../components/seasonal/seasonal-effects';
 
 const ALL = 'all';
 const PROMO_SLUG = 'lenovo-yoga-x';
@@ -28,6 +32,7 @@ const blogPosts: { tag: MessageKey; title: MessageKey; minutes: number; seed: st
 
 export default function HomePage() {
   const { locale, t } = useLocale();
+  const { event } = useAppearance();
   const [tab, setTab] = React.useState(ALL);
   const bestSellers = (
     tab === ALL ? products : products.filter((p) => p.categorySlug === tab)
@@ -41,11 +46,18 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col">
-      {/* 1. Hero — auto-advancing carousel (Elements/Header/001) */}
-      <HeroCarousel />
+      <SeasonalEffects />
+
+      {/* 1. Hero — the running/previewed event takes over; otherwise the auto-advancing
+          carousel (Elements/Header/001). Prerendered HTML has no date, so it always starts
+          as the carousel and swaps after mount. */}
+      {event ? <SeasonalHero event={event} /> : <HeroCarousel />}
 
       {/* 2. Benefits */}
       <BenefitBar />
+
+      {/* 2b. Event picks — trending categories for the season */}
+      {event ? <SeasonalPicks event={event} /> : null}
 
       {/* 3. Best sellers — 2×4 grid + filter tabs */}
       <Container as="section" className="py-12 lg:py-16">
