@@ -229,6 +229,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/crm/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unsubscribe from a shop via the emailed token (public, idempotent)
+         * @description Unknown token → 404 `crm.error.unsubscribe-invalid`.
+         */
+        post: operations["CrmUnsubscribeController_unsubscribe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/health": {
         parameters: {
             query?: never;
@@ -327,6 +347,114 @@ export interface paths {
         put?: never;
         /** Make an own address the default */
         post: operations["MeController_setDefault"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Own notifications, newest first (cursor) */
+        get: operations["NotificationsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark all own notifications read */
+        post: operations["NotificationsController_markAllRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Number of unread notifications */
+        get: operations["NotificationsController_unreadCount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one own notification read (idempotent)
+         * @description Another user's or unknown id → 404 `notification.error.not-found`.
+         */
+        post: operations["NotificationsController_markRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/vendor-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shops the user bought from (or has a preference with) + consent state */
+        get: operations["VendorPreferencesController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/vendor-preferences/{vendorId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Opt in/out of a shop’s marketing and service messages
+         * @description Only for a shop the caller bought from or already has a preference with, else 404 `vendor.error.not-found`. Already-in-state changes are no-ops (no consent event).
+         */
+        put: operations["VendorPreferencesController_update"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -481,6 +609,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform/crm/campaigns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All vendors’ campaigns, newest first; filter `vendorId`, `status` */
+        get: operations["PlatformCrmCampaignsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/crm/campaigns/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a DRAFT / SCHEDULED campaign with a reason
+         * @description Unknown → 404 `crm.error.campaign-not-found`; other status → 409 `crm.error.campaign-not-editable`. Pending messages become SKIPPED (CAMPAIGN_CANCELLED).
+         */
+        post: operations["PlatformCrmCampaignsController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/platform/orders": {
         parameters: {
             query?: never;
@@ -611,7 +776,7 @@ export interface paths {
         head?: never;
         /**
          * Change any subset of the tunables (admin only)
-         * @description Bounds: commissionBps 0..10000, holdPeriodDays / refundWindowDays 0..365, paymentTimeoutMinutes 5..1440, maxCouponStack 1..10, non-empty supportedCurrencies that contains defaultCurrency (checked against the stored values when only one is sent).
+         * @description Bounds: commissionBps 0..10000, holdPeriodDays / refundWindowDays 0..365, paymentTimeoutMinutes 5..1440, maxCouponStack 1..10, non-empty supportedCurrencies that contains defaultCurrency (checked against the stored values when only one is sent); CRM thresholds crm* 1..3650 with crmAtRiskAfterDays < crmLapsedAfterDays (also merged with the stored values).
          */
         patch: operations["PlatformSettingsController_update"];
         trace?: never;
@@ -961,6 +1126,256 @@ export interface paths {
         put?: never;
         /** Accept an invitation (verified email must match); then refresh the token */
         post: operations["VendorInvitationAcceptController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/automations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The three automations (unsaved ones: disabled, default delay) */
+        get: operations["CrmAutomationsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/automations/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save one automation (owner only)
+         * @description delayDays: THANK_YOU 0..7, REVIEW_REQUEST 1..30, REORDER_REMINDER 7..180. `couponId` only on REORDER_REMINDER: own VENDOR coupon, active and valid now, code `^[A-Z0-9_-]{3,32}$` (else 422 `crm.error.coupon-invalid`). Templates: plain text, no links (`crm.error.links-not-allowed`), placeholders `{customerName}` `{shopName}` `{couponCode}` (`{couponCode}` without a coupon → `crm.error.unknown-placeholder`).
+         */
+        put: operations["CrmAutomationsController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/campaigns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Own campaigns, newest first (cursor pagination) */
+        get: operations["CrmCampaignsController_list"];
+        put?: never;
+        /**
+         * Create a DRAFT campaign
+         * @description Templates: plain text, no links (`crm.error.links-not-allowed {match}`), placeholders `{customerName}` `{shopName}` `{couponCode}` only (`crm.error.unknown-placeholder`; `{couponCode}` needs a coupon). Coupon: own VENDOR coupon, active, valid (`crm.error.coupon-invalid`).
+         */
+        post: operations["CrmCampaignsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/campaigns/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One own campaign with delivery stats */
+        get: operations["CrmCampaignsController_get"];
+        /**
+         * Replace a DRAFT (other status → 409 `crm.error.campaign-not-editable`)
+         * @description Templates: plain text, no links (`crm.error.links-not-allowed {match}`), placeholders `{customerName}` `{shopName}` `{couponCode}` only (`crm.error.unknown-placeholder`; `{couponCode}` needs a coupon). Coupon: own VENDOR coupon, active, valid (`crm.error.coupon-invalid`).
+         */
+        put: operations["CrmCampaignsController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/campaigns/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a DRAFT / SCHEDULED campaign (owner only)
+         * @description Its not-yet-sent messages become SKIPPED (CAMPAIGN_CANCELLED).
+         */
+        post: operations["CrmCampaignsController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/campaigns/{id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Audience size now + sample render (vi / en) — writes nothing
+         * @description `matchedCustomers` match the filter; `eligibleRecipients` also opted in to marketing.
+         */
+        post: operations["CrmCampaignsController_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/campaigns/{id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Schedule a DRAFT (owner only): `scheduledAt` null = now, ≤ 30 days ahead
+         * @description Limit: `crmMaxCampaignsPerWeek` per sliding 7 days → 429 `crm.error.campaign-limit-reached`; nobody eligible now → 422 `crm.error.empty-audience`; not DRAFT → 409 `crm.error.campaign-not-editable`. The audience is resolved again at send time.
+         */
+        post: operations["CrmCampaignsController_schedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Customers of the shop (≥ 1 paid, non-refunded sub-order), stats computed on read
+         * @description Filter by `segment`, `tag`, `productId` (bought it), `q` (name substring or customer id). `sort=last_order` (default) | `order_count`, both newest/highest first. `cursor` is the opaque `nextCursor` of the previous page (same `sort`); a malformed one → 422. No email or phone is ever returned.
+         */
+        get: operations["CrmCustomersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/customers/{customerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Customer 360: stats, recent sub-orders, reviews on this shop, internal notes
+         * @description Not a customer of this shop → 404 `crm.error.not-a-customer`.
+         */
+        get: operations["CrmCustomersController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/customers/{customerId}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an internal note about a customer */
+        post: operations["CrmCustomersController_addNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/customers/{customerId}/notes/{noteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a note (its author or the shop owner; soft delete)
+         * @description Unknown / already deleted → 404 `crm.error.note-not-found`; others → 403.
+         */
+        delete: operations["CrmCustomersController_deleteNote"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/customers/{customerId}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the internal tags of a customer (≤ 10, lowercase) */
+        put: operations["CrmCustomersController_replaceTags"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/crm/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Customers and marketing opt-ins per segment */
+        get: operations["CrmCustomersController_segments"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1380,6 +1795,9 @@ export interface components {
             recipientName?: string;
             ward?: string;
         };
+        CancelCrmCampaignDto: {
+            reason: string;
+        };
         CartDto_Output: {
             currencies: ("VND" | "USD")[];
             groups: {
@@ -1537,6 +1955,202 @@ export interface components {
             provider: "VNPAY" | "STRIPE";
             shippingMethodIds: string[];
         };
+        CreateCrmCampaignDto: {
+            audience: {
+                boughtProductIds: string[];
+                lastOrderWithinDays: number | null;
+                segments: ("NEW" | "RETURNING" | "VIP" | "AT_RISK" | "LAPSED")[];
+                tags: string[];
+            };
+            couponId: string | null;
+            name: string;
+            templateEn: string | null;
+            templateVi: string;
+        };
+        CreateCustomerNoteDto: {
+            body: string;
+        };
+        CrmAutomationDto_Output: {
+            couponId: string | null;
+            delayDays: number;
+            isEnabled: boolean;
+            /** @enum {string} */
+            kind: "THANK_YOU" | "REVIEW_REQUEST" | "REORDER_REMINDER";
+            /** @enum {string} */
+            messageKind: "SERVICE" | "MARKETING";
+            templateEn: string | null;
+            templateVi: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CrmAutomationListDto_Output: {
+            couponId: string | null;
+            delayDays: number;
+            isEnabled: boolean;
+            /** @enum {string} */
+            kind: "THANK_YOU" | "REVIEW_REQUEST" | "REORDER_REMINDER";
+            /** @enum {string} */
+            messageKind: "SERVICE" | "MARKETING";
+            templateEn: string | null;
+            templateVi: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+        }[];
+        CrmCampaignDto_Output: {
+            audience: {
+                boughtProductIds: string[];
+                lastOrderWithinDays: number | null;
+                segments: ("NEW" | "RETURNING" | "VIP" | "AT_RISK" | "LAPSED")[];
+                tags: string[];
+            };
+            cancelledAt: string | null;
+            completedAt: string | null;
+            couponId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            name: string;
+            recipientCount: number;
+            scheduledAt: string | null;
+            startedAt: string | null;
+            stats: {
+                couponRedemptions: number;
+                failed: number;
+                sent: number;
+                skipped: number;
+            };
+            /** @enum {string} */
+            status: "DRAFT" | "SCHEDULED" | "SENDING" | "SENT" | "CANCELLED";
+            templateEn: string | null;
+            templateVi: string;
+        };
+        CrmCampaignPageDto_Output: {
+            items: {
+                audience: {
+                    boughtProductIds: string[];
+                    lastOrderWithinDays: number | null;
+                    segments: ("NEW" | "RETURNING" | "VIP" | "AT_RISK" | "LAPSED")[];
+                    tags: string[];
+                };
+                cancelledAt: string | null;
+                completedAt: string | null;
+                couponId: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+                name: string;
+                recipientCount: number;
+                scheduledAt: string | null;
+                startedAt: string | null;
+                stats: {
+                    couponRedemptions: number;
+                    failed: number;
+                    sent: number;
+                    skipped: number;
+                };
+                /** @enum {string} */
+                status: "DRAFT" | "SCHEDULED" | "SENDING" | "SENT" | "CANCELLED";
+                templateEn: string | null;
+                templateVi: string;
+            }[];
+            nextCursor: string | null;
+        };
+        CrmCampaignPreviewDto_Output: {
+            eligibleRecipients: number;
+            matchedCustomers: number;
+            sample: {
+                en: string;
+                vi: string;
+            };
+        };
+        CrmCustomerDetailDto_Output: {
+            avatarUrl: string | null;
+            customerId: string;
+            /** Format: date-time */
+            firstOrderAt: string;
+            /** Format: date-time */
+            lastOrderAt: string;
+            marketingOptIn: boolean;
+            name: string;
+            notes: {
+                authorName: string;
+                body: string;
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+            }[];
+            orderCount: number;
+            province: string | null;
+            recentOrders: {
+                /** Format: date-time */
+                createdAt: string;
+                itemTitles: string[];
+                orderId: string;
+                /** @enum {string} */
+                status: "AWAITING_PAYMENT" | "PAID" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "COMPLETED" | "REFUNDED" | "CANCELLED";
+                subOrderId: string;
+                total: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                };
+            }[];
+            reviews: {
+                body: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                productId: string;
+                rating: number;
+            }[];
+            /** @enum {string} */
+            segment: "NEW" | "RETURNING" | "VIP" | "AT_RISK" | "LAPSED";
+            serviceOptOut: boolean;
+            spend: {
+                amount: number;
+                /** @enum {string} */
+                currency: "VND" | "USD";
+            }[];
+            tags: string[];
+        };
+        CrmCustomerNoteDto_Output: {
+            authorName: string;
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+        };
+        CrmCustomerPageDto_Output: {
+            items: {
+                avatarUrl: string | null;
+                customerId: string;
+                /** Format: date-time */
+                firstOrderAt: string;
+                /** Format: date-time */
+                lastOrderAt: string;
+                marketingOptIn: boolean;
+                name: string;
+                orderCount: number;
+                province: string | null;
+                /** @enum {string} */
+                segment: "NEW" | "RETURNING" | "VIP" | "AT_RISK" | "LAPSED";
+                spend: {
+                    amount: number;
+                    /** @enum {string} */
+                    currency: "VND" | "USD";
+                }[];
+                tags: string[];
+            }[];
+            nextCursor: string | null;
+        };
+        CrmSegmentCountsDto_Output: {
+            segments: {
+                customers: number;
+                marketingOptedIn: number;
+                /** @enum {string} */
+                segment: "NEW" | "RETURNING" | "VIP" | "AT_RISK" | "LAPSED";
+            }[];
+            totalCustomers: number;
+        };
         HealthReadyResponseDto_Output: {
             /** @constant */
             db: "up";
@@ -1618,6 +2232,29 @@ export interface components {
             primaryLocale: "VI" | "EN";
             roles: ("GUEST" | "CUSTOMER" | "VENDOR_OWNER" | "VENDOR_STAFF" | "PLATFORM_STAFF" | "PLATFORM_ADMIN")[];
             vendorId: string | null;
+        };
+        NotificationDto_Output: {
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            linkPath: string | null;
+            readAt: string | null;
+            title: string;
+            vendorId: string | null;
+        };
+        NotificationPageDto_Output: {
+            items: {
+                body: string;
+                /** Format: date-time */
+                createdAt: string;
+                id: string;
+                linkPath: string | null;
+                readAt: string | null;
+                title: string;
+                vendorId: string | null;
+            }[];
+            nextCursor: string | null;
         };
         OrderDto_Output: {
             /** Format: date-time */
@@ -1979,6 +2616,11 @@ export interface components {
         };
         PlatformSettingsDto_Output: {
             commissionBps: number;
+            crmAtRiskAfterDays: number;
+            crmLapsedAfterDays: number;
+            crmMaxCampaignsPerWeek: number;
+            crmMaxMarketingPerCustomerPerWeek: number;
+            crmVipMinOrders: number;
             /** @enum {string} */
             defaultCurrency: "VND" | "USD";
             holdPeriodDays: number;
@@ -1998,6 +2640,11 @@ export interface components {
         };
         PlatformSettingsUpdateDto: {
             commissionBps?: number;
+            crmAtRiskAfterDays?: number;
+            crmLapsedAfterDays?: number;
+            crmMaxCampaignsPerWeek?: number;
+            crmMaxMarketingPerCustomerPerWeek?: number;
+            crmVipMinOrders?: number;
             /** @enum {string} */
             defaultCurrency?: "VND" | "USD";
             holdPeriodDays?: number;
@@ -2247,6 +2894,12 @@ export interface components {
             }[];
             nextCursor: string | null;
         };
+        ReplaceCustomerTagsDto: {
+            tags: string[];
+        };
+        ReplaceCustomerTagsDto_Output: {
+            tags: string[];
+        };
         ReviewCreateBodyDto: {
             body?: string;
             rating: number;
@@ -2283,6 +2936,9 @@ export interface components {
                     number
                 ];
             };
+        };
+        ScheduleCrmCampaignDto: {
+            scheduledAt: string | null;
         };
         ShippingMethodDto_Output: {
             estDays: number;
@@ -2337,6 +2993,37 @@ export interface components {
             expiresIn: number;
             /** @constant */
             tokenType: "Bearer";
+        };
+        UnreadCountDto_Output: {
+            count: number;
+        };
+        UnsubscribeDto: {
+            /** @enum {string} */
+            scope: "MARKETING" | "ALL";
+            token: string;
+        };
+        UpdateCrmAutomationDto: {
+            couponId: string | null;
+            delayDays: number;
+            isEnabled: boolean;
+            templateEn: string | null;
+            templateVi: string | null;
+        };
+        UpdateCrmCampaignDto: {
+            audience: {
+                boughtProductIds: string[];
+                lastOrderWithinDays: number | null;
+                segments: ("NEW" | "RETURNING" | "VIP" | "AT_RISK" | "LAPSED")[];
+                tags: string[];
+            };
+            couponId: string | null;
+            name: string;
+            templateEn: string | null;
+            templateVi: string;
+        };
+        UpdateVendorPreferenceDto: {
+            marketingOptIn?: boolean;
+            serviceOptOut?: boolean;
         };
         VariantStockUpdateDto: {
             stockOnHand: number;
@@ -2491,6 +3178,22 @@ export interface components {
             };
             slug: string;
         };
+        VendorPreferenceDto_Output: {
+            marketingOptIn: boolean;
+            serviceOptOut: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            vendorId: string;
+            vendorName: string;
+        };
+        VendorPreferenceListDto_Output: {
+            marketingOptIn: boolean;
+            serviceOptOut: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+            vendorId: string;
+            vendorName: string;
+        }[];
         VendorProductDto_Output: {
             basePrice: {
                 amount: number;
@@ -3073,6 +3776,28 @@ export interface operations {
             };
         };
     };
+    CrmUnsubscribeController_unsubscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnsubscribeDto"];
+            };
+        };
+        responses: {
+            /** @description Unsubscribed (or already was) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     HealthController_check: {
         parameters: {
             query?: never;
@@ -3245,6 +3970,135 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AddressDto_Output"];
+                };
+            };
+        };
+    };
+    NotificationsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPageDto_Output"];
+                };
+            };
+        };
+    };
+    NotificationsController_markAllRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Marked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    NotificationsController_unreadCount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unread count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCountDto_Output"];
+                };
+            };
+        };
+    };
+    NotificationsController_markRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The notification */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationDto_Output"];
+                };
+            };
+        };
+    };
+    VendorPreferencesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Preferences */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorPreferenceListDto_Output"];
+                };
+            };
+        };
+    };
+    VendorPreferencesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVendorPreferenceDto"];
+            };
+        };
+        responses: {
+            /** @description Updated preference */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorPreferenceDto_Output"];
                 };
             };
         };
@@ -3448,6 +4302,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlatformSettingsPublicDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformCrmCampaignsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                vendorId?: string;
+                status?: "DRAFT" | "SCHEDULED" | "SENDING" | "SENT" | "CANCELLED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCampaignPageDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformCrmCampaignsController_cancel: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelCrmCampaignDto"];
+            };
+        };
+        responses: {
+            /** @description The cancelled campaign */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCampaignDto_Output"];
                 };
             };
         };
@@ -4165,6 +5073,384 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvitationAcceptResultDto_Output"];
+                };
+            };
+        };
+    };
+    CrmAutomationsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Automations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmAutomationListDto_Output"];
+                };
+            };
+        };
+    };
+    CrmAutomationsController_update: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                kind: "THANK_YOU" | "REVIEW_REQUEST" | "REORDER_REMINDER";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCrmAutomationDto"];
+            };
+        };
+        responses: {
+            /** @description The automation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmAutomationDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCampaignsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCampaignPageDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCampaignsController_create: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCrmCampaignDto"];
+            };
+        };
+        responses: {
+            /** @description The draft */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCampaignDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCampaignsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The campaign */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCampaignDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCampaignsController_update: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCrmCampaignDto"];
+            };
+        };
+        responses: {
+            /** @description The draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCampaignDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCampaignsController_cancel: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cancelled campaign */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCampaignDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCampaignsController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCampaignPreviewDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCampaignsController_schedule: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleCrmCampaignDto"];
+            };
+        };
+        responses: {
+            /** @description The scheduled campaign */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCampaignDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCustomersController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                segment?: "NEW" | "RETURNING" | "VIP" | "AT_RISK" | "LAPSED";
+                tag?: string;
+                q?: string;
+                productId?: string;
+                sort?: "last_order" | "order_count";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of customers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCustomerPageDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCustomersController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                customerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The customer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCustomerDetailDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCustomersController_addNote: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                customerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCustomerNoteDto"];
+            };
+        };
+        responses: {
+            /** @description The note */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmCustomerNoteDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCustomersController_deleteNote: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                customerId: string;
+                noteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CrmCustomersController_replaceTags: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                customerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceCustomerTagsDto"];
+            };
+        };
+        responses: {
+            /** @description The saved tags */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplaceCustomerTagsDto_Output"];
+                };
+            };
+        };
+    };
+    CrmCustomersController_segments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Segment counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrmSegmentCountsDto_Output"];
                 };
             };
         };

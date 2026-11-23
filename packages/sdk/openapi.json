@@ -214,6 +214,19 @@
         },
         "type": "object"
       },
+      "CancelCrmCampaignDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
       "CartDto_Output": {
         "additionalProperties": false,
         "properties": {
@@ -1063,6 +1076,1165 @@
         ],
         "type": "object"
       },
+      "CreateCrmCampaignDto": {
+        "properties": {
+          "audience": {
+            "properties": {
+              "boughtProductIds": {
+                "items": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              "lastOrderWithinDays": {
+                "anyOf": [
+                  {
+                    "maximum": 730,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "segments": {
+                "items": {
+                  "enum": [
+                    "NEW",
+                    "RETURNING",
+                    "VIP",
+                    "AT_RISK",
+                    "LAPSED"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 5,
+                "type": "array"
+              },
+              "tags": {
+                "items": {
+                  "maxLength": 30,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "type": "array"
+              }
+            },
+            "required": [
+              "segments",
+              "tags",
+              "boughtProductIds",
+              "lastOrderWithinDays"
+            ],
+            "type": "object"
+          },
+          "couponId": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "templateEn": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "templateVi": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "audience",
+          "templateVi",
+          "templateEn",
+          "couponId"
+        ],
+        "type": "object"
+      },
+      "CreateCustomerNoteDto": {
+        "properties": {
+          "body": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "CrmAutomationDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "couponId": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delayDays": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "THANK_YOU",
+              "REVIEW_REQUEST",
+              "REORDER_REMINDER"
+            ],
+            "type": "string"
+          },
+          "messageKind": {
+            "enum": [
+              "SERVICE",
+              "MARKETING"
+            ],
+            "type": "string"
+          },
+          "templateEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "templateVi": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "messageKind",
+          "isEnabled",
+          "delayDays",
+          "templateVi",
+          "templateEn",
+          "couponId",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "CrmAutomationListDto_Output": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "couponId": {
+              "anyOf": [
+                {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "delayDays": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "isEnabled": {
+              "type": "boolean"
+            },
+            "kind": {
+              "enum": [
+                "THANK_YOU",
+                "REVIEW_REQUEST",
+                "REORDER_REMINDER"
+              ],
+              "type": "string"
+            },
+            "messageKind": {
+              "enum": [
+                "SERVICE",
+                "MARKETING"
+              ],
+              "type": "string"
+            },
+            "templateEn": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "templateVi": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "updatedAt": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "messageKind",
+            "isEnabled",
+            "delayDays",
+            "templateVi",
+            "templateEn",
+            "couponId",
+            "updatedAt"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "CrmCampaignDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "additionalProperties": false,
+            "properties": {
+              "boughtProductIds": {
+                "items": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              "lastOrderWithinDays": {
+                "anyOf": [
+                  {
+                    "maximum": 730,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "segments": {
+                "items": {
+                  "enum": [
+                    "NEW",
+                    "RETURNING",
+                    "VIP",
+                    "AT_RISK",
+                    "LAPSED"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 5,
+                "type": "array"
+              },
+              "tags": {
+                "items": {
+                  "maxLength": 30,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "type": "array"
+              }
+            },
+            "required": [
+              "segments",
+              "tags",
+              "boughtProductIds",
+              "lastOrderWithinDays"
+            ],
+            "type": "object"
+          },
+          "cancelledAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "couponId": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "recipientCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "scheduledAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stats": {
+            "additionalProperties": false,
+            "properties": {
+              "couponRedemptions": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "failed": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "sent": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "skipped": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "sent",
+              "skipped",
+              "failed",
+              "couponRedemptions"
+            ],
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "SCHEDULED",
+              "SENDING",
+              "SENT",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "templateEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "templateVi": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "audience",
+          "templateVi",
+          "templateEn",
+          "couponId",
+          "scheduledAt",
+          "startedAt",
+          "completedAt",
+          "cancelledAt",
+          "recipientCount",
+          "createdAt",
+          "stats"
+        ],
+        "type": "object"
+      },
+      "CrmCampaignPageDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "audience": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "boughtProductIds": {
+                      "items": {
+                        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                        "type": "string"
+                      },
+                      "maxItems": 20,
+                      "type": "array"
+                    },
+                    "lastOrderWithinDays": {
+                      "anyOf": [
+                        {
+                          "maximum": 730,
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "segments": {
+                      "items": {
+                        "enum": [
+                          "NEW",
+                          "RETURNING",
+                          "VIP",
+                          "AT_RISK",
+                          "LAPSED"
+                        ],
+                        "type": "string"
+                      },
+                      "maxItems": 5,
+                      "type": "array"
+                    },
+                    "tags": {
+                      "items": {
+                        "maxLength": 30,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "maxItems": 10,
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "segments",
+                    "tags",
+                    "boughtProductIds",
+                    "lastOrderWithinDays"
+                  ],
+                  "type": "object"
+                },
+                "cancelledAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "completedAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "couponId": {
+                  "anyOf": [
+                    {
+                      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "createdAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "recipientCount": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "scheduledAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "startedAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "stats": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "couponRedemptions": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "failed": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "sent": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "skipped": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "sent",
+                    "skipped",
+                    "failed",
+                    "couponRedemptions"
+                  ],
+                  "type": "object"
+                },
+                "status": {
+                  "enum": [
+                    "DRAFT",
+                    "SCHEDULED",
+                    "SENDING",
+                    "SENT",
+                    "CANCELLED"
+                  ],
+                  "type": "string"
+                },
+                "templateEn": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "templateVi": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "status",
+                "audience",
+                "templateVi",
+                "templateEn",
+                "couponId",
+                "scheduledAt",
+                "startedAt",
+                "completedAt",
+                "cancelledAt",
+                "recipientCount",
+                "createdAt",
+                "stats"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "CrmCampaignPreviewDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "eligibleRecipients": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "matchedCustomers": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sample": {
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "type": "string"
+              },
+              "vi": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "vi",
+              "en"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "matchedCustomers",
+          "eligibleRecipients",
+          "sample"
+        ],
+        "type": "object"
+      },
+      "CrmCustomerDetailDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "customerId": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "firstOrderAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "type": "string"
+          },
+          "lastOrderAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "type": "string"
+          },
+          "marketingOptIn": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "authorName": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "authorName",
+                "body",
+                "createdAt"
+              ],
+              "type": "object"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "orderCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "province": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recentOrders": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "createdAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "itemTitles": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "orderId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "AWAITING_PAYMENT",
+                    "PAID",
+                    "PROCESSING",
+                    "SHIPPED",
+                    "DELIVERED",
+                    "COMPLETED",
+                    "REFUNDED",
+                    "CANCELLED"
+                  ],
+                  "type": "string"
+                },
+                "subOrderId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "total": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "enum": [
+                        "VND",
+                        "USD"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "subOrderId",
+                "orderId",
+                "status",
+                "createdAt",
+                "total",
+                "itemTitles"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "reviews": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "body": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "createdAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "productId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "rating": {
+                  "maximum": 5,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "productId",
+                "rating",
+                "body",
+                "createdAt"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "segment": {
+            "enum": [
+              "NEW",
+              "RETURNING",
+              "VIP",
+              "AT_RISK",
+              "LAPSED"
+            ],
+            "type": "string"
+          },
+          "serviceOptOut": {
+            "type": "boolean"
+          },
+          "spend": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "amount": {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                "currency": {
+                  "enum": [
+                    "VND",
+                    "USD"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "amount",
+                "currency"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "customerId",
+          "name",
+          "avatarUrl",
+          "province",
+          "orderCount",
+          "firstOrderAt",
+          "lastOrderAt",
+          "spend",
+          "segment",
+          "tags",
+          "marketingOptIn",
+          "serviceOptOut",
+          "recentOrders",
+          "reviews",
+          "notes"
+        ],
+        "type": "object"
+      },
+      "CrmCustomerNoteDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "authorName": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "authorName",
+          "body",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CrmCustomerPageDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "avatarUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "customerId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "firstOrderAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "lastOrderAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "marketingOptIn": {
+                  "type": "boolean"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "orderCount": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "province": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "segment": {
+                  "enum": [
+                    "NEW",
+                    "RETURNING",
+                    "VIP",
+                    "AT_RISK",
+                    "LAPSED"
+                  ],
+                  "type": "string"
+                },
+                "spend": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "amount": {
+                        "maximum": 9007199254740991,
+                        "minimum": -9007199254740991,
+                        "type": "integer"
+                      },
+                      "currency": {
+                        "enum": [
+                          "VND",
+                          "USD"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "amount",
+                      "currency"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "tags": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "customerId",
+                "name",
+                "avatarUrl",
+                "province",
+                "orderCount",
+                "firstOrderAt",
+                "lastOrderAt",
+                "spend",
+                "segment",
+                "tags",
+                "marketingOptIn"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "CrmSegmentCountsDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "segments": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "customers": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "marketingOptedIn": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "segment": {
+                  "enum": [
+                    "NEW",
+                    "RETURNING",
+                    "VIP",
+                    "AT_RISK",
+                    "LAPSED"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "segment",
+                "customers",
+                "marketingOptedIn"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "totalCustomers": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "segments",
+          "totalCustomers"
+        ],
+        "type": "object"
+      },
       "HealthReadyResponseDto_Output": {
         "additionalProperties": false,
         "properties": {
@@ -1487,6 +2659,164 @@
           "primaryLocale",
           "roles",
           "vendorId"
+        ],
+        "type": "object"
+      },
+      "NotificationDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "linkPath": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "pattern": "^\\/(?!\\/)[^\\s]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "readAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "maxLength": 200,
+            "type": "string"
+          },
+          "vendorId": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "vendorId",
+          "title",
+          "body",
+          "linkPath",
+          "readAt",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "NotificationPageDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "body": {
+                  "maxLength": 2000,
+                  "type": "string"
+                },
+                "createdAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "linkPath": {
+                  "anyOf": [
+                    {
+                      "maxLength": 500,
+                      "pattern": "^\\/(?!\\/)[^\\s]*$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "readAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "title": {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                "vendorId": {
+                  "anyOf": [
+                    {
+                      "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "vendorId",
+                "title",
+                "body",
+                "linkPath",
+                "readAt",
+                "createdAt"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
         ],
         "type": "object"
       },
@@ -3346,6 +4676,31 @@
             "minimum": 0,
             "type": "integer"
           },
+          "crmAtRiskAfterDays": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "crmLapsedAfterDays": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "crmMaxCampaignsPerWeek": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "crmMaxMarketingPerCustomerPerWeek": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "crmVipMinOrders": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
           "defaultCurrency": {
             "enum": [
               "VND",
@@ -3403,6 +4758,11 @@
           "paymentTimeoutMinutes",
           "supportedCurrencies",
           "defaultCurrency",
+          "crmAtRiskAfterDays",
+          "crmLapsedAfterDays",
+          "crmVipMinOrders",
+          "crmMaxCampaignsPerWeek",
+          "crmMaxMarketingPerCustomerPerWeek",
           "updatedAt"
         ],
         "type": "object"
@@ -3446,6 +4806,31 @@
           "commissionBps": {
             "maximum": 10000,
             "minimum": 0,
+            "type": "integer"
+          },
+          "crmAtRiskAfterDays": {
+            "maximum": 3650,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "crmLapsedAfterDays": {
+            "maximum": 3650,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "crmMaxCampaignsPerWeek": {
+            "maximum": 3650,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "crmMaxMarketingPerCustomerPerWeek": {
+            "maximum": 3650,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "crmVipMinOrders": {
+            "maximum": 3650,
+            "minimum": 1,
             "type": "integer"
           },
           "defaultCurrency": {
@@ -4714,6 +6099,41 @@
         ],
         "type": "object"
       },
+      "ReplaceCustomerTagsDto": {
+        "properties": {
+          "tags": {
+            "items": {
+              "maxLength": 30,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          }
+        },
+        "required": [
+          "tags"
+        ],
+        "type": "object"
+      },
+      "ReplaceCustomerTagsDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "tags": {
+            "items": {
+              "maxLength": 30,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          }
+        },
+        "required": [
+          "tags"
+        ],
+        "type": "object"
+      },
       "ReviewCreateBodyDto": {
         "properties": {
           "body": {
@@ -4903,6 +6323,26 @@
           "items",
           "nextCursor",
           "summary"
+        ],
+        "type": "object"
+      },
+      "ScheduleCrmCampaignDto": {
+        "properties": {
+          "scheduledAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "scheduledAt"
         ],
         "type": "object"
       },
@@ -5148,6 +6588,207 @@
           "tokenType",
           "expiresIn"
         ],
+        "type": "object"
+      },
+      "UnreadCountDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "type": "object"
+      },
+      "UnsubscribeDto": {
+        "properties": {
+          "scope": {
+            "enum": [
+              "MARKETING",
+              "ALL"
+            ],
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 43,
+            "minLength": 43,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "scope"
+        ],
+        "type": "object"
+      },
+      "UpdateCrmAutomationDto": {
+        "properties": {
+          "couponId": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delayDays": {
+            "maximum": 180,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "templateEn": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "templateVi": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "isEnabled",
+          "delayDays",
+          "templateVi",
+          "templateEn",
+          "couponId"
+        ],
+        "type": "object"
+      },
+      "UpdateCrmCampaignDto": {
+        "properties": {
+          "audience": {
+            "properties": {
+              "boughtProductIds": {
+                "items": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              "lastOrderWithinDays": {
+                "anyOf": [
+                  {
+                    "maximum": 730,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "segments": {
+                "items": {
+                  "enum": [
+                    "NEW",
+                    "RETURNING",
+                    "VIP",
+                    "AT_RISK",
+                    "LAPSED"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 5,
+                "type": "array"
+              },
+              "tags": {
+                "items": {
+                  "maxLength": 30,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "type": "array"
+              }
+            },
+            "required": [
+              "segments",
+              "tags",
+              "boughtProductIds",
+              "lastOrderWithinDays"
+            ],
+            "type": "object"
+          },
+          "couponId": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "templateEn": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "templateVi": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "audience",
+          "templateVi",
+          "templateEn",
+          "couponId"
+        ],
+        "type": "object"
+      },
+      "UpdateVendorPreferenceDto": {
+        "properties": {
+          "marketingOptIn": {
+            "type": "boolean"
+          },
+          "serviceOptOut": {
+            "type": "boolean"
+          }
+        },
         "type": "object"
       },
       "VariantStockUpdateDto": {
@@ -5957,6 +7598,71 @@
           "products"
         ],
         "type": "object"
+      },
+      "VendorPreferenceDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "marketingOptIn": {
+            "type": "boolean"
+          },
+          "serviceOptOut": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "type": "string"
+          },
+          "vendorId": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "vendorName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "vendorId",
+          "vendorName",
+          "marketingOptIn",
+          "serviceOptOut",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "VendorPreferenceListDto_Output": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "marketingOptIn": {
+              "type": "boolean"
+            },
+            "serviceOptOut": {
+              "type": "boolean"
+            },
+            "updatedAt": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string"
+            },
+            "vendorId": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            },
+            "vendorName": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vendorId",
+            "vendorName",
+            "marketingOptIn",
+            "serviceOptOut",
+            "updatedAt"
+          ],
+          "type": "object"
+        },
+        "type": "array"
       },
       "VendorProductDto_Output": {
         "additionalProperties": false,
@@ -7839,6 +9545,32 @@
         ]
       }
     },
+    "/v1/crm/unsubscribe": {
+      "post": {
+        "description": "Unknown token → 404 `crm.error.unsubscribe-invalid`.",
+        "operationId": "CrmUnsubscribeController_unsubscribe",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnsubscribeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Unsubscribed (or already was)"
+          }
+        },
+        "summary": "Unsubscribe from a shop via the emailed token (public, idempotent)",
+        "tags": [
+          "crm-consent"
+        ]
+      }
+    },
     "/v1/health": {
       "get": {
         "operationId": "HealthController_check",
@@ -8091,6 +9823,214 @@
         "summary": "Make an own address the default",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/v1/me/notifications": {
+      "get": {
+        "operationId": "NotificationsController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPageDto_Output"
+                }
+              }
+            },
+            "description": "One page"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Own notifications, newest first (cursor)",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/me/notifications/read-all": {
+      "post": {
+        "operationId": "NotificationsController_markAllRead",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Marked"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark all own notifications read",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/me/notifications/unread-count": {
+      "get": {
+        "operationId": "NotificationsController_unreadCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountDto_Output"
+                }
+              }
+            },
+            "description": "Unread count"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Number of unread notifications",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/me/notifications/{id}/read": {
+      "post": {
+        "description": "Another user's or unknown id → 404 `notification.error.not-found`.",
+        "operationId": "NotificationsController_markRead",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationDto_Output"
+                }
+              }
+            },
+            "description": "The notification"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark one own notification read (idempotent)",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/me/vendor-preferences": {
+      "get": {
+        "operationId": "VendorPreferencesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorPreferenceListDto_Output"
+                }
+              }
+            },
+            "description": "Preferences"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Shops the user bought from (or has a preference with) + consent state",
+        "tags": [
+          "crm-consent"
+        ]
+      }
+    },
+    "/v1/me/vendor-preferences/{vendorId}": {
+      "put": {
+        "description": "Only for a shop the caller bought from or already has a preference with, else 404 `vendor.error.not-found`. Already-in-state changes are no-ops (no consent event).",
+        "operationId": "VendorPreferencesController_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vendorId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVendorPreferenceDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorPreferenceDto_Output"
+                }
+              }
+            },
+            "description": "Updated preference"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Opt in/out of a shop’s marketing and service messages",
+        "tags": [
+          "crm-consent"
         ]
       }
     },
@@ -8461,6 +10401,135 @@
         "summary": "Currencies and limits the storefront needs (public)",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/v1/platform/crm/campaigns": {
+      "get": {
+        "operationId": "PlatformCrmCampaignsController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vendorId",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "DRAFT",
+                "SCHEDULED",
+                "SENDING",
+                "SENT",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCampaignPageDto_Output"
+                }
+              }
+            },
+            "description": "One page"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "All vendors’ campaigns, newest first; filter `vendorId`, `status`",
+        "tags": [
+          "platform"
+        ]
+      }
+    },
+    "/v1/platform/crm/campaigns/{id}/cancel": {
+      "post": {
+        "description": "Unknown → 404 `crm.error.campaign-not-found`; other status → 409 `crm.error.campaign-not-editable`. Pending messages become SKIPPED (CAMPAIGN_CANCELLED).",
+        "operationId": "PlatformCrmCampaignsController_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelCrmCampaignDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCampaignDto_Output"
+                }
+              }
+            },
+            "description": "The cancelled campaign"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel a DRAFT / SCHEDULED campaign with a reason",
+        "tags": [
+          "platform"
         ]
       }
     },
@@ -8848,7 +10917,7 @@
         ]
       },
       "patch": {
-        "description": "Bounds: commissionBps 0..10000, holdPeriodDays / refundWindowDays 0..365, paymentTimeoutMinutes 5..1440, maxCouponStack 1..10, non-empty supportedCurrencies that contains defaultCurrency (checked against the stored values when only one is sent).",
+        "description": "Bounds: commissionBps 0..10000, holdPeriodDays / refundWindowDays 0..365, paymentTimeoutMinutes 5..1440, maxCouponStack 1..10, non-empty supportedCurrencies that contains defaultCurrency (checked against the stored values when only one is sent); CRM thresholds crm* 1..3650 with crmAtRiskAfterDays < crmLapsedAfterDays (also merged with the stored values).",
         "operationId": "PlatformSettingsController_update",
         "parameters": [
           {
@@ -10006,6 +12075,753 @@
         "summary": "Accept an invitation (verified email must match); then refresh the token",
         "tags": [
           "vendor-staff"
+        ]
+      }
+    },
+    "/v1/vendor/crm/automations": {
+      "get": {
+        "operationId": "CrmAutomationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmAutomationListDto_Output"
+                }
+              }
+            },
+            "description": "Automations"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The three automations (unsaved ones: disabled, default delay)",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/automations/{kind}": {
+      "put": {
+        "description": "delayDays: THANK_YOU 0..7, REVIEW_REQUEST 1..30, REORDER_REMINDER 7..180. `couponId` only on REORDER_REMINDER: own VENDOR coupon, active and valid now, code `^[A-Z0-9_-]{3,32}$` (else 422 `crm.error.coupon-invalid`). Templates: plain text, no links (`crm.error.links-not-allowed`), placeholders `{customerName}` `{shopName}` `{couponCode}` (`{couponCode}` without a coupon → `crm.error.unknown-placeholder`).",
+        "operationId": "CrmAutomationsController_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "enum": [
+                "THANK_YOU",
+                "REVIEW_REQUEST",
+                "REORDER_REMINDER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCrmAutomationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmAutomationDto_Output"
+                }
+              }
+            },
+            "description": "The automation"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save one automation (owner only)",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/campaigns": {
+      "get": {
+        "operationId": "CrmCampaignsController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCampaignPageDto_Output"
+                }
+              }
+            },
+            "description": "One page"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Own campaigns, newest first (cursor pagination)",
+        "tags": [
+          "vendor-crm"
+        ]
+      },
+      "post": {
+        "description": "Templates: plain text, no links (`crm.error.links-not-allowed {match}`), placeholders `{customerName}` `{shopName}` `{couponCode}` only (`crm.error.unknown-placeholder`; `{couponCode}` needs a coupon). Coupon: own VENDOR coupon, active, valid (`crm.error.coupon-invalid`).",
+        "operationId": "CrmCampaignsController_create",
+        "parameters": [
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCrmCampaignDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCampaignDto_Output"
+                }
+              }
+            },
+            "description": "The draft"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a DRAFT campaign",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/campaigns/{id}": {
+      "get": {
+        "operationId": "CrmCampaignsController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCampaignDto_Output"
+                }
+              }
+            },
+            "description": "The campaign"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "One own campaign with delivery stats",
+        "tags": [
+          "vendor-crm"
+        ]
+      },
+      "put": {
+        "description": "Templates: plain text, no links (`crm.error.links-not-allowed {match}`), placeholders `{customerName}` `{shopName}` `{couponCode}` only (`crm.error.unknown-placeholder`; `{couponCode}` needs a coupon). Coupon: own VENDOR coupon, active, valid (`crm.error.coupon-invalid`).",
+        "operationId": "CrmCampaignsController_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCrmCampaignDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCampaignDto_Output"
+                }
+              }
+            },
+            "description": "The draft"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace a DRAFT (other status → 409 `crm.error.campaign-not-editable`)",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/campaigns/{id}/cancel": {
+      "post": {
+        "description": "Its not-yet-sent messages become SKIPPED (CAMPAIGN_CANCELLED).",
+        "operationId": "CrmCampaignsController_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCampaignDto_Output"
+                }
+              }
+            },
+            "description": "The cancelled campaign"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel a DRAFT / SCHEDULED campaign (owner only)",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/campaigns/{id}/preview": {
+      "post": {
+        "description": "`matchedCustomers` match the filter; `eligibleRecipients` also opted in to marketing.",
+        "operationId": "CrmCampaignsController_preview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCampaignPreviewDto_Output"
+                }
+              }
+            },
+            "description": "The preview"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Audience size now + sample render (vi / en) — writes nothing",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/campaigns/{id}/schedule": {
+      "post": {
+        "description": "Limit: `crmMaxCampaignsPerWeek` per sliding 7 days → 429 `crm.error.campaign-limit-reached`; nobody eligible now → 422 `crm.error.empty-audience`; not DRAFT → 409 `crm.error.campaign-not-editable`. The audience is resolved again at send time.",
+        "operationId": "CrmCampaignsController_schedule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleCrmCampaignDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCampaignDto_Output"
+                }
+              }
+            },
+            "description": "The scheduled campaign"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Schedule a DRAFT (owner only): `scheduledAt` null = now, ≤ 30 days ahead",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/customers": {
+      "get": {
+        "description": "Filter by `segment`, `tag`, `productId` (bought it), `q` (name substring or customer id). `sort=last_order` (default) | `order_count`, both newest/highest first. `cursor` is the opaque `nextCursor` of the previous page (same `sort`); a malformed one → 422. No email or phone is ever returned.",
+        "operationId": "CrmCustomersController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "segment",
+            "required": false,
+            "schema": {
+              "enum": [
+                "NEW",
+                "RETURNING",
+                "VIP",
+                "AT_RISK",
+                "LAPSED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "maxLength": 30,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "productId",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "enum": [
+                "last_order",
+                "order_count"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCustomerPageDto_Output"
+                }
+              }
+            },
+            "description": "One page of customers"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Customers of the shop (≥ 1 paid, non-refunded sub-order), stats computed on read",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/customers/{customerId}": {
+      "get": {
+        "description": "Not a customer of this shop → 404 `crm.error.not-a-customer`.",
+        "operationId": "CrmCustomersController_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCustomerDetailDto_Output"
+                }
+              }
+            },
+            "description": "The customer"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Customer 360: stats, recent sub-orders, reviews on this shop, internal notes",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/customers/{customerId}/notes": {
+      "post": {
+        "operationId": "CrmCustomersController_addNote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerNoteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmCustomerNoteDto_Output"
+                }
+              }
+            },
+            "description": "The note"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add an internal note about a customer",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/customers/{customerId}/notes/{noteId}": {
+      "delete": {
+        "description": "Unknown / already deleted → 404 `crm.error.note-not-found`; others → 403.",
+        "operationId": "CrmCustomersController_deleteNote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "noteId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a note (its author or the shop owner; soft delete)",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/customers/{customerId}/tags": {
+      "put": {
+        "operationId": "CrmCustomersController_replaceTags",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customerId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceCustomerTagsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplaceCustomerTagsDto_Output"
+                }
+              }
+            },
+            "description": "The saved tags"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace the internal tags of a customer (≤ 10, lowercase)",
+        "tags": [
+          "vendor-crm"
+        ]
+      }
+    },
+    "/v1/vendor/crm/segments": {
+      "get": {
+        "operationId": "CrmCustomersController_segments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrmSegmentCountsDto_Output"
+                }
+              }
+            },
+            "description": "Segment counts"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Customers and marketing opt-ins per segment",
+        "tags": [
+          "vendor-crm"
         ]
       }
     },
