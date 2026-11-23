@@ -314,4 +314,96 @@ export const vi: Messages = {
     emailPlaceholder: 'Địa chỉ email của bạn',
     subscribe: 'Đăng ký',
   },
+  admin: {
+    appName: 'Elma Admin',
+    splash: {
+      restoring: 'Đang khôi phục phiên đăng nhập…',
+    },
+    login: {
+      title: 'Đăng nhập Elma Admin',
+      subtitle: 'Cổng người bán và trang quản trị sàn',
+      continueGoogle: 'Tiếp tục với Google',
+      continueFacebook: 'Tiếp tục với Facebook',
+      note: 'Dùng đúng tài khoản Google hoặc Facebook bạn đã dùng trên cửa hàng Elma.',
+    },
+    callback: {
+      signingIn: 'Đang đăng nhập…',
+      failedTitle: 'Đăng nhập thất bại',
+      failedSession: 'Không thể bắt đầu phiên đăng nhập. Vui lòng thử lại.',
+      backToLogin: 'Quay lại đăng nhập',
+    },
+    noAccess: {
+      title: 'Bạn không có quyền truy cập',
+      description:
+        'Tài khoản này chưa có vai trò người bán hoặc quản trị sàn. Hãy đăng ký bán hàng trên cửa hàng Elma, hoặc đăng nhập bằng tài khoản khác.',
+    },
+    chooser: {
+      title: 'Chọn khu vực làm việc',
+      description: 'Tài khoản của bạn có thể vào nhiều khu vực.',
+      vendorDesc: 'Quản lý cửa hàng: sản phẩm, đơn hàng, vận chuyển và thanh toán.',
+      platformDesc: 'Duyệt người bán, kiểm duyệt sản phẩm và vận hành sàn.',
+    },
+    invite: {
+      title: 'Lời mời làm nhân viên',
+      description: 'Tính năng nhận lời mời vào cửa hàng sẽ sớm có tại đây.',
+    },
+    notFound: {
+      title: 'Không tìm thấy trang',
+      description: 'Trang bạn tìm không tồn tại hoặc đã được chuyển đi.',
+      backHome: 'Về trang chủ',
+    },
+    routeError: {
+      title: 'Đã xảy ra lỗi',
+      description: 'Có lỗi không mong muốn khi tải trang này.',
+      reload: 'Tải lại trang',
+    },
+    comingSoon: {
+      title: 'Sắp ra mắt',
+      description: 'Trang này đang được xây dựng.',
+    },
+    portal: {
+      vendor: 'Cổng người bán',
+      platform: 'Quản trị sàn',
+      switch: 'Đổi khu vực',
+    },
+    nav: {
+      mainNavigation: 'Điều hướng chính',
+      openMenu: 'Mở menu',
+      dashboard: 'Tổng quan',
+      products: 'Sản phẩm',
+      orders: 'Đơn hàng',
+      shipping: 'Vận chuyển',
+      wallet: 'Ví',
+      staff: 'Nhân viên',
+      applications: 'Đơn đăng ký',
+      vendors: 'Người bán',
+      refunds: 'Hoàn tiền',
+      settings: 'Cài đặt',
+      users: 'Người dùng',
+    },
+    dashboard: {
+      welcome: 'Xin chào, {name}',
+      placeholder: 'Các số liệu chính của khu vực này sẽ hiển thị tại đây.',
+    },
+    user: {
+      menu: 'Menu tài khoản',
+      signOut: 'Đăng xuất',
+    },
+    role: {
+      guest: 'Khách',
+      customer: 'Khách hàng',
+      vendorOwner: 'Chủ cửa hàng',
+      vendorStaff: 'Nhân viên cửa hàng',
+      platformStaff: 'Nhân viên sàn',
+      platformAdmin: 'Quản trị viên sàn',
+    },
+    locale: {
+      vi: 'Tiếng Việt',
+      en: 'English',
+    },
+    error: {
+      network: 'Không kết nối được máy chủ. Kiểm tra kết nối mạng rồi thử lại.',
+      retry: 'Thử lại',
+    },
+  },
 };

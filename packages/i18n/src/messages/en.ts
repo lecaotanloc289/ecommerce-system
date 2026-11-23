@@ -315,6 +315,99 @@ export const en = {
     emailPlaceholder: 'Your email address',
     subscribe: 'Subscribe',
   },
+  /** Admin app (`apps/admin`): vendor portal + platform console. */
+  admin: {
+    appName: 'Elma Admin',
+    splash: {
+      restoring: 'Restoring your session…',
+    },
+    login: {
+      title: 'Sign in to Elma Admin',
+      subtitle: 'Vendor portal and platform console',
+      continueGoogle: 'Continue with Google',
+      continueFacebook: 'Continue with Facebook',
+      note: 'Use the same Google or Facebook account you use on the Elma storefront.',
+    },
+    callback: {
+      signingIn: 'Signing you in…',
+      failedTitle: 'Sign-in failed',
+      failedSession: 'We could not start your session. Please try again.',
+      backToLogin: 'Back to sign in',
+    },
+    noAccess: {
+      title: "You don't have access",
+      description:
+        'This account has no vendor or platform role. Apply to sell on the Elma storefront, or sign in with another account.',
+    },
+    chooser: {
+      title: 'Choose a workspace',
+      description: 'Your account can open more than one workspace.',
+      vendorDesc: 'Manage your shop: products, orders, shipping and payouts.',
+      platformDesc: 'Review vendors, moderate products and run the marketplace.',
+    },
+    invite: {
+      title: 'Staff invitation',
+      description: 'Accepting a shop invitation will be available here soon.',
+    },
+    notFound: {
+      title: 'Page not found',
+      description: 'The page you are looking for does not exist or was moved.',
+      backHome: 'Back to home',
+    },
+    routeError: {
+      title: 'Something went wrong',
+      description: 'An unexpected error occurred while loading this page.',
+      reload: 'Reload page',
+    },
+    comingSoon: {
+      title: 'Coming soon',
+      description: 'This page is under construction.',
+    },
+    portal: {
+      vendor: 'Vendor portal',
+      platform: 'Platform console',
+      switch: 'Switch workspace',
+    },
+    nav: {
+      mainNavigation: 'Main navigation',
+      openMenu: 'Open menu',
+      dashboard: 'Dashboard',
+      products: 'Products',
+      orders: 'Orders',
+      shipping: 'Shipping',
+      wallet: 'Wallet',
+      staff: 'Staff',
+      applications: 'Applications',
+      vendors: 'Vendors',
+      refunds: 'Refunds',
+      settings: 'Settings',
+      users: 'Users',
+    },
+    dashboard: {
+      welcome: 'Welcome, {name}',
+      placeholder: 'Key figures for this workspace will appear here.',
+    },
+    user: {
+      menu: 'Account menu',
+      signOut: 'Sign out',
+    },
+    role: {
+      guest: 'Guest',
+      customer: 'Customer',
+      vendorOwner: 'Shop owner',
+      vendorStaff: 'Shop staff',
+      platformStaff: 'Platform staff',
+      platformAdmin: 'Platform admin',
+    },
+    locale: {
+      vi: 'Tiếng Việt',
+      en: 'English',
+    },
+    error: {
+      network: 'Cannot reach the server. Check your connection and try again.',
+      retry: 'Try again',
+    },
+  },
 } as const;
 
 /** Same shape as `en`, but every leaf widened to `string` so locale catalogues

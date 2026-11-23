@@ -5,6 +5,9 @@ import path from 'node:path';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Read `.env*` from the repo root (first-time setup copies `.env.example` → `.env` there).
+  // Only `VITE_*` keys reach the bundle — and they are public.
+  envDir: path.resolve(__dirname, '../..'),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
