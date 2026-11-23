@@ -68,32 +68,36 @@ export class CartService {
   ): Promise<Cart> {
     if (quantity === 0) return this.removeItem(userId, variantId, locale);
 
-    const variant = await this.prisma.client.productVariant.findUnique({
-      where: { id: variantId },
-      ...VARIANT_ARGS,
-    });
-    if (!variant) throw new DomainError('product.error.variant-not-found', { variantId });
-    if (!isSellable(variant)) throw new DomainError('product.error.not-available', { variantId });
-    const available = stockAvailable(variant);
-    const cartId = await this.ensureCart(this.prisma.client, userId);
-    const line = await this.prisma.client.cartItem.findUnique({
-      where: { cartId_variantId: { cartId, variantId } },
-      select: { quantity: true },
-    });
-    // Lowering a line is always allowed (stock may have dropped under it); only raising is checked.
-    if (quantity > (line?.quantity ?? 0) && quantity > available) {
-      throw new DomainError('cart.error.quantity-exceeds-stock', {
-        variantId,
-        requested: quantity,
-        available,
+    await this.prisma.client.$transaction(async (tx) => {
+      const variant = await tx.productVariant.findUnique({
+        where: { id: variantId },
+        ...VARIANT_ARGS,
       });
-    }
+      if (!variant) throw new DomainError('product.error.variant-not-found', { variantId });
+      if (!isSellable(variant)) throw new DomainError('product.error.not-available', { variantId });
+      const available = stockAvailable(variant);
+      const cartId = await this.ensureCart(tx, userId);
+      // Same cart-row lock as `merge`: concurrent writers serialise, so the line cap is exact.
+      await tx.$queryRaw`SELECT id FROM carts WHERE id = ${cartId} FOR UPDATE`;
+      const line = await tx.cartItem.findUnique({
+        where: { cartId_variantId: { cartId, variantId } },
+        select: { quantity: true },
+      });
+      // Lowering a line is always allowed (stock may have dropped under it); only raising is checked.
+      if (quantity > (line?.quantity ?? 0) && quantity > available) {
+        throw new DomainError('cart.error.quantity-exceeds-stock', {
+          variantId,
+          requested: quantity,
+          available,
+        });
+      }
 
-    if (!line) await this.assertRoomForNewLine(this.prisma.client, cartId, 1);
-    await this.prisma.client.cartItem.upsert({
-      where: { cartId_variantId: { cartId, variantId } },
-      create: { id: ulid(), cartId, variantId, quantity },
-      update: { quantity },
+      if (!line) await this.assertRoomForNewLine(tx, cartId, 1);
+      await tx.cartItem.upsert({
+        where: { cartId_variantId: { cartId, variantId } },
+        create: { id: ulid(), cartId, variantId, quantity },
+        update: { quantity },
+      });
     });
     return this.readCart(userId, locale);
   }
@@ -245,7 +249,6 @@ function buildCart(items: readonly CartItemRow[], locale: CartLocale): Cart {
     const { product } = variant;
     const translation =
       product.translations.find((t) => t.locale === wanted) ?? product.translations[0];
-    if (!translation) continue; // a product without any translation cannot be shown
 
     const unavailable = !(product.status === 'ACTIVE' && product.vendor.status === 'ACTIVE');
     const unitPrice = toMoney(variant.priceAmount, variant.priceCurrency);
@@ -253,8 +256,9 @@ function buildCart(items: readonly CartItemRow[], locale: CartLocale): Cart {
       variantId: variant.id as CartLine['variantId'],
       productId: product.id as CartLine['productId'],
       vendorId: product.vendorId as CartLine['vendorId'],
-      productName: translation.name,
-      productSlug: translation.slug,
+      // No translation: show the variant SKU so the line stays visible and removable.
+      productName: translation?.name ?? variant.sku,
+      productSlug: translation?.slug ?? skuSlug(variant.sku),
       attributes: parseAttributes(variant.attributes),
       imageUrl: product.primaryImageUrl ?? product.images[0]?.url ?? null,
       unitPrice,
@@ -298,4 +302,14 @@ function buildCart(items: readonly CartItemRow[], locale: CartLocale): Cart {
 function parseAttributes(value: unknown): CartLine['attributes'] {
   const parsed = VariantAttributesSchema.safeParse(value);
   return parsed.success ? parsed.data : {};
+}
+
+/** A `Slug`-shaped form of a SKU (lowercase, dash-separated) for lines whose product has no translation. */
+function skuSlug(sku: string): string {
+  return (
+    sku
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'product'
+  );
 }
