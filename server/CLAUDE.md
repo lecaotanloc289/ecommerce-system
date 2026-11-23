@@ -90,7 +90,7 @@ All routes are unauthenticated, take `?locale=vi|en` (default vi; a missing en t
 
 ## Reviews (`src/reviews/`, T3.6)
 
-Shapes in `@repo/core/schemas/review`. The author is always the JWT user; no email is ever exposed (`authorName` = `User.name`).
+Shapes in `@repo/core/schemas/review`. The author is always the JWT user; no email is ever exposed, and `authorName` is the masked `User.name` (`maskAuthorName` from `@repo/core`: first word + initial of the last word, "Nguyễn Văn An" → "Nguyễn A."; single word unchanged; blank → `*`), in both the list and the POST response.
 
 | Endpoint                                                         | Behaviour                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

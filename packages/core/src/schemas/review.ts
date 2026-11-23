@@ -28,6 +28,20 @@ export type ReviewCreateBody = z.infer<typeof ReviewCreateBodySchema>;
 export const ReviewCreateSchema = ReviewCreateBodySchema.extend({ productId: ProductIdSchema });
 export type ReviewCreate = z.infer<typeof ReviewCreateSchema>;
 
+/**
+ * Public display name of a review author: first word + initial of the last word
+ * ("Nguyễn Văn An" -> "Nguyễn A."). A single word is unchanged; blank -> "*".
+ */
+export function maskAuthorName(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const [first] = words;
+  if (first === undefined) return '*';
+  if (words.length === 1) return first;
+  const last = words[words.length - 1] ?? '';
+  const [initial] = Array.from(last);
+  return `${first} ${(initial ?? '').toLocaleUpperCase()}.`;
+}
+
 export const ReviewSchema = z.object({
   id: ReviewIdSchema,
   productId: ProductIdSchema,

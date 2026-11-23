@@ -95,7 +95,7 @@ describe('product reviews', () => {
 
   it('creates a review and updates the summary in the list and the product detail', async () => {
     const { vendor, product, customer, variantId } = await setup();
-    const second = await makeUser(t.db, { name: 'Bob' });
+    const second = await makeUser(t.db, { name: 'Nguyễn Văn An' });
     const so1 = await makeSubOrder(customer.id, vendor.id, [variantId]);
     const so2 = await makeSubOrder(second.id, vendor.id, [variantId], 'COMPLETED');
 
@@ -113,7 +113,7 @@ describe('product reviews', () => {
     const res = await list(product.id);
     expect(res.status).toBe(200);
     const page = ReviewPageSchema.parse(res.body);
-    expect(page.items.map((r) => r.authorName)).toEqual(['Bob', 'Alice']); // newest first
+    expect(page.items.map((r) => r.authorName)).toEqual(['Nguyễn A.', 'Alice']); // newest first, masked
     expect(page.items[0]?.body).toBeNull();
     expect(page.summary).toEqual({ average: 3.5, count: 2, distribution: [0, 1, 0, 0, 1] });
     expect(page.nextCursor).toBeNull();
