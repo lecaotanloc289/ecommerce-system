@@ -33,7 +33,9 @@ export class PlatformSettingsController {
     description:
       'Bounds: commissionBps 0..10000, holdPeriodDays / refundWindowDays 0..365, ' +
       'paymentTimeoutMinutes 5..1440, maxCouponStack 1..10, non-empty supportedCurrencies that ' +
-      'contains defaultCurrency (checked against the stored values when only one is sent).',
+      'contains defaultCurrency (checked against the stored values when only one is sent); ' +
+      'CRM thresholds crm* 1..3650 with crmAtRiskAfterDays < crmLapsedAfterDays (also merged ' +
+      'with the stored values).',
   })
   @ApiHeader(IDEMPOTENCY_HEADER)
   @ZodResponse({ status: 200, description: 'The updated settings', type: PlatformSettingsDto })

@@ -46,6 +46,15 @@ describe('parseEnv', () => {
     );
   });
 
+  it('requires a 32+ char CRM_UNSUBSCRIBE_SECRET and rejects its placeholder in production', () => {
+    expect(() => testEnv({ CRM_UNSUBSCRIBE_SECRET: 'short' })).toThrow(/CRM_UNSUBSCRIBE_SECRET/);
+    const placeholder = 'change-me-crm-unsubscribe-32-byte-random';
+    expect(() => testEnv({ CRM_UNSUBSCRIBE_SECRET: placeholder })).not.toThrow();
+    expect(() => testEnv({ CRM_UNSUBSCRIBE_SECRET: placeholder, NODE_ENV: 'production' })).toThrow(
+      /CRM_UNSUBSCRIBE_SECRET/,
+    );
+  });
+
   it('rejects placeholder secrets in production only', () => {
     const placeholders = {
       JWT_ACCESS_SECRET: 'change-me-access-32-byte-random-base64',

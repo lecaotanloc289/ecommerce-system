@@ -1,6 +1,6 @@
 import { ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
-import { DomainError } from '@repo/core';
+import { CrmTemplateTextSchema, DomainError } from '@repo/core';
 import { ZodValidationException } from 'nestjs-zod';
 import { z } from 'zod';
 import { DomainErrorFilter } from '../../src/common/domain-error.filter';
@@ -26,6 +26,33 @@ describe('DomainErrorFilter', () => {
       status: 422,
       body: { errorCode: 'common.error.validation-failed', params: {} },
     });
+  });
+
+  it('surfaces a 422 domain error recorded by a core schema refinement (with params)', () => {
+    const error = z
+      .object({ body: CrmTemplateTextSchema })
+      .safeParse({ body: 'Xem tại https://x.vn nhé' }).error;
+    expect(run(new ZodValidationException(error))).toEqual({
+      status: 422,
+      body: { errorCode: 'crm.error.links-not-allowed', params: { match: 'https://' } },
+    });
+  });
+
+  it('ignores custom issues whose message is not a 422 error code', () => {
+    const notCode = z
+      .string()
+      .refine(() => false, { message: 'Duplicate tags' })
+      .safeParse('x').error;
+    const not422 = z
+      .string()
+      .refine(() => false, { message: 'crm.error.not-a-customer' })
+      .safeParse('x').error;
+    for (const error of [notCode, not422]) {
+      expect(run(new ZodValidationException(error)).body).toEqual({
+        errorCode: 'common.error.validation-failed',
+        params: {},
+      });
+    }
   });
 
   it('maps framework HttpExceptions by status', () => {

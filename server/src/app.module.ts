@@ -8,8 +8,11 @@ import { CatalogModule } from './catalog/catalog.module';
 import { DomainErrorFilter } from './common/domain-error.filter';
 import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { ConfigModule } from './config/config.module';
+import { CrmModule } from './crm/crm.module';
+import { CrmConsentModule } from './crm-consent/crm-consent.module';
 import { HealthModule } from './health/health.module';
 import { MeModule } from './me/me.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { PlatformModule } from './platform/platform.module';
 import { PaymentsModule } from './payments/payments.module';
@@ -54,6 +57,9 @@ const isDev = process.env.NODE_ENV !== 'production';
     VendorStaffModule,
     RefundsModule,
     VendorOrdersModule,
+    CrmModule,
+    NotificationsModule,
+    CrmConsentModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

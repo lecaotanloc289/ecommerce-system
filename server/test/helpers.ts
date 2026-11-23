@@ -12,6 +12,7 @@ export function testEnv(overrides: Record<string, string> = {}): Env {
     REDIS_URL: 'redis://localhost:6379',
     JWT_ACCESS_SECRET: 'test-access-secret-0123456789abcdef',
     JWT_REFRESH_SECRET: 'test-refresh-secret-0123456789abcdef',
+    CRM_UNSUBSCRIBE_SECRET: 'test-crm-unsubscribe-secret-0123456789',
     GOOGLE_OAUTH_CLIENT_ID: 'google-id',
     GOOGLE_OAUTH_CLIENT_SECRET: 'google-secret',
     GOOGLE_OAUTH_CALLBACK_URL: 'http://localhost:3001/v1/auth/google/callback',
