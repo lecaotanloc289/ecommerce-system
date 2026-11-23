@@ -10,6 +10,7 @@ export default tsupPreset({
     'src/errors/index.ts',
     'src/enums/index.ts',
     'src/ids/index.ts',
+    'src/calendar/index.ts',
     'src/schemas/*.ts',
   ],
   splitting: true,

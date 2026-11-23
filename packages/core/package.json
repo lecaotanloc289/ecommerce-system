@@ -36,6 +36,11 @@
       "types": "./dist/ids/index.d.ts",
       "import": "./dist/ids/index.js",
       "require": "./dist/ids/index.cjs"
+    },
+    "./calendar": {
+      "types": "./dist/calendar/index.d.ts",
+      "import": "./dist/calendar/index.js",
+      "require": "./dist/calendar/index.cjs"
     }
   },
   "scripts": {

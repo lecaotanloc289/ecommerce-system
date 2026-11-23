@@ -5,13 +5,14 @@ Pure TypeScript + `zod` — runs in browser and Node. Never imports `@repo/db`, 
 
 ## Layout
 
-| Path            | Subpath export         | What                                                                                               |
-| --------------- | ---------------------- | -------------------------------------------------------------------------------------------------- |
-| `src/money/`    | `@repo/core/money`     | `of`, `zero`, `add`, `subtract`, `sum`, `multiply`, `applyBps`, `allocate`, `compare`, `equals`, … |
-| `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`         |
-| `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum      |
-| `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                           |
-| `src/schemas/*` | `@repo/core/schemas/*` | `money`, `common`, `address`, `category`, `product`, `cart`, `checkout`                            |
+| Path            | Subpath export         | What                                                                                                                                                          |
+| --------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/money/`    | `@repo/core/money`     | `of`, `zero`, `add`, `subtract`, `sum`, `multiply`, `applyBps`, `allocate`, `compare`, `equals`, …                                                            |
+| `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`                                                                    |
+| `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum                                                                 |
+| `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                                                                                      |
+| `src/schemas/*` | `@repo/core/schemas/*` | `money`, `common`, `address`, `category`, `product`, `cart`, `checkout`                                                                                       |
+| `src/calendar/` | `@repo/core/calendar`  | `lunarToSolar` (VN lunar calendar, UTC+7), `SEASONAL_EVENTS` + `getActiveSeasonalEvent` / `getSeasonalCalendar` / `getUpcomingSeasonalEvents`, `vietnamToday` |
 
 The root export (`@repo/core`) re-exports everything; Money helpers are namespaced there:
 `const m: Money = Money.of(150_000, 'VND')`. Every export (root and subpaths) resolves to `dist/`, built
@@ -33,6 +34,11 @@ whichever path it was imported from). Consumers need `@repo/core` built first (t
   fixed canonical ULIDs for this reason).
 - **Errors:** codes are i18n keys, `<domain>.error.<kebab>`. New code → add to `ERROR_CODES` and
   `ERROR_HTTP_STATUS` (the compiler enforces the second). No user-facing text in this package.
+- **Calendar:** dates are plain `CalendarDate` `{ year, month, day }` in Vietnam time — take "today" with
+  `vietnamToday(new Date())`, never the device timezone. Lunar dates use Hồ Ngọc Đức's algorithm at UTC+7
+  (differs from the Chinese UTC+8 calendar in some years); `test/calendar.test.ts` pins known Tết / Mid-Autumn
+  dates. New event → add its id to `SEASONAL_EVENT_IDS` + a `SEASONAL_EVENTS` entry, then `events.<id>` copy in
+  `@repo/i18n` (a test enforces it) and a visual in each app. Overlaps resolve by `priority`, then nearest day.
 - **Schemas:** read shapes mirror DB nullability (`null`, not optional). Request schemas never carry
   `price`, `vendorId`, `userId` or `role` — the server re-reads them.
 
