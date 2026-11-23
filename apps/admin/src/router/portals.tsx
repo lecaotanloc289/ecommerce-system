@@ -23,8 +23,6 @@ import {
   VENDOR_ROLES,
   type Portal,
 } from '@/auth/roles';
-import { ComingSoonPage } from '@/pages/coming-soon-page';
-import { DashboardPage } from '@/pages/dashboard-page';
 import { ApplicationsPage } from '@/pages/platform/applications-page';
 import { OrdersPage } from '@/pages/platform/orders-page';
 import { PlatformDashboardPage } from '@/pages/platform/platform-dashboard-page';
@@ -33,6 +31,14 @@ import { RefundsPage } from '@/pages/platform/refunds-page';
 import { SettingsPage } from '@/pages/platform/settings-page';
 import { UsersPage } from '@/pages/platform/users-page';
 import { VendorsPage } from '@/pages/platform/vendors-page';
+import { OrderDetailPage } from '@/pages/vendor/order-detail-page';
+import { OrdersPage as VendorOrdersPage } from '@/pages/vendor/orders-page';
+import { ProductEditPage } from '@/pages/vendor/product-edit-page';
+import { ProductsPage as VendorProductsPage } from '@/pages/vendor/products-page';
+import { ShippingPage } from '@/pages/vendor/shipping-page';
+import { StaffPage } from '@/pages/vendor/staff-page';
+import { VendorDashboardPage } from '@/pages/vendor/vendor-dashboard-page';
+import { WalletPage } from '@/pages/vendor/wallet-page';
 
 /**
  * One entry = one sidebar link + one route under the portal. `roles` narrows access within the
@@ -48,22 +54,20 @@ export interface PortalPage {
   element: ReactNode;
 }
 
+/** A route under the portal that has no sidebar link (detail / edit pages, `products/:id`). */
+export interface PortalSubRoute {
+  path: string;
+  roles?: readonly Role[];
+  element: ReactNode;
+}
+
 export interface PortalConfig {
   portal: Portal;
   basePath: `/${Portal}`;
   titleKey: MessageKey;
   roles: readonly Role[];
   pages: readonly PortalPage[];
-}
-
-function comingSoon(path: string, labelKey: MessageKey, icon: LucideIcon, roles?: readonly Role[]) {
-  const page: PortalPage = {
-    path,
-    labelKey,
-    icon,
-    element: <ComingSoonPage titleKey={labelKey} />,
-  };
-  return roles ? { ...page, roles } : page;
+  subRoutes?: readonly PortalSubRoute[];
 }
 
 export const VENDOR_PORTAL: PortalConfig = {
@@ -76,13 +80,40 @@ export const VENDOR_PORTAL: PortalConfig = {
       path: '',
       labelKey: 'admin.nav.dashboard',
       icon: LayoutDashboard,
-      element: <DashboardPage titleKey="admin.portal.vendor" />,
+      element: <VendorDashboardPage />,
     },
-    comingSoon('products', 'admin.nav.products', Package),
-    comingSoon('orders', 'admin.nav.orders', ShoppingBag),
-    comingSoon('shipping', 'admin.nav.shipping', Truck),
-    comingSoon('wallet', 'admin.nav.wallet', Wallet, VENDOR_OWNER_ROLES),
-    comingSoon('staff', 'admin.nav.staff', Users, VENDOR_OWNER_ROLES),
+    {
+      path: 'products',
+      labelKey: 'admin.nav.products',
+      icon: Package,
+      element: <VendorProductsPage />,
+    },
+    {
+      path: 'orders',
+      labelKey: 'admin.nav.orders',
+      icon: ShoppingBag,
+      element: <VendorOrdersPage />,
+    },
+    { path: 'shipping', labelKey: 'admin.nav.shipping', icon: Truck, element: <ShippingPage /> },
+    {
+      path: 'wallet',
+      labelKey: 'admin.nav.wallet',
+      icon: Wallet,
+      roles: VENDOR_OWNER_ROLES,
+      element: <WalletPage />,
+    },
+    {
+      path: 'staff',
+      labelKey: 'admin.nav.staff',
+      icon: Users,
+      roles: VENDOR_OWNER_ROLES,
+      element: <StaffPage />,
+    },
+  ],
+  subRoutes: [
+    { path: 'products/new', element: <ProductEditPage /> },
+    { path: 'products/:id', element: <ProductEditPage /> },
+    { path: 'orders/:id', element: <OrderDetailPage /> },
   ],
 };
 

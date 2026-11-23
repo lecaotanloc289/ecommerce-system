@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Badge, type BadgeProps } from '@repo/ui';
 import { useT, type MessageKey } from '@/i18n/use-locale';
 
@@ -34,4 +35,11 @@ export function StatusBadge({ status }: { status: StatusValue }) {
   const t = useT();
   const [labelKey, tone] = STATUSES[status];
   return <Badge variant={tone}>{t(labelKey)}</Badge>;
+}
+
+export type StatusTone = Tone;
+
+/** Coloured pill for a caller-mapped status: the caller picks the tone and passes the translated label. */
+export function StatusPill({ tone, children }: { tone: StatusTone; children: ReactNode }) {
+  return <Badge variant={tone}>{children}</Badge>;
 }
