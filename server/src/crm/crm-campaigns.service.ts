@@ -33,6 +33,8 @@ const LIMIT_WINDOW_MS = 7 * MS_PER_DAY;
 /** Statuses that count towards the weekly campaign limit (C10). */
 const LIMIT_STATUSES: readonly CrmCampaignStatus[] = ['SCHEDULED', 'SENDING', 'SENT'];
 const CANCELLABLE: readonly CrmCampaignStatus[] = ['DRAFT', 'SCHEDULED'];
+/** Platform staff can also stop a campaign that is already going out (abuse control, C13). */
+const PLATFORM_CANCELLABLE: readonly CrmCampaignStatus[] = [...CANCELLABLE, 'SENDING'];
 /** Schedule runs the audience query under locks: bound how long it may wait and run. */
 const SCHEDULE_TX_OPTIONS = { maxWait: 5_000, timeout: 15_000 } as const;
 /** Sample recipient name for the preview render (plan K4a). */
@@ -91,8 +93,8 @@ export function exceedsWeeklyLimit(times: readonly number[], limit: number): boo
 }
 
 /**
- * Vendor CRM campaigns (C10): DRAFT → SCHEDULED (→ SENDING → SENT by the K5 worker), cancellable
- * while DRAFT / SCHEDULED. Every transition is a guarded `updateMany … WHERE status = <from>`
+ * Vendor CRM campaigns (C10): DRAFT → SCHEDULED (→ SENDING → SENT by the CRM worker), cancellable
+ * by the vendor while DRAFT / SCHEDULED, by platform staff also while SENDING. Every transition is a guarded `updateMany … WHERE status = <from>`
  * inside a `$transaction`, so a concurrent move (worker, platform cancel) makes this one 409.
  */
 @Injectable()
@@ -278,15 +280,19 @@ export class CrmCampaignsService {
     await this.prisma.client.$transaction(async (tx) => {
       await assertVendorOwner(tx, userId, vendorId);
       await assertVendorActive(tx, vendorId);
-      await this.cancelLocked(tx, id, vendorId, null);
+      await this.cancelLocked(tx, id, vendorId, null, CANCELLABLE);
     });
     return this.get(vendorId, id);
   }
 
-  /** Platform staff / admin (abuse control): same transition, with a reason. */
+  /**
+   * Platform staff / admin (abuse control): same transition with a reason, also from SENDING — the
+   * messages not sent yet are SKIPPED (`CAMPAIGN_CANCELLED`); one the worker is sending right now
+   * holds its row lock, so this waits for it and then leaves it SENT.
+   */
   async platformCancel(actorId: string, id: string, reason: string): Promise<CrmCampaign> {
     const row = await this.prisma.client.$transaction(async (tx) => {
-      await this.cancelLocked(tx, id, null, reason);
+      await this.cancelLocked(tx, id, null, reason, PLATFORM_CANCELLABLE);
       return tx.crmCampaign.findUniqueOrThrow({ where: { id } });
     });
     this.logger.log({ actorId, campaignId: id, vendorId: row.vendorId }, 'crm campaign cancelled');
@@ -295,8 +301,8 @@ export class CrmCampaignsService {
 
   /**
    * `SELECT … FOR UPDATE` on the campaign row (scoped to `vendorId` unless null = platform), then
-   * the row as committed. Every writer (update / schedule / cancel; the K5 worker's SCHEDULED →
-   * SENDING must do the same) locks it first, so their checks and transition cannot interleave.
+   * the row as committed. Every writer (update / schedule / cancel; the worker's SCHEDULED →
+   * SENDING in `workers/jobs/src/crm/campaigns.ts` does the same) locks it first, so their checks and transition cannot interleave.
    */
   private async lockCampaign(
     tx: Prisma.TransactionClient,
@@ -316,13 +322,14 @@ export class CrmCampaignsService {
     id: string,
     vendorId: string | null,
     reason: string | null,
+    from: readonly CrmCampaignStatus[],
   ): Promise<void> {
     const row = await this.lockCampaign(tx, id, vendorId);
-    if (!CANCELLABLE.includes(row.status)) {
+    if (!from.includes(row.status)) {
       throw new DomainError('crm.error.campaign-not-editable');
     }
     const { count } = await tx.crmCampaign.updateMany({
-      where: { id, status: { in: [...CANCELLABLE] } },
+      where: { id, status: { in: [...from] } },
       data: { status: 'CANCELLED', cancelledAt: new Date(), cancelReason: reason },
     });
     if (count === 0) throw new DomainError('crm.error.campaign-not-editable');

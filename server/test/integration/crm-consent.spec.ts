@@ -315,6 +315,39 @@ describe('CRM consent: vendor preferences + unsubscribe', () => {
       expect(await events(customer.id, vendor.id)).toEqual([]);
     });
   });
+
+  describe('POST /v1/crm/unsubscribe/one-click (RFC 8058)', () => {
+    const oneClick = (query: string) =>
+      t.app.inject({
+        method: 'POST',
+        url: `/v1/crm/unsubscribe/one-click?${query}`,
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        payload: 'List-Unsubscribe=One-Click',
+      });
+
+    it('accepts the mail client form POST with token + scope in the query', async () => {
+      const { vendor, customer } = await setup();
+      await put(customer, vendor.id, { marketingOptIn: true });
+      const token = await tokenFor(customer.id, vendor.id);
+      const res = await oneClick(new URLSearchParams({ token, scope: 'ALL' }).toString());
+      expect(res.statusCode).toBe(204);
+      const row = await pref(customer.id, vendor.id);
+      expect(row.marketingOptOutAt).not.toBeNull();
+      expect(row.serviceOptOutAt).not.toBeNull();
+      expect((await events(customer.id, vendor.id)).slice(1)).toEqual([
+        { action: 'MARKETING_OPT_OUT', source: 'UNSUBSCRIBE_LINK' },
+        { action: 'SERVICE_OPT_OUT', source: 'UNSUBSCRIBE_LINK' },
+      ]);
+    });
+
+    it('answers 404 for an unknown token and 422 without a scope', async () => {
+      await setup();
+      const unknown = await oneClick(`token=${'A'.repeat(43)}&scope=MARKETING`);
+      expect(unknown.statusCode).toBe(404);
+      expect(unknown.json()).toEqual({ errorCode: 'crm.error.unsubscribe-invalid', params: {} });
+      expect((await oneClick(`token=${'A'.repeat(43)}`)).statusCode).toBe(422);
+    });
+  });
 });
 
 describe('POST /v1/crm/unsubscribe rate limit', () => {

@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { DomainErrorFilter } from './common/domain-error.filter';
+import { redactRequestUrl } from './common/log-redaction';
 import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { ConfigModule } from './config/config.module';
 import { CrmModule } from './crm/crm.module';
@@ -34,6 +35,8 @@ const isDev = process.env.NODE_ENV !== 'production';
     LoggerModule.forRoot({
       pinoHttp: {
         redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+        // Query-string credentials (CRM one-click unsubscribe `?token=`) never reach the log.
+        serializers: { req: redactRequestUrl },
         ...(isDev && {
           transport: { target: 'pino-pretty', options: { singleLine: true } },
         }),

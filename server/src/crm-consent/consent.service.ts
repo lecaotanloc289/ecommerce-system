@@ -31,7 +31,14 @@ export async function ensurePreference(
     data: [{ userId, vendorId, unsubscribeTokenHash }],
     skipDuplicates: true,
   });
-  return lockPreference(tx, userId, vendorId);
+  const pref = await lockPreference(tx, userId, vendorId);
+  // After a `CRM_UNSUBSCRIBE_SECRET` rotation the stored hash belongs to the old secret: refresh it
+  // so links derived with the new one resolve (the worker mirror does the same).
+  if (pref.unsubscribeTokenHash === unsubscribeTokenHash) return pref;
+  return tx.customerVendorPreference.update({
+    where: { userId_vendorId: { userId, vendorId } },
+    data: { unsubscribeTokenHash },
+  });
 }
 
 /** Locks the existing preference row (`FOR UPDATE`) and returns its fresh state. */

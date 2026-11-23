@@ -1015,6 +1015,41 @@ describe('vendor CRM (Testcontainers)', () => {
       expect(unknown.json<ErrorBody>().errorCode).toBe('crm.error.campaign-not-found');
     });
 
+    it('only the platform can stop a SENDING campaign; unsent messages are skipped', async () => {
+      await audience(1, 0);
+      const id = await create(owner, draft({ templateVi: 'Hi' }));
+      await t.db.crmCampaign.update({ where: { id }, data: { status: 'SENDING' } });
+      const message = (status: 'SCHEDULED' | 'SENT', userId: string) =>
+        t.db.crmMessage.create({
+          data: {
+            id: ulid(),
+            vendorId,
+            userId,
+            kind: 'MARKETING',
+            campaignId: id,
+            channels: ['IN_APP'],
+            status,
+            scheduledFor: new Date(),
+          },
+        });
+      const pending = await message('SCHEDULED', (await makeUser(t.db)).id);
+      const sent = await message('SENT', (await makeUser(t.db)).id);
+
+      const byOwner = await call(owner, 'POST', `/vendor/crm/campaigns/${id}/cancel`);
+      expect(byOwner.statusCode).toBe(409);
+      const platformStaff = await t.authHeader(await makeUser(t.db, { roles: ['PLATFORM_STAFF'] }));
+      const res = await call(platformStaff, 'POST', `/platform/crm/campaigns/${id}/cancel`, {
+        reason: 'Spam reports',
+      });
+      expect(res.statusCode).toBe(200);
+      expect(CrmCampaignSchema.parse(res.json()).status).toBe('CANCELLED');
+      const rows = await t.db.crmMessage.findMany({ where: { campaignId: id } });
+      expect(Object.fromEntries(rows.map((r) => [r.id, [r.status, r.skipReason]]))).toEqual({
+        [pending.id]: ['SKIPPED', 'CAMPAIGN_CANCELLED'],
+        [sent.id]: ['SENT', null],
+      });
+    });
+
     it('a suspended vendor cannot schedule or cancel', async () => {
       await audience(1, 0);
       const draftId = await create(owner, draft({ templateVi: 'Hi' }));

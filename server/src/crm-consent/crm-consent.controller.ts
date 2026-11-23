@@ -1,5 +1,21 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiNoContentResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiExcludeEndpoint,
+  ApiNoContentResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { VendorPreference } from '@repo/core';
 import { ZodResponse } from 'nestjs-zod';
 import type { AuthUser } from '../auth/auth.schemas';
@@ -70,5 +86,21 @@ export class CrmUnsubscribeController {
   @RateLimit('unsubscribe')
   unsubscribe(@Body() body: UnsubscribeDto): Promise<void> {
     return this.consent.unsubscribe(body);
+  }
+
+  /**
+   * RFC 8058 one-click unsubscribe: the target of the CRM emails' `List-Unsubscribe` header
+   * (`List-Unsubscribe-Post: List-Unsubscribe=One-Click`). Mail clients POST
+   * `List-Unsubscribe=One-Click` as form-urlencoded to the URL from the header and cannot send
+   * JSON, so the token and scope travel in the query string; the body (parsed by the Nest Fastify
+   * adapter's built-in urlencoded parser) is ignored. Same effect,
+   * errors and rate limit as `POST /crm/unsubscribe`. Not in the SDK (no frontend calls it).
+   */
+  @ApiExcludeEndpoint()
+  @Post('one-click')
+  @HttpCode(204)
+  @RateLimit('unsubscribe')
+  oneClick(@Query() query: UnsubscribeDto): Promise<void> {
+    return this.consent.unsubscribe(query);
   }
 }
