@@ -24,6 +24,7 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 - `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
 - `packages/sdk` — OpenAPI pipeline + `createApiClient` (openapi-fetch; Bearer, auto Idempotency-Key, single-flight 401 refresh); `pnpm sdk:generate` (see `packages/sdk/CLAUDE.md`).
 - `packages/payments` — `PaymentProvider` interface + VNPay (v2.1.0 HMAC-SHA512 pay URL, IPN/return verify, merchant-webapi refund) and Stripe (Checkout Session, `constructEvent` webhook verify, refunds) adapters; config via factory params, injectable `fetch` / Stripe client; ESLint + Vitest (see `packages/payments/CLAUDE.md`).
+- Vendor CRM (wave 7) — backend done on `feat/crm`: customer 360 / segments / tags / notes, post-purchase automations config, segment campaigns with coupons, customer notifications + per-shop consent + unsubscribe (see `docs/superpowers/plans/2026-11-23-vendor-crm.md`). Worker delivery (K5) pending `@workers/jobs`.
 
 Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
 
@@ -416,9 +417,15 @@ PlatformSettings (singleton row)
 
 OutboxEvent
   aggregate_id, event_type, payload (JSONB), created_at, processed_at?
+
+Vendor ─── VendorCustomer (tags) / VendorCustomerNote / CrmAutomation / CrmCampaign
+User ─── CustomerVendorPreference (consent) / CrmConsentEvent (append-only) / Notification
+CrmMessage (one row per scheduled send: SCHEDULED → SENT / SKIPPED / FAILED)
 ```
 
 **Snapshot rule:** product price/title and shipping address are **copied into `OrderItem` / `SubOrder`** at checkout. Later edits to the underlying `Product` or `Address` must never alter historical orders.
+
+**CRM contact rule:** shops never see customer email/phone; all CRM contact goes through the platform (in-app + email); marketing requires explicit per-shop opt-in.
 
 ---
 
