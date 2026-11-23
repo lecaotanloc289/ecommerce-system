@@ -51,7 +51,7 @@ Full spec: [`docs/design-spec.md`](./docs/design-spec.md).
 
 ```bash
 # 1. Tooling
-node --version        # 20.x (see .nvmrc)
+node --version        # 22.x (see .nvmrc)
 corepack enable       # provides pnpm
 
 # 2. Install
@@ -93,11 +93,20 @@ Every PR must pass:
 ```bash
 pnpm lint          # ESLint flat config (@repo/config/eslint)
 pnpm typecheck     # tsc --noEmit per workspace
-pnpm test          # Vitest (packages) + Jest (server) + Playwright (apps)
+pnpm test          # Vitest (packages, worker) + Jest (server); @repo/db tests need DATABASE_URL + SHADOW_DATABASE_URL, API/worker suites need Docker (Testcontainers)
 pnpm build         # Turbo: build all workspaces
 ```
 
-CI runs these on GitHub Actions before merge. The pre-commit hook (`husky` + `lint-staged`) runs `lint` + `typecheck` on changed files.
+Cross-system browser smoke flows (slow, not part of `pnpm test`):
+
+```bash
+pnpm e2e           # Playwright over the real API + worker + storefront + admin (needs Postgres + Redis)
+pnpm e2e:headed    # same with a visible browser
+```
+
+Details, env vars and how auth/payments are faked: [`e2e/CLAUDE.md`](./e2e/CLAUDE.md).
+
+CI runs the first four on GitHub Actions before merge (Postgres service for `@repo/db`, Docker for the Testcontainers suites); the e2e workflow runs on PRs into `prod` and on manual dispatch. The pre-commit hook (`husky` + `lint-staged`) runs `lint` + `typecheck` on changed files.
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org). Branches: `feat/`, `fix/`, `chore/`, `refactor/`. Default base: `prod` (renamed from `main`); active work branches off `dev`.
 

@@ -14,6 +14,26 @@ jobs:
   build:
     name: lint + typecheck + test + build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # @repo/db tests run against this service (see turbo.json `@repo/db#test`); the API and
+      # worker integration suites start their own Testcontainers (Docker is preinstalled here).
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ecommerce_test?schema=public
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ecommerce_shadow?schema=public
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ecommerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -22,7 +42,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install
@@ -36,6 +56,9 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-${{ github.ref_name }}-
             turbo-${{ runner.os }}-
+
+      - name: Create shadow database
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -c 'CREATE DATABASE ecommerce_shadow'
 
       - name: SDK drift check (OpenAPI spec + generated types)
         run: |

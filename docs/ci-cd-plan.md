@@ -348,6 +348,21 @@ Rollback drill: revert the last commit on `prod` and push — workflow redeploys
 
 ---
 
+## CI details (T6.1)
+
+- **`ci.yml`** (push/PR to `dev`/`prod`): a `postgres:16` service for the `@repo/db` tests, with `DATABASE_URL` /
+  `SHADOW_DATABASE_URL` exported for the job (a `ecommerce_shadow` database is created by a step) and forwarded to
+  `@repo/db#test` by `turbo.json` (`passThroughEnv`, uncached; `DOCKER_HOST` / `TESTCONTAINERS_*` are passed to every task).
+  The API and worker integration suites start their own Testcontainers (Docker is preinstalled on `ubuntu-latest`).
+  The SDK drift check (`pnpm sdk:generate`, fails on any change to `packages/sdk/openapi.json` / `src/schema.d.ts`) is unchanged.
+- **Node version:** every workflow reads `.nvmrc` (`node-version-file`), now `22` (worker `engines`, Dockerfiles and the
+  deploy workflows were already on 22; only `ci.yml` was on 20).
+- **`e2e.yml`**: PRs into `prod` + manual dispatch. Postgres + Redis services, installs Chromium, runs `pnpm e2e`
+  (builds the API, worker and both frontends for the e2e ports, boots them, runs the Playwright flows), uploads the
+  Playwright report on failure. See `e2e/CLAUDE.md`.
+
+---
+
 ## Out of scope (call out for follow-ups)
 
 - Auto-branching Neon per PR.
@@ -355,7 +370,7 @@ Rollback drill: revert the last commit on `prod` and push — workflow redeploys
 - Custom domains (waiting on user to buy / point CNAMEs).
 - Sentry / OpenTelemetry wiring.
 - Migration runner step (`prisma migrate deploy`) — should be added once `packages/db` is real; placeholder in plan.
-- E2E (Playwright) post-deploy smoke tests in CI.
+- E2E (Playwright) smoke tests **against the deployed** environments (the pre-merge suite already exists, see "CI details" below).
 
 ---
 
