@@ -4,6 +4,11 @@
 export { prisma } from './client.js';
 export { assertZeroSum } from './ledger.js';
 export { toMoney, toDbAmount } from './money.js';
+export {
+  queueZaloMessages,
+  queueZaloStatusMessages,
+  type QueueZaloMessagesInput,
+} from './zalo-queue.js';
 
 // Re-export generated enums + types so consumers never import @prisma/client directly.
 export {

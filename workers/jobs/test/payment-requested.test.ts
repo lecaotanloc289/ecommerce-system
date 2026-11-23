@@ -195,6 +195,36 @@ describe('payment.requested handler', () => {
       return { ...fixture, payment, event };
     }
 
+    it('queues Zalo ORDER_PAID (DB clock) for an opted-in free order', async () => {
+      const { order, subOrders } = await freeOrder();
+      await prisma.order.update({ where: { id: order.id }, data: { zaloOptIn: true } });
+      for (const s of subOrders) {
+        await prisma.zaloAccount.create({
+          data: {
+            id: ulid(),
+            vendorId: s.vendor.id,
+            status: 'ACTIVE',
+            zaloUid: `uid-${s.vendor.id}`,
+            credentials: 'v1.x.y.z',
+          },
+        });
+      }
+
+      await dispatcherWith({ VNPAY: fakeProvider('VNPAY') }).pollOnce();
+
+      const rows = await prisma.zaloMessage.findMany({ orderBy: { subOrderId: 'asc' } });
+      expect(rows.map((r) => [r.subOrderId, r.event])).toEqual(
+        subOrders.map((s) => [s.subOrder.id, 'ORDER_PAID']).sort(),
+      );
+      const [clock] = await prisma.$queryRaw<
+        { now: Date }[]
+      >`SELECT (now() AT TIME ZONE 'UTC') AS now`;
+      if (!clock) throw new Error('no DB clock');
+      for (const r of rows) {
+        expect(r.scheduledAt.getTime()).toBeLessThanOrEqual(clock.now.getTime());
+      }
+    });
+
     it('confirms it without a provider: payment CONFIRMED, order PAID, stock committed, order.paid', async () => {
       const vnpay = fakeProvider('VNPAY');
       const { order, payment, subOrders, event, customer } = await freeOrder();
