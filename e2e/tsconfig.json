@@ -1,0 +1,15 @@
+{
+  "//": "Relative extends so ESLint's project service resolves base.json's own relative extends.",
+  "extends": "../packages/config/tsconfig/base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "noEmit": true,
+    "incremental": false,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", ".tmp", "playwright-report", "test-results"]
+}

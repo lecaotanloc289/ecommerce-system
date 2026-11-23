@@ -97,7 +97,7 @@ pnpm --filter @apps/web test         # Vitest (test/): auth store, guest cart, c
 
 Use `pnpm run deploy`, not `pnpm deploy` (that is pnpm's built-in workspace deploy command). Deploying needs `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`. CI targets an environment by running, from `apps/client`, `pnpm exec opennextjs-cloudflare build --env <dev|prod>` then `pnpm exec opennextjs-cloudflare deploy --env <dev|prod>` (`.github/workflows/deploy-web.yml`). `@repo/core` / `@repo/i18n` / `@repo/sdk` must be built first (`pnpm turbo run build --filter=@apps/web^...`). Build output `.open-next/` and wrangler state `.wrangler/` are git-ignored.
 
-E2E (Playwright) is not set up yet (T6.1): planned smoke flows are OAuth sign-in (mocked provider), browse → add to cart → checkout. T5.1 flows were verified against the built API with minted tokens (see the task report), not in a browser.
+E2E lives in the `e2e/` workspace (`pnpm e2e`, see `e2e/CLAUDE.md`): browse → cart → sign-in merge → 2-vendor checkout → payment → "My orders" run in Chromium against a built storefront (`NEXT_PUBLIC_API_URL` = the e2e API). Sign-in there is a minted refresh cookie, not OAuth.
 
 ## Customer journey (features in scope for MVP)
 

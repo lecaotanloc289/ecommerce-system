@@ -1,0 +1,26 @@
+{
+  "name": "@repo/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cross-system Playwright smoke suite (storefront + admin + API + worker). See CLAUDE.md.",
+  "type": "module",
+  "scripts": {
+    "e2e": "tsx scripts/run.ts",
+    "e2e:headed": "tsx scripts/run.ts --headed",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.0",
+    "@repo/config": "workspace:*",
+    "@repo/core": "workspace:*",
+    "@repo/payments": "workspace:*",
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.15.0",
+    "eslint": "^10.15.0",
+    "ioredis": "^5.11.1",
+    "pg": "^8.16.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5.7.0"
+  }
+}

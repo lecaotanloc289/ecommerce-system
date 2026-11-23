@@ -6,6 +6,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 export default [
   ...base,
   // `.tsc-node-out/` = declarations emitted by `tsc -b` for the vite/vitest configs.
-  { ignores: ['dist/**', '.tsc-node-out/**', '*.mjs', '*.config.ts'] },
+  // `dist-e2e/` = the build `pnpm e2e` serves (see e2e/CLAUDE.md).
+  { ignores: ['dist/**', 'dist-e2e/**', '.tsc-node-out/**', '*.mjs', '*.config.ts'] },
   reactHooks.configs.flat['recommended-latest'],
 ];
