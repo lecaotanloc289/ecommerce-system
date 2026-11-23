@@ -461,31 +461,56 @@ describe('platform refunds API (Testcontainers)', () => {
     expect(succeeded.items.map((r) => r.subOrderId)).toEqual([order.subs[2]?.subOrderId]);
   });
 
-  it('refunds against the earliest CONFIRMED payment equal to the order total, not a duplicate', async () => {
-    const order = await paidOrder([{}]);
-    const s = order.subs[0];
-    if (!s) throw new Error('setup');
-    // A later duplicate payment (manual review keeps it CONFIRMED) of a different amount, and an
-    // even later one of the same amount: neither is the sale payment.
-    for (const [attemptNo, amount] of [
-      [2, 50_000],
-      [3, s.paid],
-    ] as const) {
-      await t.db.payment.create({
-        data: {
-          id: ulid(),
-          orderId: order.orderId,
-          attemptNo,
-          provider: 'STRIPE',
-          status: 'CONFIRMED',
-          amount: BigInt(amount),
-          currency: 'VND',
-        },
-      });
+  describe('which CONFIRMED payment is refunded (duplicates stay CONFIRMED in manual review)', () => {
+    const MINUTE = 60_000;
+    /** Confirmation time = `updated_at` (set explicitly: same-millisecond inserts must not decide). */
+    const confirmedAt = (paymentId: string, at: Date) =>
+      t.db.$executeRaw`UPDATE payments SET updated_at = ${at} WHERE id = ${paymentId}`;
+
+    async function withDuplicates() {
+      const order = await paidOrder([{}]);
+      const s = order.subs[0];
+      if (!s) throw new Error('setup');
+      const t0 = new Date(Date.now() - 60 * MINUTE);
+      await confirmedAt(order.payment.id, t0);
+      const ids: string[] = [];
+      for (const [attemptNo, amount] of [
+        [2, 50_000],
+        [3, s.paid],
+      ] as const) {
+        const id = ulid();
+        await t.db.payment.create({
+          data: {
+            id,
+            orderId: order.orderId,
+            attemptNo,
+            provider: 'STRIPE',
+            status: 'CONFIRMED',
+            amount: BigInt(amount),
+            currency: 'VND',
+          },
+        });
+        await confirmedAt(id, new Date(t0.getTime() + attemptNo * MINUTE));
+        ids.push(id);
+      }
+      return { order, s, t0, sameAmountId: ids[1] ?? '' };
     }
-    const res = await refund(await admin(), s.subOrderId);
-    expect(res.statusCode).toBe(201);
-    expect(res.json<RefundBody>().paymentId).toBe(order.payment.id);
+
+    it('picks the first-confirmed payment equal to the order total, not a later duplicate', async () => {
+      const { order, s } = await withDuplicates();
+      const res = await refund(await admin(), s.subOrderId);
+      expect(res.statusCode).toBe(201);
+      expect(res.json<RefundBody>().paymentId).toBe(order.payment.id);
+    });
+
+    it('a late payment of an older attempt is the duplicate, even with a lower attemptNo', async () => {
+      const { order, s, t0, sameAmountId } = await withDuplicates();
+      // Attempt 1 was paid after attempt 3 had already paid the order.
+      await confirmedAt(order.payment.id, new Date(t0.getTime() + 10 * MINUTE));
+      const res = await refund(await admin(), s.subOrderId);
+      expect(res.statusCode).toBe(201);
+      expect(res.json<RefundBody>().paymentId).toBe(sameAmountId);
+    });
   });
 
   describe('retry of a FAILED provider refund', () => {

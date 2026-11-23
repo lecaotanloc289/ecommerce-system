@@ -230,10 +230,13 @@ export class RefundsService {
 
   /**
    * The CONFIRMED payment that paid for the sale. An order can hold more than one CONFIRMED
-   * payment (a duplicate payment lands in manual review and stays CONFIRMED), so pick the
-   * earliest one whose amount + currency equal the order's grand total — the duplicate is the
-   * later attempt. Interim rule until payments record which one the order consumed (needs a
-   * migration). No exact match → latest CONFIRMED attempt, with a warning.
+   * payment (a duplicate lands in manual review and stays CONFIRMED), so pick, among those whose
+   * amount + currency equal the order's grand total, the one **confirmed first**: the first
+   * confirmation paid the order, any later one went to manual review. Confirmation time =
+   * `updatedAt` — a CONFIRMED row is written only by its confirmation (every other payment update
+   * targets PENDING rows, and CONFIRMED → REFUNDED leaves this set). Not `attemptNo`: a late
+   * payment of an older attempt is the duplicate. Interim rule until payments record which one
+   * the order consumed (needs a migration). No exact match → latest CONFIRMED attempt + warning.
    */
   private async salePayment(tx: Tx, orderId: string, subOrderId: string) {
     const order = await tx.order.findUniqueOrThrow({
@@ -242,20 +245,23 @@ export class RefundsService {
     });
     const confirmed = await tx.payment.findMany({
       where: { orderId, status: 'CONFIRMED' },
-      orderBy: { attemptNo: 'asc' },
+      orderBy: [{ updatedAt: 'asc' }, { attemptNo: 'asc' }],
     });
     const exact = confirmed.find(
       (p) => p.amount === order.grandTotalAmount && p.currency === order.currency,
     );
     if (exact) return exact;
-    const latest = confirmed.at(-1);
+    const latest = confirmed.reduce<(typeof confirmed)[number] | null>(
+      (best, p) => (best === null || p.attemptNo > best.attemptNo ? p : best),
+      null,
+    );
     if (latest) {
       this.logger.warn(
         { orderId, subOrderId, paymentId: latest.id, confirmed: confirmed.length },
         'no CONFIRMED payment equals the order total; refunding against the latest attempt',
       );
     }
-    return latest ?? null;
+    return latest;
   }
 
   /**
