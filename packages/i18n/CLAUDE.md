@@ -29,6 +29,9 @@ Root export only (`@repo/i18n`), built by tsup to `dist/`.
 - **Missing keys:** `t()` returns the key itself, so a gap is visible rather than blank.
 - **Money:** `formatMoney` takes core `Money` (integer minor units), throws on non-integers, and divides
   USD cents by 100 only at the `Intl` boundary. Do money math with `@repo/core/money`, not here.
+- **Seasonal events:** `events.<id>.{name,tagline,description,offer}` is keyed by `@repo/core`'s
+  `SEASONAL_EVENT_IDS` (kebab ids); `test/catalog.test.ts` fails if an event lacks copy or has extra copy.
+  `appearance.*` = storefront appearance panel, `seasonal.*` = shared event UI (ribbon, hero, calendar).
 - Existing catalog keys are camelCase leaves (`common.addToCart`); keep that style within the tree.
 
 ## Commands

@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '@repo/core';
+import { ERROR_CODES, SEASONAL_EVENT_IDS } from '@repo/core';
 import { describe, expect, it } from 'vitest';
 import { APP_LOCALES } from '../src/locale';
 import { errorMessages, messages } from '../src/translator';
@@ -66,4 +66,10 @@ describe('error catalogs', () => {
       expect(withParams.map(([code]) => code)).toEqual([]);
     },
   );
+});
+
+describe('seasonal event copy', () => {
+  it.each(APP_LOCALES)('%s has copy for exactly the events core defines', (locale) => {
+    expect(Object.keys(messages[locale].events).sort()).toEqual([...SEASONAL_EVENT_IDS].sort());
+  });
 });

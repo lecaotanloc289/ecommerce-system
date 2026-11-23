@@ -315,6 +315,218 @@ export const en = {
     emailPlaceholder: 'Your email address',
     subscribe: 'Subscribe',
   },
+  appearance: {
+    open: 'Customize appearance',
+    title: 'Appearance',
+    description: 'Your choices are saved on this device.',
+    mode: 'Color mode',
+    modeLight: 'Light',
+    modeDark: 'Dark',
+    modeSystem: 'System',
+    accent: 'Accent color',
+    accentAuto: 'Seasonal',
+    accentAutoActive: 'Follows the season — {event} right now.',
+    accentAutoIdle: 'Follows the season — Elma indigo until the next event.',
+    accentIndigo: 'Indigo',
+    accentRed: 'Red',
+    accentOrange: 'Orange',
+    accentGreen: 'Green',
+    accentTeal: 'Teal',
+    accentBlue: 'Blue',
+    accentPurple: 'Purple',
+    radius: 'Corners',
+    radiusSharp: 'Sharp',
+    radiusDefault: 'Default',
+    radiusRound: 'Rounded',
+    fontScale: 'Text size',
+    fontScaleSm: 'Small',
+    fontScaleMd: 'Default',
+    fontScaleLg: 'Large',
+    seasonal: 'Seasonal themes',
+    seasonalHint: 'Event banner, colors and picks follow the holiday calendar.',
+    effects: 'Decorative effects',
+    effectsHint:
+      'Falling petals, lanterns, snow… Always off when your device asks for reduced motion.',
+    preview: 'Preview an event',
+    previewNone: "Today's calendar",
+    reset: 'Reset to defaults',
+  },
+  seasonal: {
+    navEvents: 'Events',
+    calendarTitle: 'Events calendar {year}',
+    calendarSubtitle:
+      'Holidays and shopping seasons the store dresses up for. Lunar dates are converted for Vietnam (UTC+7).',
+    happeningNow: 'Happening now',
+    upcoming: 'Coming up',
+    ended: 'Ended',
+    today: 'Today',
+    tomorrow: 'Tomorrow',
+    daysLeft: '{days} days to go',
+    endsOn: 'Until {date}',
+    startsOn: 'Theme starts {date}',
+    lunarDate: 'Lunar {day}/{month}',
+    shopNow: 'Shop the collection',
+    viewCalendar: 'Events calendar',
+    previewTheme: 'Preview theme',
+    previewing: 'Previewing: {event}',
+    exitPreview: 'Exit preview',
+    picksTitle: 'Picks for {event}',
+    picksSubtitle: 'Trending gifts this season',
+    dismiss: 'Hide banner',
+    nextUp: 'Next up: {event} · {date}',
+    prevYear: 'Previous year',
+    nextYear: 'Next year',
+  },
+  events: {
+    'new-year': {
+      name: "New Year's Day",
+      tagline: 'Fresh start, fresh gear',
+      description:
+        'Count down to 1 January with year-end deals on everything you need to start the new year right.',
+      offer: 'Countdown deals',
+    },
+    'lunar-new-year': {
+      name: 'Lunar New Year (Tết)',
+      tagline: 'Welcome spring, welcome luck',
+      description:
+        "The biggest holiday of the year. Shop Tết gifts, home décor and travel essentials early — from Kitchen Gods' Day (23rd of the 12th lunar month) to the 7th day of the new year.",
+      offer: 'Tết gift boxes & lucky deals',
+    },
+    'lantern-festival': {
+      name: 'Lantern Festival',
+      tagline: 'First full moon of the year',
+      description:
+        'The first full moon of the lunar year closes the Tết season — a time for family gatherings and lighting lanterns.',
+      offer: 'Full-moon specials',
+    },
+    'valentines-day': {
+      name: "Valentine's Day",
+      tagline: 'Say it with a gift',
+      description:
+        'Thoughtful gifts for your favourite person — wearables, audio and accessories, ready to wrap.',
+      offer: 'Couple combos',
+    },
+    'womens-day': {
+      name: "International Women's Day",
+      tagline: 'Celebrate the women you love',
+      description: 'Gifts to thank mothers, partners, sisters and colleagues on 8 March.',
+      offer: 'Gifts for her',
+    },
+    'hung-kings': {
+      name: "Hung Kings' Commemoration",
+      tagline: 'Remember our roots',
+      description:
+        'The 10th day of the 3rd lunar month honours the founding kings of Vietnam — a public holiday and a long-weekend getaway.',
+      offer: 'Long-weekend travel gear',
+    },
+    'reunification-day': {
+      name: 'Reunification Day & Labour Day',
+      tagline: 'Long holiday, big savings',
+      description:
+        '30 April and 1 May make the longest break of spring — stock up on cameras, speakers and travel tech.',
+      offer: 'Holiday deals',
+    },
+    'mothers-day': {
+      name: "Mother's Day",
+      tagline: 'For the one who gave us everything',
+      description: "The second Sunday of May — say thank you with a gift she'll use every day.",
+      offer: 'Gifts for Mum',
+    },
+    'childrens-day': {
+      name: "Children's Day",
+      tagline: 'Play, learn, smile',
+      description:
+        '1 June is all about the kids — learning gadgets, headphones and fun tech for the summer.',
+      offer: 'Summer fun for kids',
+    },
+    'dragon-boat': {
+      name: 'Dragon Boat Festival',
+      tagline: 'Midsummer festival',
+      description:
+        'On the 5th day of the 5th lunar month families share sticky-rice wine and summer fruit.',
+      offer: 'Midsummer deals',
+    },
+    'fathers-day': {
+      name: "Father's Day",
+      tagline: 'For the quiet hero',
+      description: 'The third Sunday of June — gadgets and gear Dad will actually use.',
+      offer: 'Gifts for Dad',
+    },
+    'family-day': {
+      name: 'Vietnamese Family Day',
+      tagline: 'Home is where we gather',
+      description: '28 June celebrates the family — tech that brings everyone together at home.',
+      offer: 'Family bundles',
+    },
+    'vu-lan': {
+      name: 'Vu Lan Festival',
+      tagline: 'Gratitude to our parents',
+      description:
+        'The 15th day of the 7th lunar month is a time to honour parents — a rose pinned to the shirt, a gift from the heart.',
+      offer: 'Gifts for parents',
+    },
+    'national-day': {
+      name: 'National Day',
+      tagline: 'Proud to be Vietnamese',
+      description:
+        "2 September marks Vietnam's independence — celebrate the long weekend with flag-red deals.",
+      offer: 'Independence Day sale',
+    },
+    'mid-autumn': {
+      name: 'Mid-Autumn Festival',
+      tagline: 'Full moon, full hearts',
+      description:
+        'On the 15th day of the 8th lunar month children parade lanterns under the brightest moon of the year and families share mooncakes.',
+      offer: 'Mid-Autumn gift sets',
+    },
+    'vietnamese-womens-day': {
+      name: "Vietnamese Women's Day",
+      tagline: 'Flowers and thanks',
+      description:
+        '20 October honours Vietnamese women — gifts for mothers, wives, sisters and colleagues.',
+      offer: 'Gifts for her',
+    },
+    halloween: {
+      name: 'Halloween',
+      tagline: 'Treats, no tricks',
+      description:
+        'Spooky-season deals on 31 October — costumes not included, scary-good prices are.',
+      offer: 'Spooky prices',
+    },
+    'singles-day': {
+      name: '11.11 Mega Sale',
+      tagline: 'The biggest one-day sale',
+      description:
+        "Singles' Day grew into Asia's biggest online shopping day — flash deals every hour.",
+      offer: 'Hourly flash deals',
+    },
+    'teachers-day': {
+      name: "Vietnamese Teachers' Day",
+      tagline: 'Thank you, teacher',
+      description: '20 November honours teachers — thoughtful gifts and tools for learning.',
+      offer: 'Gifts for teachers',
+    },
+    'black-friday': {
+      name: 'Black Friday & Cyber Monday',
+      tagline: 'Lowest prices of the year',
+      description:
+        'From the Friday after US Thanksgiving through Cyber Monday — the deepest tech discounts of the year.',
+      offer: 'Biggest tech deals',
+    },
+    'double-twelve': {
+      name: '12.12 Year-End Sale',
+      tagline: 'Last mega sale of the year',
+      description: 'The final double-day sale before the holidays — stack your vouchers.',
+      offer: 'Year-end vouchers',
+    },
+    christmas: {
+      name: 'Christmas',
+      tagline: 'Merry everything',
+      description:
+        'Gifts under the tree for everyone on your list, from stocking stuffers to big surprises.',
+      offer: 'Christmas gift guide',
+    },
+  },
 } as const;
 
 /** Same shape as `en`, but every leaf widened to `string` so locale catalogues
