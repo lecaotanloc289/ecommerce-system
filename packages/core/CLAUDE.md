@@ -27,7 +27,7 @@ Read shapes use Money, ISO-datetime strings and branded ids. Input shapes never 
 
 - `money`, `common`: `Money`, `NonNegativeMoney`; `Slug`, `HttpUrl`. `datetime`: `IsoDateTime` (UTC ISO string on the wire).
 - `address`: `AddressInput` (create), `AddressUpdate` (partial PATCH body), `AddressParams`, `Address`, `CountryCode`, `Phone`. `category`, `product`: `Category`, `CategoryTranslation`, `Product`, `ProductVariant`, `ProductImage`, `VariantAttributes`.
-- `cart`, `checkout`: `CartLineInput`, `CartLine` (+ `lineTotal`, `unavailable`), `Cart` (grouped by vendor via `CartVendorGroup`), `CartQuery`, `CartItemSet`, `CartMergeInput`, `CartMergeResult` / `CartMergeAdjustment`, `CartShippingOptions`, `Checkout`, `CouponCode`.
+- `cart`, `checkout`: `CartLineInput`, `CartLine` (+ `lineTotal`, `unavailable`), `Cart` (grouped by vendor via `CartVendorGroup`), `CartQuery`, `CartItemSet`, `CartMergeInput`, `CartMergeResult` / `CartMergeAdjustment`, `CartShippingOptions`, `Checkout`, `CouponCode` (trim + uppercase: case-insensitive codes).
 - `me`: `TokenResponse`, `MeResponse` (moved from the server), `ProfileUpdate`.
 - `upload`: `UploadPurpose`, `UploadKey`, `PresignRequest`, `PresignResponse`. Clients send upload **keys**, never URLs (D13).
 - `vendor`: `VendorPublic`, `VendorApplicationCreate`, `VendorApplication`, `VendorReject`, `VendorApprove {slug, displayName}`, `VendorApplicationMe {latest, history}`, `VendorApplicationListQuery` (+ `status`), `VendorApplicationListItem` / `ListPage` (KYC numbers masked: `taxIdMasked`, …), `VendorApplicationDetail` (full + presigned document URLs), `VendorApplicationReviewResult` (list item + `vendorId`). Document keys map to DB `businessLicenseUrl` / `nationalIdUrl`.

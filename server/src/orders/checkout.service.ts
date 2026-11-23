@@ -89,8 +89,12 @@ export class CheckoutService {
     } catch (error) {
       // DB backstop: a concurrent request with the same key may have committed first. It surfaces
       // as P2002 on `orders.idempotency_key` — or as any earlier failure (e.g. out-of-stock on the
-      // unit the winner just reserved) — so on every error, answer with the winner's order if any.
-      const winner = await this.findByIdempotencyKey(userId, idempotencyKey, input);
+      // unit the winner just reserved) — so on every error, answer with the winner's order if any (else rethrow the original).
+      // Only a found same-user/same-body winner replaces the error: a failing lookup (incl. a
+      // key-reused verdict) or no winner must never mask the original error.
+      const winner = await this.findByIdempotencyKey(userId, idempotencyKey, input).catch(
+        () => null,
+      );
       if (winner) return winner;
       throw error;
     }
@@ -447,7 +451,7 @@ export class CheckoutService {
 
     const locked = await tx.$queryRaw<{ id: string }[]>`
       SELECT id FROM coupons
-      WHERE code = ANY(${codes}::text[])
+      WHERE upper(code) = ANY(${codes}::text[])
         AND ((scope = 'PLATFORM' AND vendor_id IS NULL) OR vendor_id = ANY(${vendorIds}::text[]))
       ORDER BY id
       FOR UPDATE`;
@@ -471,10 +475,12 @@ export class CheckoutService {
     const vendorCoupons: AppliedCoupon[] = [];
     const platformCoupons: AppliedCoupon[] = [];
     for (const code of codes) {
-      const platform = rows.find((r) => r.scope === 'PLATFORM' && r.code === code && r.isActive);
+      const platform = rows.find(
+        (r) => r.scope === 'PLATFORM' && r.code.toUpperCase() === code && r.isActive,
+      );
       const matches = platform
         ? [platform]
-        : rows.filter((r) => r.scope === 'VENDOR' && r.code === code);
+        : rows.filter((r) => r.scope === 'VENDOR' && r.code.toUpperCase() === code);
       if (matches.length === 0) throw new DomainError('coupon.error.not-found', { code });
       for (const row of matches) {
         const totalRedemptions = totalOf.get(row.id) ?? 0;

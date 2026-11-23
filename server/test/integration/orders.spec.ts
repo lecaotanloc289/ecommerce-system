@@ -449,6 +449,19 @@ describe('orders API (Testcontainers)', () => {
     expect(await t.db.cartItem.count()).toBe(1);
   });
 
+  it('keeps the original out-of-stock error when no same-key winner exists', async () => {
+    const { address, headers } = await customer();
+    const { variant, method } = await shop({ stock: 1 });
+    const res = await checkout(headers, {
+      items: [{ variantId: variant.id, quantity: 5 }],
+      addressId: address.id,
+      shippingMethodIds: [method.id],
+      provider: 'VNPAY',
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json<ErrorBody>().errorCode).toBe('checkout.error.out-of-stock');
+  });
+
   it('lets exactly one of two concurrent checkouts take the last unit', async () => {
     const { variant, method } = await shop({ stock: 1 });
     const buyers = await Promise.all([customer(), customer()]);
@@ -646,6 +659,22 @@ describe('orders API (Testcontainers)', () => {
     });
     expect(unknown.statusCode).toBe(404);
     expect(unknown.json<ErrorBody>().errorCode).toBe('coupon.error.not-found');
+  });
+
+  it('matches coupon codes case-insensitively (typed lowercase, stored in any case)', async () => {
+    const { address, headers } = await customer();
+    const { variant, method } = await shop({ stock: 10 });
+    await makeCoupon(t.db, { code: 'WELCOME10' });
+    const res = await checkout(headers, {
+      items: [{ variantId: variant.id, quantity: 1 }],
+      addressId: address.id,
+      shippingMethodIds: [method.id],
+      couponCodes: ['welcome10'],
+      provider: 'VNPAY',
+    });
+    expect(res.statusCode).toBe(201);
+    expect(await t.db.couponRedemption.count()).toBe(1);
+    expect(res.json<OrderBody>().discountTotal.amount).toBeGreaterThan(0);
   });
 
   it('validates shipping methods per vendor', async () => {
