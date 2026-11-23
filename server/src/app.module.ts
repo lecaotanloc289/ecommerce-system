@@ -22,6 +22,7 @@ import { VendorApplicationsModule } from './vendor-applications/vendor-applicati
 import { VendorStaffModule } from './vendor-staff/vendor-staff.module';
 import { VendorModule } from './vendor/vendor.module';
 import { VendorOrdersModule } from './vendor-orders/vendor-orders.module';
+import { ZaloModule } from './zalo/zalo.module';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -54,6 +55,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     VendorStaffModule,
     RefundsModule,
     VendorOrdersModule,
+    ZaloModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

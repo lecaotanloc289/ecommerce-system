@@ -91,6 +91,7 @@ const complete: CheckoutChoices = {
   shipping: { [V1]: ulid(12), [V2]: ulid(21) },
   provider: 'VNPAY',
   couponCodes: [],
+  zaloOptIn: false,
 };
 
 const base = (over: Partial<GuardInput> = {}): GuardInput => ({
@@ -190,7 +191,16 @@ describe('checkout body + idempotency fingerprint', () => {
       shippingMethodIds: [ulid(12), ulid(21)],
       couponCodes: ['SAVE10'],
       provider: 'VNPAY',
+      zaloOptIn: false,
     });
+  });
+
+  it('sends the Zalo opt-in and treats a change as a different request', () => {
+    const off = buildCheckoutBody(twoVendorLines, complete);
+    const on = buildCheckoutBody(twoVendorLines, { ...complete, zaloOptIn: true });
+    if (!off || !on) throw new Error('bodies');
+    expect(on.zaloOptIn).toBe(true);
+    expect(checkoutFingerprint(on)).not.toBe(checkoutFingerprint(off));
   });
 
   it('is null while a vendor has no method or the address is missing', () => {
@@ -218,7 +228,15 @@ describe('checkout body + idempotency fingerprint', () => {
         provider: 'PAYPAL',
         couponCodes: ['A', 'A', 7],
       }),
-    ).toEqual({ addressId: null, shipping: { [V1]: 'm1' }, provider: null, couponCodes: ['A'] });
+    ).toEqual({
+      addressId: null,
+      shipping: { [V1]: 'm1' },
+      provider: null,
+      couponCodes: ['A'],
+      zaloOptIn: false,
+    });
+    expect(sanitizeChoices({ zaloOptIn: true }).zaloOptIn).toBe(true);
+    expect(sanitizeChoices({ zaloOptIn: 'yes' }).zaloOptIn).toBe(false);
   });
 });
 

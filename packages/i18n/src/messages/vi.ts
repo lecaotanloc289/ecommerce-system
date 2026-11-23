@@ -227,6 +227,9 @@ export const vi: Messages = {
     estimateNote:
       'Đây là số tạm tính từ giỏ hàng và phương thức vận chuyển đã chọn. Mã giảm giá và số tiền cuối cùng được tính khi bạn đặt hàng.',
     placing: 'Đang đặt hàng…',
+    zaloOptIn: 'Nhận thông báo đơn hàng qua Zalo',
+    zaloOptInHint:
+      'Mỗi shop trong đơn có thể nhắn Zalo tới số điện thoại nhận hàng về đơn và việc giao hàng.',
     waitingPayment: 'Đang chuẩn bị thanh toán…',
     redirecting: 'Đang chuyển bạn đến trang thanh toán…',
     paymentTimeout: 'Trang thanh toán đang mất nhiều thời gian hơn dự kiến.',

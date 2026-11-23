@@ -24,6 +24,7 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 - `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
 - `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront and admin (see `packages/i18n/CLAUDE.md`).
 - `packages/sdk` — OpenAPI pipeline + `createApiClient` (openapi-fetch; Bearer, auto Idempotency-Key, single-flight 401 refresh); `pnpm sdk:generate` (see `packages/sdk/CLAUDE.md`).
+- `workers/zalo` — Zalo session keeper + automated order messages per shop (zca-js QR login, encrypted sessions, Redis leases, keep-alive, paced sending with retries); the API side is `server/src/zalo/` (see `workers/zalo/CLAUDE.md`).
 - `packages/payments` — `PaymentProvider` interface + VNPay (v2.1.0 HMAC-SHA512 pay URL, IPN/return verify, merchant-webapi refund) and Stripe (Checkout Session, `constructEvent` webhook verify, refunds) adapters; config via factory params, injectable `fetch` / Stripe client; ESLint + Vitest (see `packages/payments/CLAUDE.md`).
 
 Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
@@ -78,6 +79,8 @@ ecommerce-system/
 ├── workers/                       Background processes (no HTTP); never import from server/ or apps/.
 │   └── jobs/                      `@workers/jobs`: outbox dispatcher → payment sessions, refunds,
 │                                  emails; scheduled jobs (payment expiry, auto-complete, payouts).
+│   └── zalo/                      `@workers/zalo`: holds shops' Zalo sessions (zca-js) + sends automated
+│                                  order messages from `zalo_messages` (roadmap D16).
 ├── packages/                      Shared libraries
 │   ├── core/                      Domain layer: Zod schemas, types (z.infer), enums, error codes,
 │   │                              Money utility, ID brands, shared constants.
@@ -188,7 +191,7 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
 
 8. **Migrations are forward-only and reviewed.** Created with `pnpm db:migrate dev`. Never edit an applied migration. Destructive changes (drop column, rename) require a 2-phase migration: ship code that reads both → migrate → cleanup migration.
 
-9. **Side effects go through the Outbox.** Email, webhooks, payouts, notifications — write to `outbox_events` inside the same transaction as the business change; a BullMQ worker dispatches them. Do NOT `await externalApi()` in the request thread.
+9. **Side effects go through the Outbox.** Email, webhooks, payouts, notifications — write to `outbox_events` inside the same transaction as the business change; a BullMQ worker dispatches them. Do NOT `await externalApi()` in the request thread. _Exception:_ automated Zalo messages use their own outbox table `zalo_messages` (same transaction, written by `queueZaloMessages` / `queueZaloStatusMessages` in `server/src/zalo/`, delivered by `workers/zalo`) because they need a per-row send time (post-delivery care), per-shop session affinity and a vendor-visible send log.
 
 10. **CI gate must pass.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` must be green before merge. The pre-commit hook runs `lint-staged` + `typecheck` on changed files.
 

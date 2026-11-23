@@ -1,0 +1,10 @@
+{
+  "extends": "../../packages/config/tsconfig/node.json",
+  "compilerOptions": {
+    // zca-js ships `index.d.ts` = `export * from "./dist"` (a directory import NodeNext can't
+    // resolve). Point the types at the real entry; runtime still resolves via the package exports.
+    "paths": { "zca-js": ["./node_modules/zca-js/dist/index.d.ts"] }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

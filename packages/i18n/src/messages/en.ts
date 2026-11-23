@@ -224,6 +224,9 @@ export const en = {
     estimateNote:
       'This is an estimate from your cart and the chosen shipping. Vouchers and the final amounts are calculated when you place the order.',
     placing: 'Placing your order…',
+    zaloOptIn: 'Get order updates on Zalo',
+    zaloOptInHint:
+      'Each shop in this order may message the delivery phone number on Zalo about this order and its delivery.',
     waitingPayment: 'Preparing your payment…',
     redirecting: 'Redirecting you to the payment page…',
     paymentTimeout: 'The payment page is taking longer than expected.',
