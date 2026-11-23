@@ -7,6 +7,7 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "openapi:export": "ts-node --transpile-only -P tsconfig.scripts.json -r tsconfig-paths/register scripts/export-openapi.ts",
+    "e2e:mint-sessions": "ts-node --transpile-only -P tsconfig.scripts.json -r tsconfig-paths/register test/e2e/mint-sessions.ts",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit -p tsconfig.spec.json",
     "test": "jest"

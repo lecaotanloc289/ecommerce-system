@@ -223,4 +223,4 @@ pnpm --filter @apps/admin test       # vitest run
 pnpm --filter @apps/admin build      # tsc -b && vite build (needs @repo/core, i18n, sdk built: `pnpm turbo build --filter=@apps/admin`)
 ```
 
-E2E (Playwright, later): vendor apply → admin approve → vendor lists a product.
+E2E (Playwright, `pnpm e2e`, see `e2e/CLAUDE.md`): vendor accept → ship → deliver, wallet net, admin approves an application. `pnpm e2e` serves a separate build in `dist-e2e/` (ESLint-ignored).

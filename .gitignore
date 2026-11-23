@@ -65,3 +65,7 @@ screens.json
 .codex/
 AGENTS.md
 skills-lock.json
+
+# e2e (build output + run state)
+dist-e2e/
+e2e/.tmp/

@@ -81,6 +81,8 @@ ecommerce-system/
 │                                  emails; scheduled jobs (payment expiry, auto-complete, payouts).
 │   └── zalo/                      `@workers/zalo`: holds shops' Zalo sessions (zca-js) + sends automated
 │                                  order messages from `zalo_messages` (roadmap D16).
+├── e2e/                           `@repo/e2e`: Playwright smoke flows over the whole stack (boots API,
+│                                  worker, storefront, admin on a throwaway DB; see e2e/CLAUDE.md).
 ├── packages/                      Shared libraries
 │   ├── core/                      Domain layer: Zod schemas, types (z.infer), enums, error codes,
 │   │                              Money utility, ID brands, shared constants.
@@ -324,7 +326,7 @@ Never rename or drop in a single migration:
 
 - **Unit (Vitest, per `packages/*`):** pure functions, schema validation, Money math, payment adapter logic with mocked HTTP. Fast (<1s per file).
 - **Integration (Jest, in `server/`):** services that hit DB via Testcontainers (Postgres + Redis). Covers transaction rollback, idempotency replay, outbox publishing, role + ownership guards.
-- **E2E (Playwright, in `apps/web` and `apps/admin`):** smoke flows only — OAuth sign-in (mocked provider), browse → add to cart → checkout, vendor apply → admin approve → vendor lists a product.
+- **E2E (Playwright, in the `e2e/` workspace `@repo/e2e`):** smoke flows only, against the real API + worker + storefront + admin on a throwaway DB (see `e2e/CLAUDE.md`): guest cart → sign-in merge (minted refresh cookie, no OAuth), 2-vendor checkout → signed VNPay IPN → paid, vendor accept/ship/deliver + customer confirm, payout job → exact wallet net, admin approves a vendor application. CI: `.github/workflows/e2e.yml` (PRs into `prod` + manual dispatch).
 
 **What to test**
 
@@ -347,7 +349,7 @@ Never rename or drop in a single migration:
 - One workspace: `pnpm --filter @repo/core test`
 - Single file: `pnpm --filter @server/api test -- order.service.spec.ts`
 - Watch mode: append `-- --watch`
-- E2E headed: `pnpm --filter @apps/web e2e -- --headed`
+- E2E: `pnpm e2e` (headless; builds + boots the whole stack, needs Postgres + Redis) · headed: `pnpm e2e:headed` · one flow: `pnpm e2e -- -g payout`
 
 **Coverage**
 
@@ -484,7 +486,8 @@ pnpm test                           # all (unit + integration)
 pnpm --filter @repo/core test                                # one workspace
 pnpm --filter @server/api test -- order.service.spec.ts      # one test file
 pnpm --filter @server/api test -- --watch                    # watch mode
-pnpm --filter @apps/web e2e -- --headed                      # Playwright headed
+pnpm e2e                                                     # Playwright smoke flows on the full stack (e2e/CLAUDE.md)
+pnpm e2e:headed                                              # same, visible browser
 ```
 
 ### Database (Prisma, via `@repo/db`)

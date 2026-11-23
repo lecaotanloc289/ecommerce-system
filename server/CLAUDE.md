@@ -405,6 +405,7 @@ pnpm --filter @server/api test -- token.service.spec.ts   # one test file
 pnpm --filter @server/api test -- --watch
 pnpm --filter @server/api typecheck             # src + test + scripts (tsconfig.spec.json)
 pnpm --filter @server/api openapi:export        # write packages/sdk/openapi.json (no DB/Redis)
+pnpm --filter @server/api e2e:mint-sessions 3 customer@example.com   # E2E only: start login sessions via TokenService, print refresh tokens (needs the API env; refuses NODE_ENV=production; see e2e/CLAUDE.md)
 pnpm --filter @server/api lint                  # ESLint (type-checked @repo/config base), 0 warnings allowed
 ```
 
