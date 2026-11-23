@@ -148,13 +148,14 @@ only — the API enforces `@Roles` + ownership on every endpoint.
 | `staff` (owner)                                                       | `GET /v1/vendor/staff`, `GET/POST /v1/vendor/invitations`, `POST …/revoke`, `DELETE /v1/vendor/staff/:userId`             | owner and yourself cannot be removed; revoke only for PENDING                                                                                                                                                     |
 | `/invite` (`pages/invite-page`)                                       | `POST /v1/vendor-invitations/accept` → `restoreSession()` (`/auth/refresh` + `/auth/me`) → `/vendor`                      | the new role exists only in a fresh token. 409 conflict = account already in a shop. The token rides in the return path (sessionStorage, same tab) across the OAuth round-trip and is removed by `/auth/callback` |
 
+- **Shop currency = wallet currency** (server rule, see server CLAUDE.md "Vendor catalog"): the API refuses a product / shipping method priced in any other currency (422 `common.error.validation-failed {field: 'currency', expected}`). `useVendorCurrency()` (`vendor-currency.ts`) reads it from `GET /v1/vendor/wallet` for **owners** (same cached query as the dashboard): the new-product form and the shipping dialog default to it and offer only it (an existing shipping method in another currency also shows its own, so the vendor can switch it). **Staff** cannot read the wallet and no other endpoint exposes the vendor currency, so they keep the full VND/USD choice; a wrong pick shows the translated server error naming the expected currency (`errorMessage` → `admin.vendor.form.currencyMustMatch`).
 - Responses are parsed with the core Zod schemas (`VendorProductSchema`, …): branded ids, and a drifting API fails loudly.
 - **Money:** prices are typed as text and parsed to minor units with `lib/money-input.ts` (`parseMoneyInput`, BigInt, exact; extra decimals are rejected, never rounded; VND 0 decimals, USD 2). Shown with `formatMoney`.
 - Product attributes are one text field per variant: `Color=Red, Size=M` (`parseAttributes`). The slug follows the name until edited by hand.
 - Images: `lib/upload.ts` presigns (`product-image`), PUTs with the returned headers (no cookies), then sends `{ key }` for new images and `{ id }` for kept ones; array order = display order.
 - Reusable widgets (neutral names, `src/components/` and `src/lib/`): `DataTable` + `useCursorList` (cursor pagination), `MoneyInput`, `StatusBadge`, `FormField`, `ConfirmDialog`, `ImageListEditor`, `uploadFile`, `newRowId`.
 - Sub-routes without a sidebar link are declared in `PortalConfig.subRoutes` (`router/portals.tsx`).
-- Tests: `test/vendor/*` (product form model + component, order actions, owner gating, invite flows) with `test/vendor/fake-api.ts` (`stubApi` replaces global `fetch`); `test/money-input.test.ts`. Signed-in flows against a real API (OAuth) are not exercised.
+- Tests: `test/vendor/*` (product form model + component, order actions, owner gating, invite flows, shop currency) with `test/vendor/fake-api.ts` (`stubApi` replaces global `fetch`); `test/money-input.test.ts`. Signed-in flows against a real API (OAuth) are not exercised.
 
 ## Env
 
@@ -184,18 +185,18 @@ admin-only rows below (sidebar + route guard + in-page gating; the API enforces 
 | `/platform/vendors`      | any   | Status filter + search; Suspend (reason) / Reactivate                                                                                                                                                                                                                                                           |
 | `/platform/products`     | any   | Status / shop / search; Block (reason) / Unblock                                                                                                                                                                                                                                                                |
 | `/platform/orders`       | any   | Search by id prefix / customer email + status. `?id=` opens detail: sub-orders + items, payments (no raw payload), ledger, refunds. **ADMIN only:** "Refund sub-order" (reason; server `not-refundable` reason shown)                                                                                           |
-| `/platform/refunds`      | any   | Status filter; links to the order                                                                                                                                                                                                                                                                               |
+| `/platform/refunds`      | any   | Status filter; links to the order. **ADMIN only:** "Retry refund" on FAILED rows (`POST /v1/platform/refunds/:id/retry`, confirm dialog, `RetryRefundAction` in `retry-refund.tsx`; also on FAILED refunds in the order detail)                                                                                 |
 | `/platform/settings`     | ADMIN | Commission as percent (`lib/bps.ts`: exact integer bps ↔ percent, ≤ 2 decimals), hold / refund-window days, payment timeout, max coupon stack, currencies. `lib/settings-form.ts` mirrors the server bounds (default ∈ supported)                                                                               |
 | `/platform/users`        | ADMIN | Search; grant / revoke PLATFORM_STAFF / PLATFORM_ADMIN. `params.reason` (`last-platform-admin`, `self-demotion`, `not-platform-admin`) maps to specific texts in `errorMessage`                                                                                                                                 |
 
 Reusable widgets in `src/components/`: `status-badge` (enum → translated coloured badge), `money-text`
 (core `Money` via `formatMoney`), `confirm-reason-dialog` (required trimmed 1..500 reason: suspend, block,
 reject, refund), `cursor-table`, `filter-bar` (`FilterSelect`, `SearchForm`, `FilterBar`).
-`errorMessage` (lib/api-error.ts) also turns `refund.error.not-refundable` `params.reason` into an extra
-sentence.
+`errorMessage` (lib/api-error.ts) also turns `refund.error.not-refundable` `params.reason` (incl. the retry's
+`refund-not-failed`) into an extra sentence.
 
 Tests: `test/platform-lib.test.ts` (bps, slug, settings validation, reason mapping) and
-`test/platform-pages.test.tsx` (approve / reject dialogs, role gating, refund, settings, users, dashboard;
+`test/platform-pages.test.tsx` (approve / reject dialogs, role gating, refund, refund retry, settings, users, dashboard;
 global `fetch` faked). Signed-in flows need the OAuth round-trip, so they are covered by these tests, not
 exercised in a real browser.
 

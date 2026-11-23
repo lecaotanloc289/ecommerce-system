@@ -15,6 +15,7 @@ import {
   RefundDto,
   RefundListQueryDto,
   RefundPageDto,
+  RefundParamsDto,
   SubOrderParamsDto,
 } from './refunds.dto';
 import { RefundsService } from './refunds.service';
@@ -56,6 +57,27 @@ export class PlatformRefundsController {
     @Body() body: RefundCreateDto,
   ): Promise<Refund> {
     return this.refunds.refundSubOrder(user.id, params.id, body);
+  }
+
+  @ApiOperation({
+    summary: 'Retry a FAILED provider refund (admin)',
+    description:
+      'Recovery path when the provider refused a refund: inserts a NEW PENDING refund (same ' +
+      'amount, currency, payment and sub-order; reason references the failed one) and asks the ' +
+      'worker to call the provider again. The ledger is not touched (the original refund already ' +
+      'moved the money to the customer). Refund not FAILED, sub-order not REFUNDED (or CANCELLED ' +
+      'for a late-payment refund), or another PENDING/SUCCEEDED refund exists → 409 ' +
+      '`refund.error.not-refundable` (`reason`: `refund-not-failed` | `status` | ' +
+      '`refund-exists`); unknown refund → 404 `common.error.not-found`; your own order → 403.',
+  })
+  @ApiHeader(IDEMPOTENCY_HEADER)
+  @ZodResponse({ status: 201, description: 'The new PENDING refund', type: RefundDto })
+  @Post('refunds/:id/retry')
+  @Roles('PLATFORM_ADMIN')
+  @Idempotent()
+  @RateLimit('strict')
+  retry(@CurrentUser() user: AuthUser, @Param() params: RefundParamsDto): Promise<Refund> {
+    return this.refunds.retryRefund(user.id, params.id);
   }
 
   @ApiOperation({ summary: 'Refunds, newest first, optional `status` filter' })

@@ -14,6 +14,7 @@ import { useApiMutation } from '@/lib/use-api-mutation';
 import { flattenCategories } from './categories';
 import { ProductForm } from './product-form';
 import { emptyProductForm, fromProduct, toRequestBody } from './product-form-model';
+import { currencyOptions, useVendorCurrency } from './vendor-currency';
 import { ProductStatusBadge } from './vendor-status';
 
 /** `/vendor/products/new` and `/vendor/products/:id` — create (→ DRAFT) or edit a product. */
@@ -65,6 +66,7 @@ export function ProductEditPage() {
 
 function CreateNew({ categories }: { categories: ReturnType<typeof flattenCategories> }) {
   const { t } = useLocale();
+  const vendorCurrency = useVendorCurrency();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const create = useApiMutation(
@@ -84,15 +86,22 @@ function CreateNew({ categories }: { categories: ReturnType<typeof flattenCatego
     <>
       <PageHeader title={t('admin.vendor.products.new')} />
       {create.error ? <ErrorAlert className="mb-4" error={create.error} /> : null}
-      <ProductForm
-        initial={emptyProductForm('VND')}
-        categories={categories}
-        isNew
-        readOnly={false}
-        submitting={create.isPending}
-        onSubmit={(value) => create.mutate(value)}
-        uploadImage={(file) => uploadFile(api, file, 'product-image')}
-      />
+      {vendorCurrency.isPending ? (
+        <p role="status" className="py-8 text-center text-body-s text-text-muted">
+          {t('admin.table.loading')}
+        </p>
+      ) : (
+        <ProductForm
+          initial={emptyProductForm(vendorCurrency.currency ?? 'VND')}
+          categories={categories}
+          isNew
+          readOnly={false}
+          currencies={currencyOptions(vendorCurrency.currency)}
+          submitting={create.isPending}
+          onSubmit={(value) => create.mutate(value)}
+          uploadImage={(file) => uploadFile(api, file, 'product-image')}
+        />
+      )}
     </>
   );
 }

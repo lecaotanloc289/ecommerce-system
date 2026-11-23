@@ -831,11 +831,18 @@ export const en = {
         payoutReleased: 'The payout was already released to the shop.',
         noConfirmedPayment: 'The order has no confirmed payment.',
         refundExists: 'A refund already exists for this sub-order.',
+        refundNotFailed: 'Only a refund the provider refused (failed) can be retried.',
       },
       refunds: {
         refund: 'Refund',
         amount: 'Amount',
         reason: 'Reason',
+        actions: 'Actions',
+        retry: 'Retry refund',
+        retryTitle: 'Retry refund',
+        retryDescription:
+          'The payment provider refused this refund of {amount}. A new refund request is sent to the provider; the books are not changed again.',
+        retried: 'Refund requested again.',
       },
       settings: {
         description: 'Changes apply to new checkouts only; existing orders keep their snapshot.',
@@ -961,6 +968,7 @@ export const en = {
         description: 'Description',
         variants: 'Variants',
         currency: 'Currency',
+        currencyMustMatch: 'This shop sells in {currency} only. Use {currency} for every price.',
         variantN: 'Variant {n}',
         sku: 'SKU',
         attributes: 'Attributes',

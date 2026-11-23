@@ -827,11 +827,19 @@ export const vi: Messages = {
         payoutReleased: 'Khoản chi trả đã được chuyển cho cửa hàng.',
         noConfirmedPayment: 'Đơn hàng chưa có thanh toán được xác nhận.',
         refundExists: 'Đơn con này đã có yêu cầu hoàn tiền.',
+        refundNotFailed:
+          'Chỉ có thể thử lại yêu cầu hoàn tiền đã bị cổng thanh toán từ chối (thất bại).',
       },
       refunds: {
         refund: 'Hoàn tiền',
         amount: 'Số tiền',
         reason: 'Lý do',
+        actions: 'Thao tác',
+        retry: 'Thử hoàn tiền lại',
+        retryTitle: 'Thử hoàn tiền lại',
+        retryDescription:
+          'Cổng thanh toán đã từ chối khoản hoàn {amount}. Một yêu cầu hoàn tiền mới sẽ được gửi lại; sổ cái không bị ghi thêm.',
+        retried: 'Đã gửi lại yêu cầu hoàn tiền.',
       },
       settings: {
         description:
@@ -958,6 +966,7 @@ export const vi: Messages = {
         description: 'Mô tả',
         variants: 'Phân loại',
         currency: 'Tiền tệ',
+        currencyMustMatch: 'Cửa hàng chỉ bán bằng {currency}. Hãy đặt mọi giá bằng {currency}.',
         variantN: 'Phân loại {n}',
         sku: 'SKU',
         attributes: 'Thuộc tính',

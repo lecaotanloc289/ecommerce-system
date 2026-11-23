@@ -36,9 +36,9 @@ import { useLocale } from '@/i18n/use-locale';
 import { unwrap } from '@/lib/api-error';
 import { formatMoneyInput, moneyFromInput } from '@/lib/money-input';
 import { useApiMutation } from '@/lib/use-api-mutation';
+import { currencyOptions, useVendorCurrency } from './vendor-currency';
 
 const QUERY_KEY = ['vendor', 'shipping-methods'];
-const CURRENCIES: readonly Currency[] = ['VND', 'USD'];
 
 interface MethodForm {
   name: string;
@@ -48,8 +48,8 @@ interface MethodForm {
   isActive: boolean;
 }
 
-function emptyForm(): MethodForm {
-  return { name: '', price: '', currency: 'VND', estDays: '3', isActive: true };
+function emptyForm(currency: Currency): MethodForm {
+  return { name: '', price: '', currency, estDays: '3', isActive: true };
 }
 
 function toForm(method: ShippingMethod): MethodForm {
@@ -80,6 +80,7 @@ export function ShippingPage() {
   const { t, locale } = useLocale();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<{ method: ShippingMethod | null } | null>(null);
+  const vendorCurrency = useVendorCurrency();
 
   const query = useQuery({
     queryKey: QUERY_KEY,
@@ -181,10 +182,11 @@ export function ShippingPage() {
           </Table>
         </div>
       ) : null}
-      {editing ? (
+      {editing && !vendorCurrency.isPending ? (
         <MethodDialog
           key={editing.method?.id ?? 'new'}
           method={editing.method}
+          shopCurrency={vendorCurrency.currency}
           onClose={() => setEditing(null)}
         />
       ) : null}
@@ -192,10 +194,24 @@ export function ShippingPage() {
   );
 }
 
-function MethodDialog({ method, onClose }: { method: ShippingMethod | null; onClose: () => void }) {
+/**
+ * Create / edit dialog. `shopCurrency` (the wallet currency, owners only) is the only currency
+ * offered; an existing method in another currency keeps its own as a second option so the vendor
+ * sees it (the API refuses to save it until it is switched to the shop currency).
+ */
+function MethodDialog({
+  method,
+  shopCurrency,
+  onClose,
+}: {
+  method: ShippingMethod | null;
+  shopCurrency: Currency | null;
+  onClose: () => void;
+}) {
   const t = useLocale().t;
   const queryClient = useQueryClient();
-  const [form, setForm] = useState(method ? toForm(method) : emptyForm());
+  const [form, setForm] = useState(method ? toForm(method) : emptyForm(shopCurrency ?? 'VND'));
+  const currencies = currencyOptions(shopCurrency, method?.price.currency);
   const [invalid, setInvalid] = useState(false);
 
   const save = useApiMutation(
@@ -267,11 +283,11 @@ function MethodDialog({ method, onClose }: { method: ShippingMethod | null; onCl
               className="h-10 rounded-md border border-border-input bg-bg-elevated px-3 text-body-m"
               value={form.currency}
               onChange={(event) => {
-                const next = CURRENCIES.find((currency) => currency === event.target.value);
+                const next = currencies.find((currency) => currency === event.target.value);
                 if (next) setForm({ ...form, currency: next });
               }}
             >
-              {CURRENCIES.map((currency) => (
+              {currencies.map((currency) => (
                 <option key={currency} value={currency}>
                   {currency}
                 </option>

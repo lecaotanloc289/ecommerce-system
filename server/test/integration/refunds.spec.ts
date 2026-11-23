@@ -460,4 +460,167 @@ describe('platform refunds API (Testcontainers)', () => {
     const succeeded = (await get('?status=SUCCEEDED')).json<{ items: RefundBody[] }>();
     expect(succeeded.items.map((r) => r.subOrderId)).toEqual([order.subs[2]?.subOrderId]);
   });
+
+  describe('which CONFIRMED payment is refunded (duplicates stay CONFIRMED in manual review)', () => {
+    const MINUTE = 60_000;
+    /** Confirmation time = `updated_at` (set explicitly: same-millisecond inserts must not decide). */
+    const confirmedAt = (paymentId: string, at: Date) =>
+      t.db.$executeRaw`UPDATE payments SET updated_at = ${at} WHERE id = ${paymentId}`;
+
+    async function withDuplicates() {
+      const order = await paidOrder([{}]);
+      const s = order.subs[0];
+      if (!s) throw new Error('setup');
+      const t0 = new Date(Date.now() - 60 * MINUTE);
+      await confirmedAt(order.payment.id, t0);
+      const ids: string[] = [];
+      for (const [attemptNo, amount] of [
+        [2, 50_000],
+        [3, s.paid],
+      ] as const) {
+        const id = ulid();
+        await t.db.payment.create({
+          data: {
+            id,
+            orderId: order.orderId,
+            attemptNo,
+            provider: 'STRIPE',
+            status: 'CONFIRMED',
+            amount: BigInt(amount),
+            currency: 'VND',
+          },
+        });
+        await confirmedAt(id, new Date(t0.getTime() + attemptNo * MINUTE));
+        ids.push(id);
+      }
+      return { order, s, t0, sameAmountId: ids[1] ?? '' };
+    }
+
+    it('picks the first-confirmed payment equal to the order total, not a later duplicate', async () => {
+      const { order, s } = await withDuplicates();
+      const res = await refund(await admin(), s.subOrderId);
+      expect(res.statusCode).toBe(201);
+      expect(res.json<RefundBody>().paymentId).toBe(order.payment.id);
+    });
+
+    it('a late payment of an older attempt is the duplicate, even with a lower attemptNo', async () => {
+      const { order, s, t0, sameAmountId } = await withDuplicates();
+      // Attempt 1 was paid after attempt 3 had already paid the order.
+      await confirmedAt(order.payment.id, new Date(t0.getTime() + 10 * MINUTE));
+      const res = await refund(await admin(), s.subOrderId);
+      expect(res.statusCode).toBe(201);
+      expect(res.json<RefundBody>().paymentId).toBe(sameAmountId);
+    });
+  });
+
+  describe('retry of a FAILED provider refund', () => {
+    const retry = async (user: { id: string }, refundId: string, key: string = ulid()) =>
+      t.app.inject({
+        method: 'POST',
+        url: `/v1/platform/refunds/${refundId}/retry`,
+        headers: { ...(await t.authHeader(user)), 'idempotency-key': key },
+      });
+
+    /** An admin refund of the first sub-order whose provider call then FAILED (as the worker does). */
+    async function failedRefund() {
+      const order = await paidOrder([{}, {}]);
+      const s = order.subs[0];
+      if (!s) throw new Error('setup');
+      const a = await admin();
+      const created = (await refund(a, s.subOrderId)).json<RefundBody>();
+      await t.db.refund.update({ where: { id: created.id }, data: { status: 'FAILED' } });
+      await t.db.outboxEvent.deleteMany();
+      return { order, s, a, failed: created };
+    }
+
+    const refundLedgerCount = () => t.db.ledgerEntry.count({ where: { entryType: 'REFUND' } });
+
+    it('creates a new PENDING refund + refund.requested, without touching the ledger', async () => {
+      const { order, s, a, failed } = await failedRefund();
+      const ledgerBefore = await refundLedgerCount();
+      const escrowBefore = await escrowBalance(order.orderId);
+
+      const res = await retry(a, failed.id);
+      expect(res.statusCode).toBe(201);
+      const body = res.json<RefundBody>();
+      expect(body.id).not.toBe(failed.id);
+      expect(body).toMatchObject({
+        subOrderId: s.subOrderId,
+        paymentId: failed.paymentId,
+        amount: failed.amount,
+        status: 'PENDING',
+        requestedById: a.id,
+      });
+      expect(body.reason).toContain(failed.id);
+      expect((await t.db.refund.findUniqueOrThrow({ where: { id: failed.id } })).status).toBe(
+        'FAILED',
+      );
+
+      const outbox = await t.db.outboxEvent.findMany({ where: { eventType: 'refund.requested' } });
+      expect(outbox.map((e) => e.payload)).toEqual([
+        { refundId: body.id, orderId: order.orderId, subOrderId: s.subOrderId },
+      ]);
+      expect(await refundLedgerCount()).toBe(ledgerBefore);
+      expect(await escrowBalance(order.orderId)).toBe(escrowBefore);
+      const sub = await t.db.subOrder.findUniqueOrThrow({ where: { id: s.subOrderId } });
+      expect(sub.status).toBe('REFUNDED');
+    });
+
+    it('retries a late-payment refund of a CANCELLED order', async () => {
+      const { order, a, failed } = await failedRefund();
+      await t.db.subOrder.updateMany({
+        where: { orderId: order.orderId },
+        data: { status: 'CANCELLED' },
+      });
+      await t.db.order.update({ where: { id: order.orderId }, data: { status: 'CANCELLED' } });
+      expect((await retry(a, failed.id)).statusCode).toBe(201);
+    });
+
+    it('refuses to retry a PENDING or SUCCEEDED refund, or one already retried', async () => {
+      const { a, failed } = await failedRefund();
+      const first = (await retry(a, failed.id)).json<RefundBody>();
+
+      const again = await retry(a, failed.id);
+      expect(again.statusCode).toBe(409);
+      expect(again.json<ErrorBody>()).toEqual({
+        errorCode: 'refund.error.not-refundable',
+        params: { subOrderId: failed.subOrderId, reason: 'refund-exists' },
+      });
+
+      const pending = await retry(a, first.id);
+      expect(pending.statusCode).toBe(409);
+      expect(pending.json<ErrorBody>().params['reason']).toBe('refund-not-failed');
+
+      await t.db.refund.update({ where: { id: first.id }, data: { status: 'SUCCEEDED' } });
+      const succeeded = await retry(a, first.id);
+      expect(succeeded.statusCode).toBe(409);
+      expect(succeeded.json<ErrorBody>().params['reason']).toBe('refund-not-failed');
+      expect(await t.db.refund.count()).toBe(2);
+    });
+
+    it('lets exactly one of two concurrent retries win', async () => {
+      const { failed } = await failedRefund();
+      const [a1, a2] = [await admin(), await admin()];
+      const results = await Promise.all([retry(a1, failed.id), retry(a2, failed.id)]);
+      expect(results.map((r) => r.statusCode).sort()).toEqual([201, 409]);
+      expect(await t.db.refund.count({ where: { status: 'PENDING' } })).toBe(1);
+      expect(await t.db.outboxEvent.count({ where: { eventType: 'refund.requested' } })).toBe(1);
+    });
+
+    it('authorisation: STAFF 403, own order 403, unknown 404', async () => {
+      const { order, failed } = await failedRefund();
+      const staff = await makeUser(t.db, { roles: ['PLATFORM_STAFF'] });
+      expect((await retry(staff, failed.id)).statusCode).toBe(403);
+
+      const customerAdmin = await t.db.userRole.create({
+        data: { id: ulid(), userId: order.customer.id, role: 'PLATFORM_ADMIN' },
+      });
+      const self = await retry({ id: customerAdmin.userId }, failed.id);
+      expect(self.statusCode).toBe(403);
+
+      const unknown = await retry(await admin(), ulid());
+      expect(unknown.statusCode).toBe(404);
+      expect(await t.db.refund.count({ where: { status: 'PENDING' } })).toBe(0);
+    });
+  });
 });
