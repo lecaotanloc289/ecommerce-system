@@ -199,7 +199,7 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
 
 9. **Side effects go through the Outbox.** Email, webhooks, payouts, notifications — write to `outbox_events` inside the same transaction as the business change; a BullMQ worker dispatches them. Do NOT `await externalApi()` in the request thread. _Exception:_ automated Zalo messages use their own outbox table `zalo_messages` (same transaction, written by `queueZaloMessages` / `queueZaloStatusMessages` in `server/src/zalo/`, delivered by `workers/zalo`) because they need a per-row send time (post-delivery care), per-shop session affinity and a vendor-visible send log.
 
-10. **CI gate must pass.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` must be green before merge. The pre-commit hook runs `lint-staged` + `typecheck` on changed files.
+10. **CI gate must pass.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` must be green before merge. The pre-commit hook runs `lint-staged` (Prettier on staged files) + `lint` and `typecheck` on every workspace changed since `HEAD` and its dependents (`turbo run lint typecheck --filter=...[HEAD]`).
 
 ---
 

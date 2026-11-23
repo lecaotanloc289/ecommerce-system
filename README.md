@@ -110,7 +110,7 @@ pnpm e2e:headed    # same with a visible browser
 
 Details, env vars and how auth/payments are faked: [`e2e/CLAUDE.md`](./e2e/CLAUDE.md).
 
-CI (`ci.yml`, on PRs and pushes to `dev` / `prod`) runs the SDK drift check, format check, lint, typecheck, test and build (Postgres service for `@repo/db`; the Testcontainers suites use Docker on the runner). The e2e workflow (`e2e.yml`) runs on PRs into `prod` and on manual dispatch. The pre-commit hook (`husky` + `lint-staged`) runs Prettier `--write` on staged files.
+CI (`ci.yml`, on PRs and pushes to `dev` / `prod`) runs the SDK drift check, format check, lint, typecheck, test and build (Postgres service for `@repo/db`; the Testcontainers suites use Docker on the runner). The e2e workflow (`e2e.yml`) runs on PRs into `prod` and on manual dispatch. The pre-commit hook (`husky`) runs Prettier `--write` on staged files (`lint-staged`), then `turbo run lint typecheck --filter=...[HEAD]` — lint + typecheck for every workspace changed since `HEAD` and its dependents (Turbo-cached).
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org). Branches: `feat/`, `fix/`, `chore/`, `refactor/`. Default base: `prod` (renamed from `main`); active work branches off `dev`.
 
