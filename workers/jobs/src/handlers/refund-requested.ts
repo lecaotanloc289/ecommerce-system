@@ -26,7 +26,8 @@ export interface RefundRequestedDeps {
  *   CANCELLED and the SUCCEEDED refunds of the payment cover its amount (the order lock makes
  *   sibling refunds see each other's result).
  * - FAILED → Refund FAILED (+ `providerRefundId` if any), error log = ops alert. Ledger untouched:
- *   the customer is still owed the money; a retry is a NEW Refund row + event (API side).
+ *   the customer is still owed the money. Recovery is `POST /v1/platform/refunds/:id/retry` (API,
+ *   PLATFORM_ADMIN): a NEW PENDING Refund row + `refund.requested`, which lands here again.
  * - PENDING (async at the provider) → stays PENDING, `providerRefundId` stored, warn log.
  *   Reconciliation is manual for now (VNPay `querydr` / Stripe `refund.updated` not wired).
  * - `payment.error.provider-unavailable` / unknown errors → retry with backoff; validation-type
@@ -145,7 +146,7 @@ export function refundRequestedHandler(deps: RefundRequestedDeps) {
       // Alert: the customer is owed the money (the ledger already moved it to CUSTOMER).
       log.error(
         { provider: payment.provider, failureCode: result.failureCode },
-        'provider refused the refund; Refund FAILED — refund manually or request a new one',
+        'provider refused the refund; Refund FAILED — retry via POST /v1/platform/refunds/:id/retry',
       );
       return;
     }

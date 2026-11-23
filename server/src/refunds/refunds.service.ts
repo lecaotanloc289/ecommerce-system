@@ -118,10 +118,7 @@ export class RefundsService {
     if (!REFUNDABLE.includes(subOrder.status)) throw notRefundable(subOrderId, 'status');
     if (subOrder.payoutReleasedAt !== null) throw notRefundable(subOrderId, 'payout-released');
 
-    const payment = await tx.payment.findFirst({
-      where: { orderId: order.id, status: 'CONFIRMED' },
-      orderBy: { attemptNo: 'desc' },
-    });
+    const payment = await this.salePayment(tx, order.id, subOrderId);
     if (!payment) throw notRefundable(subOrderId, 'no-confirmed-payment');
 
     const active = await tx.refund.findFirst({
@@ -227,6 +224,142 @@ export class RefundsService {
         },
       });
     }
+
+    return toRefund(row);
+  }
+
+  /**
+   * The CONFIRMED payment that paid for the sale. An order can hold more than one CONFIRMED
+   * payment (a duplicate payment lands in manual review and stays CONFIRMED), so pick the
+   * earliest one whose amount + currency equal the order's grand total — the duplicate is the
+   * later attempt. Interim rule until payments record which one the order consumed (needs a
+   * migration). No exact match → latest CONFIRMED attempt, with a warning.
+   */
+  private async salePayment(tx: Tx, orderId: string, subOrderId: string) {
+    const order = await tx.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { grandTotalAmount: true, currency: true },
+    });
+    const confirmed = await tx.payment.findMany({
+      where: { orderId, status: 'CONFIRMED' },
+      orderBy: { attemptNo: 'asc' },
+    });
+    const exact = confirmed.find(
+      (p) => p.amount === order.grandTotalAmount && p.currency === order.currency,
+    );
+    if (exact) return exact;
+    const latest = confirmed.at(-1);
+    if (latest) {
+      this.logger.warn(
+        { orderId, subOrderId, paymentId: latest.id, confirmed: confirmed.length },
+        'no CONFIRMED payment equals the order total; refunding against the latest attempt',
+      );
+    }
+    return latest ?? null;
+  }
+
+  /**
+   * `POST /v1/platform/refunds/:id/retry` — the recovery path for a provider refund that FAILED.
+   * The bookkeeping (sub-order REFUNDED, stock, ledger `PLATFORM_ESCROW → CUSTOMER`) was done by
+   * the original refund and stays as is; this only asks the provider again through a NEW PENDING
+   * Refund row (new id = new provider idempotency id) + `refund.requested`. Never touches the ledger.
+   */
+  async retryRefund(adminId: string, refundId: string): Promise<Refund> {
+    try {
+      const refund = await this.prisma.client.$transaction(
+        (tx) => this.retryInTx(tx, adminId, refundId),
+        { timeout: REFUND_TX_TIMEOUT_MS },
+      );
+      this.logger.log({ refundId: refund.id, retryOf: refundId, adminId }, 'refund retried');
+      return refund;
+    } catch (error) {
+      // Backstop: `refunds_sub_order_id_active_key` (one non-FAILED refund per sub-order).
+      if (isUniqueViolation(error)) {
+        const failed = await this.prisma.client.refund.findUnique({
+          where: { id: refundId },
+          select: { subOrderId: true },
+        });
+        throw notRefundable(failed?.subOrderId ?? refundId, 'refund-exists');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 1. Lock the ORDER row (same first lock as every order writer), then the refund row.
+   * 2. Retryable iff the refund is FAILED, its sub-order is REFUNDED (admin refund) or CANCELLED
+   *    in a CANCELLED order (late-payment refund), and the sub-order has no PENDING/SUCCEEDED
+   *    refund; Σ non-FAILED refunds of the payment + this amount must stay ≤ the payment.
+   * 3. New PENDING Refund (same amount / currency / payment / sub-order, `requestedById` = admin,
+   *    reason references the failed one) + outbox `refund.requested`.
+   */
+  private async retryInTx(tx: Tx, adminId: string, refundId: string): Promise<Refund> {
+    const orders = await tx.$queryRaw<{ id: string; customer_id: string; status: string }[]>`
+      SELECT o.id, o.customer_id, o.status::text AS status
+      FROM orders o
+      JOIN sub_orders s ON s.order_id = o.id
+      JOIN refunds r ON r.sub_order_id = s.id
+      WHERE r.id = ${refundId}
+      FOR UPDATE OF o`;
+    const order = orders[0];
+    if (!order) throw new DomainError('common.error.not-found', { id: refundId });
+    await tx.$queryRaw`SELECT id FROM refunds WHERE id = ${refundId} FOR UPDATE`;
+
+    if (order.customer_id === adminId) throw new DomainError('common.error.forbidden');
+
+    const failed = await tx.refund.findUniqueOrThrow({
+      where: { id: refundId },
+      include: { subOrder: { select: { status: true } } },
+    });
+    const { subOrderId } = failed;
+    if (failed.status !== 'FAILED') throw notRefundable(subOrderId, 'refund-not-failed');
+    const lateRefund = order.status === 'CANCELLED' && failed.subOrder.status === 'CANCELLED';
+    if (failed.subOrder.status !== 'REFUNDED' && !lateRefund) {
+      throw notRefundable(subOrderId, 'status');
+    }
+
+    const active = await tx.refund.findFirst({
+      where: { subOrderId, status: { in: ['PENDING', 'SUCCEEDED'] } },
+      select: { id: true },
+    });
+    if (active) throw notRefundable(subOrderId, 'refund-exists');
+
+    const payment = await tx.payment.findUniqueOrThrow({ where: { id: failed.paymentId } });
+    const refunded = await tx.refund.aggregate({
+      where: { paymentId: payment.id, status: { in: ['PENDING', 'SUCCEEDED'] } },
+      _sum: { amount: true },
+    });
+    if ((refunded._sum.amount ?? 0n) + failed.amount > payment.amount) {
+      throw new DomainError('common.error.internal', { reason: 'refunds exceed payment' });
+    }
+
+    const row = await tx.refund.create({
+      data: {
+        id: ulid(),
+        subOrderId,
+        paymentId: failed.paymentId,
+        amount: failed.amount,
+        currency: failed.currency,
+        status: 'PENDING',
+        reason: `retry of refund ${failed.id}`,
+        requestedById: adminId,
+      },
+    });
+
+    const payload: RefundRequestedEvent = RefundRequestedEventSchema.parse({
+      refundId: row.id,
+      orderId: order.id,
+      subOrderId,
+    });
+    await tx.outboxEvent.create({
+      data: {
+        id: ulid(),
+        aggregateType: ORDER_AGGREGATE_TYPE,
+        aggregateId: order.id,
+        eventType: 'refund.requested',
+        payload,
+      },
+    });
 
     return toRefund(row);
   }

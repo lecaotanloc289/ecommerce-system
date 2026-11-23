@@ -9374,6 +9374,53 @@
         ]
       }
     },
+    "/v1/platform/refunds/{id}/retry": {
+      "post": {
+        "description": "Recovery path when the provider refused a refund: inserts a NEW PENDING refund (same amount, currency, payment and sub-order; reason references the failed one) and asks the worker to call the provider again. The ledger is not touched (the original refund already moved the money to the customer). Refund not FAILED, sub-order not REFUNDED (or CANCELLED for a late-payment refund), or another PENDING/SUCCEEDED refund exists → 409 `refund.error.not-refundable` (`reason`: `refund-not-failed` | `status` | `refund-exists`); unknown refund → 404 `common.error.not-found`; your own order → 403.",
+        "operationId": "PlatformRefundsController_retry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundDto_Output"
+                }
+              }
+            },
+            "description": "The new PENDING refund"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retry a FAILED provider refund (admin)",
+        "tags": [
+          "platform"
+        ]
+      }
+    },
     "/v1/platform/settings": {
       "get": {
         "operationId": "PlatformSettingsController_get",

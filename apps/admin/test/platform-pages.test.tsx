@@ -294,6 +294,77 @@ describe('ADMIN-only gating for PLATFORM_STAFF', () => {
   });
 });
 
+describe('refunds: retry a FAILED provider refund', () => {
+  const REFUND = {
+    id: 'R1',
+    subOrderId: 'SUB1',
+    paymentId: 'P1',
+    orderId: 'ORD1',
+    vendorId: 'V1',
+    amount: VND(250000),
+    reason: 'Customer request',
+    providerRefundId: null,
+    requestedById: 'U1',
+    createdAt: '2026-11-20T03:00:00.000Z',
+    updatedAt: '2026-11-20T03:00:00.000Z',
+  };
+  const page =
+    (...statuses: string[]) =>
+    () =>
+      json({
+        items: statuses.map((status, i) => ({ ...REFUND, id: `R${i + 1}`, status })),
+        nextCursor: null,
+      });
+
+  it('offers "Retry refund" to an admin only for FAILED refunds and sends it idempotently', async () => {
+    signInAs(['PLATFORM_ADMIN']);
+    const api = fakeApi({
+      'GET /v1/platform/refunds': page('FAILED', 'SUCCEEDED'),
+      'POST /v1/platform/refunds/R1/retry': () =>
+        json({ ...REFUND, id: 'R3', status: 'PENDING' }, 201),
+    });
+    renderAt('/platform/refunds');
+    const user = ui();
+
+    const buttons = await screen.findAllByRole('button', { name: 'Retry refund' });
+    expect(buttons).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'Retry refund' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Retry refund' });
+    expect(within(dialog).getByText(/refused this refund/)).toBeTruthy();
+    await user.click(within(dialog).getByRole('button', { name: 'Retry refund' }));
+
+    await waitFor(() => expect(api.posts('POST /v1/platform/refunds/R1/retry')).toHaveLength(1));
+    const post = nth(api.posts('POST /v1/platform/refunds/R1/retry'), 0);
+    expect(post.headers.get('Idempotency-Key')).toMatch(/^[0-9A-Z]{26}$/);
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Retry refund' })).toBeNull());
+  });
+
+  it('shows the server reason when the retry is refused', async () => {
+    signInAs(['PLATFORM_ADMIN']);
+    fakeApi({
+      'GET /v1/platform/refunds': page('FAILED'),
+      'POST /v1/platform/refunds/R1/retry': () =>
+        err(409, 'refund.error.not-refundable', { subOrderId: 'SUB1', reason: 'refund-exists' }),
+    });
+    renderAt('/platform/refunds');
+    const user = ui();
+
+    await user.click(await screen.findByRole('button', { name: 'Retry refund' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Retry refund' });
+    await user.click(within(dialog).getByRole('button', { name: 'Retry refund' }));
+    expect(await within(dialog).findByText(/already exists for this sub-order/)).toBeTruthy();
+  });
+
+  it('hides "Retry refund" from PLATFORM_STAFF', async () => {
+    signInAs(['PLATFORM_STAFF']);
+    fakeApi({ 'GET /v1/platform/refunds': page('FAILED') });
+    renderAt('/platform/refunds');
+
+    expect(await screen.findByText('Customer request')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Retry refund' })).toBeNull();
+  });
+});
+
 const SETTINGS = {
   id: 'S1',
   commissionBps: 250,

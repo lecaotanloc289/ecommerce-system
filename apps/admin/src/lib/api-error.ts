@@ -71,6 +71,7 @@ const REFUND_REASON_KEYS: Readonly<Record<string, MessageKey>> = {
   'payout-released': 'admin.platform.refundReason.payoutReleased',
   'no-confirmed-payment': 'admin.platform.refundReason.noConfirmedPayment',
   'refund-exists': 'admin.platform.refundReason.refundExists',
+  'refund-not-failed': 'admin.platform.refundReason.refundNotFailed',
 };
 
 /** `params.reason` of the platform role endpoints → replaces the generic forbidden / conflict text. */

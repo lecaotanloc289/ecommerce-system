@@ -595,6 +595,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform/refunds/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry a FAILED provider refund (admin)
+         * @description Recovery path when the provider refused a refund: inserts a NEW PENDING refund (same amount, currency, payment and sub-order; reason references the failed one) and asks the worker to call the provider again. The ledger is not touched (the original refund already moved the money to the customer). Refund not FAILED, sub-order not REFUNDED (or CANCELLED for a late-payment refund), or another PENDING/SUCCEEDED refund exists → 409 `refund.error.not-refundable` (`reason`: `refund-not-failed` | `status` | `refund-exists`); unknown refund → 404 `common.error.not-found`; your own order → 403.
+         */
+        post: operations["PlatformRefundsController_retry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/platform/settings": {
         parameters: {
             query?: never;
@@ -3817,6 +3837,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RefundPageDto_Output"];
+                };
+            };
+        };
+    };
+    PlatformRefundsController_retry: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new PENDING refund */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDto_Output"];
                 };
             };
         };

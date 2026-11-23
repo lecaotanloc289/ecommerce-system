@@ -185,18 +185,18 @@ admin-only rows below (sidebar + route guard + in-page gating; the API enforces 
 | `/platform/vendors`      | any   | Status filter + search; Suspend (reason) / Reactivate                                                                                                                                                                                                                                                           |
 | `/platform/products`     | any   | Status / shop / search; Block (reason) / Unblock                                                                                                                                                                                                                                                                |
 | `/platform/orders`       | any   | Search by id prefix / customer email + status. `?id=` opens detail: sub-orders + items, payments (no raw payload), ledger, refunds. **ADMIN only:** "Refund sub-order" (reason; server `not-refundable` reason shown)                                                                                           |
-| `/platform/refunds`      | any   | Status filter; links to the order                                                                                                                                                                                                                                                                               |
+| `/platform/refunds`      | any   | Status filter; links to the order. **ADMIN only:** "Retry refund" on FAILED rows (`POST /v1/platform/refunds/:id/retry`, confirm dialog, `RetryRefundAction` in `retry-refund.tsx`; also on FAILED refunds in the order detail)                                                                                 |
 | `/platform/settings`     | ADMIN | Commission as percent (`lib/bps.ts`: exact integer bps ↔ percent, ≤ 2 decimals), hold / refund-window days, payment timeout, max coupon stack, currencies. `lib/settings-form.ts` mirrors the server bounds (default ∈ supported)                                                                               |
 | `/platform/users`        | ADMIN | Search; grant / revoke PLATFORM_STAFF / PLATFORM_ADMIN. `params.reason` (`last-platform-admin`, `self-demotion`, `not-platform-admin`) maps to specific texts in `errorMessage`                                                                                                                                 |
 
 Reusable widgets in `src/components/`: `status-badge` (enum → translated coloured badge), `money-text`
 (core `Money` via `formatMoney`), `confirm-reason-dialog` (required trimmed 1..500 reason: suspend, block,
 reject, refund), `cursor-table`, `filter-bar` (`FilterSelect`, `SearchForm`, `FilterBar`).
-`errorMessage` (lib/api-error.ts) also turns `refund.error.not-refundable` `params.reason` into an extra
-sentence.
+`errorMessage` (lib/api-error.ts) also turns `refund.error.not-refundable` `params.reason` (incl. the retry's
+`refund-not-failed`) into an extra sentence.
 
 Tests: `test/platform-lib.test.ts` (bps, slug, settings validation, reason mapping) and
-`test/platform-pages.test.tsx` (approve / reject dialogs, role gating, refund, settings, users, dashboard;
+`test/platform-pages.test.tsx` (approve / reject dialogs, role gating, refund, refund retry, settings, users, dashboard;
 global `fetch` faked). Signed-in flows need the OAuth round-trip, so they are covered by these tests, not
 exercised in a real browser.
 

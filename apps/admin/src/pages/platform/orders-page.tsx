@@ -30,6 +30,7 @@ import { compact } from '@/lib/compact';
 import { unwrap } from '@/lib/api-error';
 import { useApiMutation } from '@/lib/use-api-mutation';
 import { useCursorList } from '@/lib/use-cursor-list';
+import { RetryRefundAction } from './retry-refund';
 
 type OrderRow = {
   id: string;
@@ -311,6 +312,7 @@ export function OrderDialog({ id, onClose }: { id: string; onClose: () => void }
                     <MoneyText money={r.amount} />
                     <StatusBadge status={r.status} />
                     <span className="text-body-s text-text-muted">{r.reason}</span>
+                    <RetryRefundAction refund={r} />
                   </li>
                 ))}
               </ul>

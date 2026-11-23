@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import {
   RefundCreateSchema,
+  RefundIdSchema,
   RefundListQuerySchema,
   RefundPageSchema,
   RefundSchema,
@@ -14,3 +15,4 @@ export class RefundDto extends createZodDto(RefundSchema) {}
 export class RefundListQueryDto extends createZodDto(RefundListQuerySchema) {}
 export class RefundPageDto extends createZodDto(RefundPageSchema) {}
 export class SubOrderParamsDto extends createZodDto(z.object({ id: SubOrderIdSchema })) {}
+export class RefundParamsDto extends createZodDto(z.object({ id: RefundIdSchema })) {}

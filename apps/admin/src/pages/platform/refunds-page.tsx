@@ -12,6 +12,7 @@ import { useLocale } from '@/i18n/use-locale';
 import { compact } from '@/lib/compact';
 import { unwrap } from '@/lib/api-error';
 import { useCursorList } from '@/lib/use-cursor-list';
+import { RetryRefundAction } from './retry-refund';
 
 type RefundRow = {
   id: string;
@@ -24,6 +25,7 @@ type RefundRow = {
 
 const STATUS_KEYS = { PENDING: 'pending', SUCCEEDED: 'succeeded', FAILED: 'failed' } as const;
 
+/** `/platform/refunds` — all refunds, status filter; ADMIN can retry a FAILED one. */
 export function RefundsPage() {
   const { t, locale } = useLocale();
   const [status, setStatus] = useState('');
@@ -56,6 +58,7 @@ export function RefundsPage() {
       cell: (r) => <StatusBadge status={r.status} />,
     },
     { header: t('admin.platform.common.created'), cell: (r) => formatDate(r.createdAt, locale) },
+    { header: t('admin.platform.refunds.actions'), cell: (r) => <RetryRefundAction refund={r} /> },
   ];
 
   return (

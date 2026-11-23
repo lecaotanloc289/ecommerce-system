@@ -129,7 +129,9 @@ Refund.amount, paymentAmount = Payment.amount, reason, initiatedBy = requestedBy
   is REFUNDED or CANCELLED (late-payment refunds) and Σ SUCCEEDED refunds of the payment ≥ its
   amount (the order lock lets parallel sibling refunds see each other). **FAILED** → Refund FAILED
   (+ `providerRefundId`), `error` log = ops alert; ledger and sub-order untouched (the API already
-  moved the money to `CUSTOMER`; a retry is a new Refund row + event). **PENDING** (async at the
+  moved the money to `CUSTOMER`). Recovery: a PLATFORM_ADMIN calls `POST /v1/platform/refunds/:id/retry`
+  (admin console "Retry refund"), which inserts a new PENDING Refund (new id = new provider
+  idempotency id) + `refund.requested` — this handler then runs again for it, ledger untouched. **PENDING** (async at the
   provider) → stays PENDING with `providerRefundId`, `warn` log; PENDING **without** a provider
   reference (VNPay code 94 = duplicate request id, e.g. a redelivery after the first call's commit
   was lost — the money may already be back) → stays PENDING, `error` log "possible duplicate

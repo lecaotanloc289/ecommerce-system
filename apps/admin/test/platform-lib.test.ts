@@ -173,6 +173,15 @@ describe('errorMessage with params.reason', () => {
     expect(message).toContain('payout was already released');
   });
 
+  it('explains a retry of a refund that did not fail', () => {
+    expect(
+      errorMessage(
+        'en',
+        new ApiError(409, 'refund.error.not-refundable', { reason: 'refund-not-failed' }),
+      ),
+    ).toContain('Only a refund the provider refused');
+  });
+
   it('names the shop currency for a price in another currency (vendor portal)', () => {
     const error = new ApiError(422, 'common.error.validation-failed', {
       field: 'currency',
