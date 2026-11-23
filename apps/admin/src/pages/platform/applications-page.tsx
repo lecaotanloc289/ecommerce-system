@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router';
-import { ApplicationStatusSchema, SlugSchema } from '@repo/core';
+import { ApplicationStatusSchema, HttpUrlSchema, SlugSchema } from '@repo/core';
 import { formatDate } from '@repo/i18n';
 import {
   Button,
@@ -148,7 +148,9 @@ export function ApplicationDialog({ id, onClose }: { id: string; onClose: () => 
       ),
     {
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: APPLICATIONS_KEY });
+        await queryClient.invalidateQueries({
+          predicate: (q) => q.queryKey[1] === 'applications' && q.queryKey[2] !== 'detail',
+        }); // keep the open detail (and its presigned links) untouched
         setAction(null);
         onClose();
       },
@@ -263,6 +265,8 @@ export function ApplicationDialog({ id, onClose }: { id: string; onClose: () => 
 }
 
 function DocumentLink({ href, label }: { href: string; label: string }) {
+  // Defence in depth: only ever link to http(s) URLs, whatever the server sent.
+  if (!HttpUrlSchema.safeParse(href).success) return null;
   return (
     <a
       className={buttonVariants({ variant: 'secondary', size: 'sm' })}
@@ -336,7 +340,9 @@ function ApproveForm({
       ),
     {
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: APPLICATIONS_KEY });
+        await queryClient.invalidateQueries({
+          predicate: (q) => q.queryKey[1] === 'applications' && q.queryKey[2] !== 'detail',
+        }); // keep the open detail (and its presigned links) untouched
         onDone();
       },
     },

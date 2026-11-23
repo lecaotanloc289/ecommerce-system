@@ -17,8 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui';
-import { useCurrentUser } from '@/auth/session';
-import { api } from '@/auth/session';
+import { api, useCurrentUser } from '@/auth/session';
 import { ConfirmReasonDialog } from '@/components/confirm-reason-dialog';
 import { CursorTable, type Column } from '@/components/cursor-table';
 import { ErrorAlert } from '@/components/error-alert';
@@ -69,7 +68,7 @@ const LEDGER_TYPE_KEYS: Record<LedgerEntryType, MessageKey> = {
 };
 
 /** Sub-order statuses for which the "Refund" button is offered; the server has the final say. */
-const REFUND_OFFERED = new Set(['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'COMPLETED']);
+const REFUND_OFFERED = new Set(['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED']);
 
 export function OrdersPage() {
   const { t, locale } = useLocale();

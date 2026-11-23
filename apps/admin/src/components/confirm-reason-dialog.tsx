@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import {
   Button,
   Dialog,
@@ -57,6 +57,8 @@ function ReasonForm({
   onConfirm,
 }: ConfirmReasonDialogProps) {
   const t = useT();
+  const inputId = useId();
+  const helpId = useId();
   const [reason, setReason] = useState('');
   const [touched, setTouched] = useState(false);
   const trimmed = reason.trim();
@@ -81,17 +83,17 @@ function ReasonForm({
       </DialogHeader>
       {children}
       <div className="grid gap-1.5">
-        <Label htmlFor="reason-input">{reasonLabel ?? t('admin.platform.common.reason')}</Label>
+        <Label htmlFor={inputId}>{reasonLabel ?? t('admin.platform.common.reason')}</Label>
         <Textarea
-          id="reason-input"
+          id={inputId}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={3}
           aria-invalid={touched && problem !== null}
-          aria-describedby="reason-help"
+          aria-describedby={helpId}
         />
         <p
-          id="reason-help"
+          id={helpId}
           role={touched && problem ? 'alert' : undefined}
           className={
             touched && problem ? 'text-body-s text-danger-fg' : 'text-body-s text-text-muted'
