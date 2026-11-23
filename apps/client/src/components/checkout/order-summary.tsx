@@ -15,18 +15,21 @@ import { ProductImage } from '../product/product-image';
  * `useOrderTotals()`). `footer`/`children` slot in a CTA or extra content per screen.
  */
 export function OrderSummary({
-  lines,
+  lines = [],
   totals,
   footer,
   children,
   showItems = false,
+  estimate = false,
   className,
 }: {
-  lines: CartLineView[];
+  lines?: readonly CartLineView[];
   totals: OrderTotals;
   footer?: ReactNode;
   children?: ReactNode;
   showItems?: boolean;
+  /** Totals are a client-side estimate (the server prices the real order): label them so. */
+  estimate?: boolean;
   className?: string;
 }) {
   const { locale, t } = useLocale();
@@ -86,10 +89,16 @@ export function OrderSummary({
 
       <div className="border-t border-border-subtle pt-4">
         <div className="flex items-center justify-between">
-          <span className="text-body-m font-semibold text-text-primary">{t('summary.total')}</span>
+          <span className="text-body-m font-semibold text-text-primary">
+            {estimate ? t('checkout.estimateTitle') : t('summary.total')}
+          </span>
           <span className="text-h5 font-bold text-text-price">{formatMoney(total, locale)}</span>
         </div>
       </div>
+
+      {estimate ? (
+        <p className="text-body-s text-text-muted">{t('checkout.estimateNote')}</p>
+      ) : null}
 
       {footer}
     </Card>

@@ -178,30 +178,37 @@ describe('guest cart', () => {
     });
   });
 
-  it('does not crash a USD cart on the VND-only mock shipping fee and voucher', () => {
+  it('ignores a shipping fee in another currency than the cart (estimate only)', () => {
     const usd = snapshot(
       product({ currency: 'USD', variants: [{ id: 21, price: 1999, stock: 4 }] }),
     );
     const lines = cartViews(addItem(EMPTY_CART, usd, 2));
-    const fedex = {
-      id: 's',
-      carrier: 'fedex' as const,
-      name: 'FedEx',
-      eta: { minDays: 1, maxDays: 2 },
-      fee: { amount: 60_000, currency: 'VND' as const },
-    };
-    const voucher = {
-      code: 'X',
-      type: 'FIXED' as const,
-      amount: { amount: 50_000, currency: 'VND' as const },
-      minSubtotal: { amount: 0, currency: 'VND' as const },
-    };
-    const totals = computeTotals(lines, fedex, voucher, 'VND');
+    const totals = computeTotals(lines, [{ amount: 60_000, currency: 'VND' }], 'VND');
     expect(totals).toMatchObject({
       subtotal: { amount: 3998, currency: 'USD' },
       shipping: { amount: 0, currency: 'USD' },
       discount: { amount: 0, currency: 'USD' },
       total: { amount: 3998, currency: 'USD' },
+    });
+  });
+
+  it('adds the chosen shipping fees and skips unavailable lines in the estimate', () => {
+    const cart = addItem(EMPTY_CART, snapshot(product()), 2);
+    const [line] = cartViews(cart);
+    if (!line) throw new Error('no line');
+    const totals = computeTotals(
+      [line, { ...line, unavailable: true }],
+      [
+        { amount: 30_000, currency: 'VND' },
+        { amount: 20_000, currency: 'VND' },
+      ],
+      'VND',
+    );
+    expect(totals).toMatchObject({
+      itemCount: 2,
+      subtotal: { amount: 398_000, currency: 'VND' },
+      shipping: { amount: 50_000, currency: 'VND' },
+      total: { amount: 448_000, currency: 'VND' },
     });
   });
 
@@ -211,7 +218,7 @@ describe('guest cart', () => {
       snapshot(product({ variants: [{ id: 11, price: 199_000, stock: 9 }] })),
       3,
     );
-    const totals = computeTotals(cartViews(cart), undefined, undefined, 'VND');
+    const totals = computeTotals(cartViews(cart), [], 'VND');
     expect(totals).toMatchObject({ itemCount: 3, subtotal: { amount: 597_000, currency: 'VND' } });
   });
 });

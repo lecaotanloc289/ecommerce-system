@@ -5,6 +5,7 @@ import '@/app/globals.css';
 import { AuthProvider } from '@/store/auth-provider';
 import { CartProvider } from '@/store/cart-store';
 import { CheckoutProvider } from '@/store/checkout-store';
+import { Toaster } from '@repo/ui';
 import { Navbar } from './navbar';
 import { Footer } from './footer';
 
@@ -41,6 +42,7 @@ export function StorefrontShell({ locale, children }: { locale: AppLocale; child
                 <Navbar />
                 <main className="flex-1">{children}</main>
                 <Footer />
+                <Toaster />
               </CheckoutProvider>
             </CartProvider>
           </AuthProvider>

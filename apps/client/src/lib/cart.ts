@@ -6,8 +6,8 @@ import {
   type ProductDetail,
   type ProductVariant,
 } from '@repo/core';
-import { compare, isNegative, multiply, subtract, sum, zero } from '@repo/core/money';
-import type { Currency, Money, ShippingMethod, Voucher } from '../types';
+import { multiply, sum, zero } from '@repo/core/money';
+import type { Currency, Money } from '../types';
 
 /** Upper bound for a single line's quantity (core's payload bound; stock usually caps first). */
 export const MAX_LINE_QTY = MAX_CART_LINE_QUANTITY;
@@ -34,9 +34,11 @@ export const CartItemSnapshotSchema = CartLineSchema.pick({
 });
 export type CartItemSnapshot = ReturnType<typeof CartItemSnapshotSchema.parse>;
 
-/** A guest cart line resolved for display: persisted `{ variantId, quantity }` + its snapshot. */
+/** A cart line resolved for display: guest `{ variantId, quantity }` + snapshot, or a server `CartLine`. */
 export interface CartLineView extends CartItemSnapshot {
   quantity: number;
+  /** Product or vendor no longer sellable (server cart only): greyed out, excluded from totals. */
+  unavailable: boolean;
   /** Max purchasable quantity (stock, capped at `MAX_LINE_QTY`). */
   maxQty: number;
 }
@@ -49,6 +51,14 @@ export function cartItemCount(lines: readonly Pick<CartLineInput, 'quantity'>[])
 /** unitPrice × quantity, integer minor units (core `multiply` rejects fractional qty / overflow). */
 export function lineTotal(line: Pick<CartLineView, 'unitPrice' | 'quantity'>): Money {
   return multiply(line.unitPrice, line.quantity);
+}
+
+/** Would adding `item` put two currencies in one cart? (One order = one currency, roadmap D6.) */
+export function mixesCurrency(
+  existing: readonly { unitPrice: Money }[],
+  item: { unitPrice: Money },
+): boolean {
+  return existing.some((i) => i.unitPrice.currency !== item.unitPrice.currency);
 }
 
 /** Max quantity a shopper may pick for a variant with `stockAvailable` units left. */
@@ -97,30 +107,6 @@ export function toCartSnapshot(product: ProductDetail, variant: ProductVariant):
   };
 }
 
-/**
- * Whether `subtotal` reaches the voucher's minimum spend. A minimum in another currency never
- * matches (core `compare` refuses cross-currency comparisons). Shared by the totals and the
- * voucher form so "applied" and "discounted" can't disagree.
- */
-export function meetsMinSpend(voucher: Voucher, subtotal: Money): boolean {
-  return (
-    voucher.minSubtotal.currency === subtotal.currency &&
-    compare(subtotal, voucher.minSubtotal) >= 0
-  );
-}
-
-/** FIXED voucher discount, capped at the subtotal; zero when inapplicable (currency or minimum spend). */
-export function voucherDiscount(voucher: Voucher | undefined, subtotal: Money): Money {
-  if (
-    !voucher ||
-    voucher.amount.currency !== subtotal.currency ||
-    !meetsMinSpend(voucher, subtotal)
-  ) {
-    return zero(subtotal.currency);
-  }
-  return compare(voucher.amount, subtotal) <= 0 ? { ...voucher.amount } : { ...subtotal };
-}
-
 export interface OrderTotals {
   itemCount: number;
   subtotal: Money;
@@ -129,33 +115,35 @@ export interface OrderTotals {
   total: Money;
 }
 
+/** Lines that count towards totals and checkout (unavailable ones are shown greyed out only). */
+export function payableLines(lines: readonly CartLineView[]): CartLineView[] {
+  return lines.filter((l) => !l.unavailable);
+}
+
 /**
- * Single source of truth for cart/checkout totals. All math goes through @repo/core Money,
- * which throws if lines or shipping mix currencies.
+ * Client-side ESTIMATE of cart/checkout totals (the server prices the real order at checkout:
+ * coupons, fees, rounding). Only payable lines in the cart's first currency are summed; shipping
+ * fees in another currency are ignored. All math goes through @repo/core Money.
  */
 export function computeTotals(
   lines: readonly CartLineView[],
-  shippingMethod: ShippingMethod | undefined,
-  voucher: Voucher | undefined,
+  shippingFees: readonly Money[],
   fallbackCurrency: Currency,
 ): OrderTotals {
-  const currency = lines[0]?.unitPrice.currency ?? fallbackCurrency;
-  const subtotal = sum(lines.map(lineTotal), currency);
-  // Nothing to ship → no fee. The interim mock shipping fees are VND-only: a fee in another
-  // currency than the cart's is not charged (the server prices shipping at checkout, T5.1).
-  const shipping =
-    shippingMethod && lines.length > 0 && shippingMethod.fee.currency === currency
-      ? sum([shippingMethod.fee], currency)
-      : zero(currency);
-  const discount = voucherDiscount(voucher, subtotal);
-  const gross = sum([subtotal, shipping], currency);
-  const net = subtract(gross, discount);
+  const payable = payableLines(lines);
+  const currency = payable[0]?.unitPrice.currency ?? fallbackCurrency;
+  const sameCurrency = payable.filter((l) => l.unitPrice.currency === currency);
+  const subtotal = sum(sameCurrency.map(lineTotal), currency);
+  const shipping = sum(
+    shippingFees.filter((fee) => fee.currency === currency),
+    currency,
+  );
+  const discount = zero(currency);
   return {
-    itemCount: cartItemCount(lines),
+    itemCount: cartItemCount(sameCurrency),
     subtotal,
     shipping,
     discount,
-    // A discount can never push the total below zero.
-    total: isNegative(net) ? zero(currency) : net,
+    total: sum([subtotal, shipping], currency),
   };
 }
