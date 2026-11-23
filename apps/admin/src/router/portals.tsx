@@ -25,6 +25,14 @@ import {
 } from '@/auth/roles';
 import { ComingSoonPage } from '@/pages/coming-soon-page';
 import { DashboardPage } from '@/pages/dashboard-page';
+import { ApplicationsPage } from '@/pages/platform/applications-page';
+import { OrdersPage } from '@/pages/platform/orders-page';
+import { PlatformDashboardPage } from '@/pages/platform/platform-dashboard-page';
+import { ProductsPage } from '@/pages/platform/products-page';
+import { RefundsPage } from '@/pages/platform/refunds-page';
+import { SettingsPage } from '@/pages/platform/settings-page';
+import { UsersPage } from '@/pages/platform/users-page';
+import { VendorsPage } from '@/pages/platform/vendors-page';
 
 /**
  * One entry = one sidebar link + one route under the portal. `roles` narrows access within the
@@ -88,15 +96,32 @@ export const PLATFORM_PORTAL: PortalConfig = {
       path: '',
       labelKey: 'admin.nav.dashboard',
       icon: LayoutDashboard,
-      element: <DashboardPage titleKey="admin.portal.platform" />,
+      element: <PlatformDashboardPage />,
     },
-    comingSoon('applications', 'admin.nav.applications', FileCheck),
-    comingSoon('vendors', 'admin.nav.vendors', Store),
-    comingSoon('products', 'admin.nav.products', Package),
-    comingSoon('orders', 'admin.nav.orders', ShoppingBag),
-    comingSoon('refunds', 'admin.nav.refunds', RotateCcw),
-    comingSoon('settings', 'admin.nav.settings', Settings, PLATFORM_ADMIN_ROLES),
-    comingSoon('users', 'admin.nav.users', UserCog, PLATFORM_ADMIN_ROLES),
+    {
+      path: 'applications',
+      labelKey: 'admin.nav.applications',
+      icon: FileCheck,
+      element: <ApplicationsPage />,
+    },
+    { path: 'vendors', labelKey: 'admin.nav.vendors', icon: Store, element: <VendorsPage /> },
+    { path: 'products', labelKey: 'admin.nav.products', icon: Package, element: <ProductsPage /> },
+    { path: 'orders', labelKey: 'admin.nav.orders', icon: ShoppingBag, element: <OrdersPage /> },
+    { path: 'refunds', labelKey: 'admin.nav.refunds', icon: RotateCcw, element: <RefundsPage /> },
+    {
+      path: 'settings',
+      labelKey: 'admin.nav.settings',
+      icon: Settings,
+      roles: PLATFORM_ADMIN_ROLES,
+      element: <SettingsPage />,
+    },
+    {
+      path: 'users',
+      labelKey: 'admin.nav.users',
+      icon: UserCog,
+      roles: PLATFORM_ADMIN_ROLES,
+      element: <UsersPage />,
+    },
   ],
 };
 

@@ -18,8 +18,9 @@ Read the root `CLAUDE.md` first — it is the constitution (Golden Rules, NEVER 
 
 ## State (as of 2026-11-23)
 
-Scaffold done (T4.2): routing, layout, auth session, role guards, data layer, i18n, tests. Every portal
-page except the dashboards is a "coming soon" placeholder — T5.3 (vendor) and T5.4 (platform) fill them in.
+Scaffold done (T4.2): routing, layout, auth session, role guards, data layer, i18n, tests. The platform
+console (`/platform/*`, T5.4) is built — see "Platform console" below. Vendor portal pages are still
+"coming soon" placeholders (T5.3).
 
 ## Structure
 
@@ -40,7 +41,7 @@ src/
   components/              layout/ (portal-layout, sidebar-nav, user-menu), splash, centered-card,
                            page-header, locale-switcher, sign-out-button, error-alert
   pages/                   login, auth-callback, invite, home (redirect / chooser / no access),
-                           dashboard, coming-soon, not-found, route-error
+                           dashboard, coming-soon, not-found, route-error; platform/ (T5.4 console pages)
   lib/                     api-error (ApiError, unwrap, errorMessage), idempotency, use-api-mutation, query-client
   i18n/use-locale.ts       useLocale() / useT() + locale store
 test/                      Vitest: guards.test.tsx, auth-store.test.ts, idempotency.test.tsx, lib.test.ts
@@ -98,12 +99,17 @@ only — the API enforces `@Roles` + ownership on every endpoint.
   const approve = useApiMutation((id: string, headers) =>
     unwrap(
       api.POST('/v1/platform/vendor-applications/{id}/approve', {
-        params: { path: { id } },
-        headers,
+        params: { path: { id }, header: headers },
+        body,
       }),
     ),
   );
   ```
+
+  For routes whose OpenAPI declares the `Idempotency-Key` header, the typed slot is `params.header`
+  (the SDK's `headers` option does not accept the `IdempotencyHeaders` interface); the SDK keeps a
+  caller-supplied key either way. Optional query filters must be absent, not `undefined`
+  (`exactOptionalPropertyTypes`): wrap them with `compact({ status, q, cursor })` from `lib/compact.ts`.
 
   Key reuse: one key per **user action** = one set of variables until it succeeds. TanStack's automatic
   retries (transient errors, ≤ 2) and the user pressing "Try again" with the same input reuse the key, so
@@ -138,6 +144,34 @@ do not send the SameSite=Lax refresh cookie on the cross-site `POST /v1/auth/ref
 ends signed out. **Known gap:** the current deploy targets (`elma-admin.pages.dev` + `elma-api-*.fly.dev`)
 are cross-site, so login will not stick there until a shared custom domain (or a same-origin `/v1`
 proxy) is set up — an infra decision outside this app.
+
+## Platform console (`/platform/*`, T5.4)
+
+Pages live in `src/pages/platform/`; all use cursor lists (`useCursorList` + `<CursorTable>`, "Load more"),
+`useApiMutation` and `admin.platform.*` i18n keys. Roles: STAFF and ADMIN see everything except the
+admin-only rows below (sidebar + route guard + in-page gating; the API enforces it too).
+
+| Path                     | Role  | Notes                                                                                                                                                                                                                                                                                                           |
+| ------------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/platform`              | any   | Pending applications / refunds counts (first 100, shown "100+" beyond) + 5 recent orders                                                                                                                                                                                                                        |
+| `/platform/applications` | any   | Masked list + status filter. `?id=` opens the detail dialog: full numbers + KYC links (`target=_blank rel=noopener`), fetched on every open with `gcTime: 0` (60 s presigned URLs, never cached). Approve (name + slug, slug suggested from name via `lib/slug.ts`, 409 → "slug taken") / Reject (reason ≤ 500) |
+| `/platform/vendors`      | any   | Status filter + search; Suspend (reason) / Reactivate                                                                                                                                                                                                                                                           |
+| `/platform/products`     | any   | Status / shop / search; Block (reason) / Unblock                                                                                                                                                                                                                                                                |
+| `/platform/orders`       | any   | Search by id prefix / customer email + status. `?id=` opens detail: sub-orders + items, payments (no raw payload), ledger, refunds. **ADMIN only:** "Refund sub-order" (reason; server `not-refundable` reason shown)                                                                                           |
+| `/platform/refunds`      | any   | Status filter; links to the order                                                                                                                                                                                                                                                                               |
+| `/platform/settings`     | ADMIN | Commission as percent (`lib/bps.ts`: exact integer bps ↔ percent, ≤ 2 decimals), hold / refund-window days, payment timeout, max coupon stack, currencies. `lib/settings-form.ts` mirrors the server bounds (default ∈ supported)                                                                               |
+| `/platform/users`        | ADMIN | Search; grant / revoke PLATFORM_STAFF / PLATFORM_ADMIN. `params.reason` (`last-platform-admin`, `self-demotion`, `not-platform-admin`) maps to specific texts in `errorMessage`                                                                                                                                 |
+
+Reusable widgets in `src/components/`: `status-badge` (enum → translated coloured badge), `money-text`
+(core `Money` via `formatMoney`), `confirm-reason-dialog` (required trimmed 1..500 reason: suspend, block,
+reject, refund), `cursor-table`, `filter-bar` (`FilterSelect`, `SearchForm`, `FilterBar`).
+`errorMessage` (lib/api-error.ts) also turns `refund.error.not-refundable` `params.reason` into an extra
+sentence.
+
+Tests: `test/platform-lib.test.ts` (bps, slug, settings validation, reason mapping) and
+`test/platform-pages.test.tsx` (approve / reject dialogs, role gating, refund, settings, users, dashboard;
+global `fetch` faked). Signed-in flows need the OAuth round-trip, so they are covered by these tests, not
+exercised in a real browser.
 
 ## Adding a portal page (T5.3 / T5.4)
 
