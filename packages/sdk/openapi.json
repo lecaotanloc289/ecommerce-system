@@ -1716,6 +1716,18 @@
                         "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
                         "type": "string"
                       },
+                      "productSlug": {
+                        "anyOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "productTitle": {
                         "minLength": 1,
                         "type": "string"
@@ -1756,6 +1768,7 @@
                       "id",
                       "variantId",
                       "productId",
+                      "productSlug",
                       "productTitle",
                       "attributes",
                       "unitPrice",
@@ -2708,6 +2721,18 @@
                         "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
                         "type": "string"
                       },
+                      "productSlug": {
+                        "anyOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "productTitle": {
                         "minLength": 1,
                         "type": "string"
@@ -2748,6 +2773,7 @@
                       "id",
                       "variantId",
                       "productId",
+                      "productSlug",
                       "productTitle",
                       "attributes",
                       "unitPrice",
@@ -6511,6 +6537,18 @@
                   "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
                   "type": "string"
                 },
+                "productSlug": {
+                  "anyOf": [
+                    {
+                      "maxLength": 160,
+                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "productTitle": {
                   "minLength": 1,
                   "type": "string"
@@ -6551,6 +6589,7 @@
                 "id",
                 "variantId",
                 "productId",
+                "productSlug",
                 "productTitle",
                 "attributes",
                 "unitPrice",
@@ -6937,6 +6976,18 @@
                         "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
                         "type": "string"
                       },
+                      "productSlug": {
+                        "anyOf": [
+                          {
+                            "maxLength": 160,
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "productTitle": {
                         "minLength": 1,
                         "type": "string"
@@ -6977,6 +7028,7 @@
                       "id",
                       "variantId",
                       "productId",
+                      "productSlug",
                       "productTitle",
                       "attributes",
                       "unitPrice",

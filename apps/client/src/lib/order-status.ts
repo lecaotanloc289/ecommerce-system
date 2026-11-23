@@ -1,4 +1,4 @@
-import type { OrderStatus, SubOrder, SubOrderStatus } from '@repo/core';
+import type { OrderItem, OrderStatus, SubOrder, SubOrderStatus } from '@repo/core';
 
 /** Forward path shown as the stepper (a sub-order is PAID once the payment is confirmed). */
 export const TIMELINE_STAGES = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'COMPLETED'] as const;
@@ -105,6 +105,20 @@ export function canCancelOrder(order: OrderActionsSource): boolean {
 /** Pay (again) while the order still awaits payment. */
 export function canPayOrder(order: OrderActionsSource): boolean {
   return canCancelOrder(order);
+}
+
+/**
+ * Product-page link that opens the review form for a delivered / completed sub-order item
+ * (`/product/<slug>?reviewSubOrderId=<subOrderId>#reviews`); null when the sub-order is not
+ * reviewable yet or the product has no slug. The API still decides eligibility.
+ */
+export function reviewHref(
+  sub: Pick<SubOrder, 'status'> & { id: string },
+  item: Pick<OrderItem, 'productSlug'>,
+): string | null {
+  if (sub.status !== 'DELIVERED' && sub.status !== 'COMPLETED') return null;
+  if (!item.productSlug) return null;
+  return `/product/${item.productSlug}?reviewSubOrderId=${sub.id}#reviews`;
 }
 
 /** "Mark as received" is offered for shipped / delivered sub-orders. */

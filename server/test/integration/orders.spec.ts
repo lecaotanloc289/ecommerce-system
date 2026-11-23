@@ -45,6 +45,7 @@ interface OrderBody {
     items: {
       variantId: string;
       productId: string;
+      productSlug: string | null;
       productTitle: string;
       quantity: number;
       unitPrice: MoneyBody;
@@ -173,6 +174,9 @@ describe('orders API (Testcontainers)', () => {
     );
     expect(res.statusCode).toBe(201);
     const order = res.json<OrderBody>();
+    const { slug } = await t.db.productTranslation.findFirstOrThrow({
+      where: { productId: product.id },
+    });
     expect(order.status).toBe('AWAITING_PAYMENT');
     expect(order.itemsTotal).toEqual(vnd(200_000));
     expect(order.shippingTotal).toEqual(vnd(30_000));
@@ -198,6 +202,7 @@ describe('orders API (Testcontainers)', () => {
       expect.objectContaining({
         variantId: variant.id,
         productId: product.id,
+        productSlug: slug,
         productTitle: 'Test Product', // user's primaryLocale EN (vi is "Test Product (vi)")
         quantity: 2,
         unitPrice: vnd(100_000),

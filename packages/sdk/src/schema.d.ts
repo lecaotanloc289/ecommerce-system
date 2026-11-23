@@ -1792,6 +1792,7 @@ export interface components {
                         currency: "VND" | "USD";
                     };
                     productId: string;
+                    productSlug: string | null;
                     productTitle: string;
                     quantity: number;
                     unitPrice: {
@@ -1983,6 +1984,7 @@ export interface components {
                         currency: "VND" | "USD";
                     };
                     productId: string;
+                    productSlug: string | null;
                     productTitle: string;
                     quantity: number;
                     unitPrice: {
@@ -2727,6 +2729,7 @@ export interface components {
                     currency: "VND" | "USD";
                 };
                 productId: string;
+                productSlug: string | null;
                 productTitle: string;
                 quantity: number;
                 unitPrice: {
@@ -2810,6 +2813,7 @@ export interface components {
                         currency: "VND" | "USD";
                     };
                     productId: string;
+                    productSlug: string | null;
                     productTitle: string;
                     quantity: number;
                     unitPrice: {

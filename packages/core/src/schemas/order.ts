@@ -14,7 +14,7 @@ import {
   VendorIdSchema,
 } from '../ids';
 import { AddressSchema } from './address';
-import { HttpUrlSchema, PageQuerySchema, PageSchema } from './common';
+import { HttpUrlSchema, PageQuerySchema, PageSchema, SlugSchema } from './common';
 import { IsoDateTimeSchema } from './datetime';
 import { NonNegativeMoneySchema } from './money';
 import { VariantAttributesSchema } from './product';
@@ -25,6 +25,8 @@ export const OrderItemSchema = z.object({
   variantId: ProductVariantIdSchema,
   /** Lets clients link back to the product and file a review (`ReviewCreate.productId`). */
   productId: ProductIdSchema,
+  /** Current slug of the product in the reader's locale (vi fallback) for `/product/<slug>` links; null if it has no translation. */
+  productSlug: SlugSchema.nullable(),
   productTitle: z.string().min(1),
   attributes: VariantAttributesSchema,
   unitPrice: NonNegativeMoneySchema,

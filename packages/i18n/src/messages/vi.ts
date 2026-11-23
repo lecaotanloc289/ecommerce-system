@@ -347,6 +347,7 @@ export const vi: Messages = {
     confirmReceived: 'Tôi đã nhận hàng',
     confirming: 'Đang xác nhận…',
     received: 'Đã xác nhận nhận hàng.',
+    writeReview: 'Viết đánh giá',
     actionFailed: 'Thao tác không thành công.',
     awaitingPaymentNote: 'Đang chờ thanh toán.',
     cancelledNote: 'Kiện hàng này đã bị hủy.',

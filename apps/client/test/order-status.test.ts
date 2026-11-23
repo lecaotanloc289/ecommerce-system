@@ -4,6 +4,7 @@ import {
   canConfirmReceived,
   canPayOrder,
   isPaymentSettled,
+  reviewHref,
   paymentOutcome,
   subOrderTimeline,
 } from '../src/lib/order-status';
@@ -85,5 +86,19 @@ describe('payment outcome + actions', () => {
     expect(canConfirmReceived({ status: 'DELIVERED' })).toBe(true);
     expect(canConfirmReceived({ status: 'PROCESSING' })).toBe(false);
     expect(canConfirmReceived({ status: 'COMPLETED' })).toBe(false);
+  });
+
+  it('links delivered / completed items to the review form, others to nothing', () => {
+    const item = { productSlug: 'ao-thun' };
+    const id = '01HZX3Y5K7M9P2Q4R6S8T0V1W2';
+    expect(reviewHref({ id, status: 'DELIVERED' }, item)).toBe(
+      `/product/ao-thun?reviewSubOrderId=${id}#reviews`,
+    );
+    expect(reviewHref({ id, status: 'COMPLETED' }, item)).toBe(
+      `/product/ao-thun?reviewSubOrderId=${id}#reviews`,
+    );
+    expect(reviewHref({ id, status: 'SHIPPED' }, item)).toBeNull();
+    expect(reviewHref({ id, status: 'REFUNDED' }, item)).toBeNull();
+    expect(reviewHref({ id, status: 'DELIVERED' }, { productSlug: null })).toBeNull();
   });
 });

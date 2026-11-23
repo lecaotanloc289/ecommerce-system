@@ -344,6 +344,7 @@ export const en = {
     confirmReceived: 'I received this',
     confirming: 'Confirming…',
     received: 'Marked as received.',
+    writeReview: 'Write a review',
     actionFailed: 'That action failed.',
     awaitingPaymentNote: 'Waiting for payment.',
     cancelledNote: 'This shipment was cancelled.',
