@@ -285,7 +285,7 @@
 Đợt 4: T4.1 ║ T4.2            (+ regenerate SDK trước)
 Đợt 5: T5.1 ║ T5.2 ║ T5.3 ║ T5.4
 Đợt 6: T6.1 ║ T6.2
-Đợt 7: CRM cho shop — K1 ║ K2 → K3 ║ K4a ║ K4b → K6; K5 sau T2.2 + T3.3
+Đợt 7: CRM cho shop — K1 ║ K2 → K3 ║ K4a ║ K4b → K6 → K5 (worker, xong sau khi T2.2 + T3.3 vào integration)
        (chi tiết: docs/superpowers/plans/2026-11-23-vendor-crm.md)
 ```
 

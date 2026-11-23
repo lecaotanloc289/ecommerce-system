@@ -8,6 +8,8 @@ export interface EmailContent {
 
 export interface EmailMessage extends EmailContent {
   to: string;
+  /** Extra headers, e.g. RFC 8058 `List-Unsubscribe` / `List-Unsubscribe-Post` on CRM mail. */
+  headers?: Record<string, string>;
 }
 
 /** Sends one email. Throws on failure (the dispatcher retries the event). */

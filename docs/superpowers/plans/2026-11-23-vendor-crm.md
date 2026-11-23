@@ -4,7 +4,7 @@
 
 **Mục tiêu:** mỗi shop có CRM riêng để chăm sóc khách **đã mua của shop**: hồ sơ khách 360, phân khúc, tin tự động sau mua, chiến dịch gửi coupon theo phân khúc. Mọi liên lạc đi **qua nền tảng** (thông báo in-app + email), shop **không** thấy email / số điện thoại khách.
 
-**Nền:** branch `feat/crm` từ `roadmap/integration` (đã có orders, payments, reviews, coupons, vendor catalog, platform admin, idempotency, harness test). **Phụ thuộc chưa có:** T3.3 (vendor fulfillment — phát event giao hàng), T2.2 `@workers/jobs` (dispatcher + email). Vì vậy đợt này làm **K1–K4 + K6** ngay; **K5 (worker CRM)** làm khi `@workers/jobs` vào integration.
+**Nền:** branch `feat/crm` từ `roadmap/integration` (đã có orders, payments, reviews, coupons, vendor catalog, platform admin, idempotency, harness test). **Phụ thuộc chưa có:** T3.3 (vendor fulfillment — phát event giao hàng), T2.2 `@workers/jobs` (dispatcher + email). Vì vậy đợt đầu làm **K1–K4 + K6**; **K5 (worker CRM)** làm sau khi `@workers/jobs` vào integration (đã xong).
 
 ---
 
@@ -218,13 +218,25 @@ Handler cho cả ba nằm ở K5. Dispatcher `@workers/jobs` chỉ claim event c
 - **Service dùng chung:** `ensurePreference(tx, userId, vendorId)` tạo dòng preference khi chưa có, với `unsubscribeTokenHash = hashUnsubscribeToken(await deriveUnsubscribeToken(env.CRM_UNSUBSCRIBE_SECRET, userId, vendorId))` (C12). Mọi thay đổi đồng ý ghi thêm `crm_consent_events` trong cùng transaction. Env mới `CRM_UNSUBSCRIBE_SECRET` (≥ 32 ký tự) ở server (K5 dùng ở worker), thêm vào `.env.example`.
 - **Test:** ownership thông báo, đếm chưa đọc, opt-in/opt-out ghi đúng thời điểm + nguồn, unsubscribe token sai/đúng/lặp, rate limit.
 
-### K5 — Worker CRM (đợt sau, khi `@workers/jobs` + T3.3 vào integration) · opus
+### K5 — Worker CRM (xong 2026-11-23, sau khi merge `roadmap/integration` có `@workers/jobs` + T3.3) · opus
 
 - Handler `sub-order.delivered` / `sub-order.completed` → tạo `crm_messages` SCHEDULED cho automation đang bật (unique `(automationKind, subOrderId)`), `scheduledFor = mốc + delayDays`.
   - **Mỗi event type chỉ có một handler** trong `@workers/jobs` (dispatcher đánh dấu processed sau handler). `sub-order.delivered` đã có handler gửi email "xác nhận đã nhận hàng" (T3.2, `c03544e`): K5 **mở rộng** handler đó thành fan-out các sub-handler chạy trong cùng transaction, không đăng ký handler thứ hai. `sub-order.completed` chưa có handler — các dòng outbox nằm chờ tới khi K5 đăng ký.
 - Handler `crm.campaign.scheduled` + job lặp mỗi phút: chiến dịch SCHEDULED đến hạn → SENDING, `resolveAudience` lúc gửi, chèn `crm_messages` theo lô 500 (unique `(campaignId, userId)`), cập nhật `recipientCount`, xong → SENT.
 - Job lặp mỗi phút `crm.dispatch-due-messages`: lấy ≤ 200 tin đến hạn `FOR UPDATE SKIP LOCKED`, kiểm lại C5/C8/C9/C11 → tạo `Notification` + email (template `@repo/i18n` theo `primaryLocale`, escape HTML, link huỷ đăng ký xoay token, `List-Unsubscribe`), `SENT`/`SKIPPED`/`FAILED` (+ `attempts`, `lastError`).
 - Test: Testcontainers, transport email giả, mọi lý do SKIPPED, không gửi trùng khi 2 worker chạy song song.
+- **Đã làm — lệch / chốt thêm so với kế hoạch** (chi tiết: `workers/jobs/CLAUDE.md` mục "CRM"):
+  - SQL audience chuyển từ repository của server sang `@repo/db` (`crmAudienceIds`, `packages/db/src/crm.ts`): worker không được import `server/`, nên dùng chung một bản thay vì chép.
+  - Gửi **từng tin một transaction** (khoá `FOR UPDATE SKIP LOCKED` từng dòng, quét theo trang `JOB_BATCH_SIZE`) thay vì khoá lô 200 — cùng khuôn với các job khác; job tên `crm-dispatch-messages` (+ `crm-start-campaigns`).
+  - **SENDING có nghĩa:** chiến dịch ở SENDING tới khi không còn tin SCHEDULED nào, rồi mới SENT (`completedAt`).
+  - Chiến dịch đến hạn mà shop không còn ACTIVE / coupon hết hiệu lực / audience hỏng → CANCELLED với `cancelReason` `vendor-inactive` / `coupon-invalid` / `audience-invalid`.
+  - Thêm `CrmSkipReason.COUPON_INVALID`: template cần `{couponCode}` mà coupon hết hiệu lực lúc gửi; template không cần mã thì gửi bình thường, bỏ dòng mã.
+  - `sub-order.completed` cũng lên lịch THANK_YOU / REVIEW_REQUEST (khách xác nhận nhận hàng thẳng từ SHIPPED thì không có `sub-order.delivered`); unique chống trùng.
+  - "Link huỷ đăng ký xoay token" ở trên đã thay bằng token tất định (C12). `List-Unsubscribe` trỏ route mới `POST /v1/crm/unsubscribe/one-click?token=&scope=` (RFC 8058: mail client POST form-urlencoded, không gửi được JSON); tin marketing → scope MARKETING, tin dịch vụ → ALL.
+  - Gửi thất bại → `attempts + 1`, `lastError`, thử lại sau 5 phút · 2^(n−1) (≤ 6 giờ), FAILED ở lần thứ 5.
+  - Sau review: email gửi **sau khi commit** (không giữ khoá dòng tin + preference trong lúc SMTP chạy); gửi lỗi → hoàn tác SENT + xoá thông báo rồi thử lại. Mỗi lượt job xử lý tối đa 200 tin. Tin trễ quá 3 ngày so với `scheduledFor` → SKIPPED `STALE` (thêm vào `CrmSkipReason`). `sub-order.completed` chỉ lên lịch THANK_YOU / REVIEW_REQUEST cho đơn chưa từng DELIVERED (tránh gửi hồi tố khi shop bật automation muộn). Tên khách giống link → thay bằng `crm.customerFallbackName`; tên shop giống link → FAILED ngay. Platform huỷ được chiến dịch đang SENDING. Token trong URL one-click bị che trong log server. Hash token cũ (trước khi đổi secret) được làm mới khi gặp.
+  - **Email CRM tắt mặc định** (`CRM_EMAIL_ENABLED=false`, chỉ in-app) tới khi có trang storefront `/{locale}/unsubscribe` — mọi email CRM đều trỏ tới trang này.
+  - Chưa có: trang storefront `/{locale}/unsubscribe`, UI thông báo, màn CRM trong admin.
 
 ### K6 — Docs · haiku
 

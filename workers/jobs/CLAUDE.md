@@ -2,8 +2,8 @@
 
 Runs every side effect outside the request thread (Golden Rule #9, roadmap D2/D10): the outbox
 dispatcher and its handlers (provider payment sessions, zero-amount confirmation, provider refunds,
-transactional email) and the scheduled jobs (payment expiry, auto-complete, payouts, outbox
-retention). No HTTP server.
+transactional email, vendor CRM scheduling) and the scheduled jobs (payment expiry, auto-complete,
+payouts, outbox retention, CRM campaigns + message sending). No HTTP server.
 Read the root `CLAUDE.md` first. Depends only on `@repo/db`, `@repo/core`, `@repo/payments`,
 `@repo/i18n` — never on `server/` or `apps/*`; it talks to the API only through the DB.
 
@@ -23,10 +23,13 @@ Read the root `CLAUDE.md` first. Depends only on `@repo/db`, `@repo/core`, `@rep
 | `src/handlers/payment-requested.ts` | `payment.requested` → `PaymentProvider.createSession`, or the zero-amount confirmation                                          |
 | `src/handlers/refund-requested.ts`  | `refund.requested` → `PaymentProvider.refund`, Refund / Payment outcome                                                         |
 | `src/handlers/notifications.ts`     | email handlers                                                                                                                  |
+| `src/handlers/crm.ts`               | CRM handlers (`sub-order.completed`, `crm.campaign.scheduled`), the CRM part of `sub-order.delivered`, `fanOut`                 |
+| `src/crm/`                          | Vendor CRM domain: `scheduleAutomationMessages`, `startCampaign` / `finishSentCampaigns`, `dispatchMessage`, consent mirror     |
 | `src/domain/`                       | Mirrors of the API's order writers (no `server/` import): `lockOrder`, `commitStock`, ledger groups, `confirmZeroAmountPayment` |
 | `src/jobs/`                         | Scheduled jobs (`index.ts` `JOB_NAMES` / `createJobs`), `run.ts` keyset walker, `scheduler.ts` BullMQ `JobScheduler`            |
 | `src/email/mailer.ts`               | `Mailer` interface + nodemailer SMTP implementation                                                                             |
 | `src/email/templates.ts`            | Pure renderers → `{ subject, text, html }`, all text from `@repo/i18n` `email.*`                                                |
+| `src/email/crm-templates.ts`        | `renderCrmEmail`: shop text + actions + unsubscribe footer (`@repo/i18n` `crm.email.*`)                                         |
 | `src/payments/providers.ts`         | Builds VNPay / Stripe from env; missing credentials → provider absent (disabled)                                                |
 | `src/payments/provider-errors.ts`   | `PERMANENT_PROVIDER_ERRORS` — adapter error codes that dead-letter (session + refund handlers)                                  |
 
@@ -63,8 +66,9 @@ SET attempts = 0, next_attempt_at = now() AT TIME ZONE 'UTC' WHERE id = '…'`.
    counts — so a poison event that kills the process is dead-lettered too (a claimed `attempts`
    above the max is dead-lettered without running).
 6. **Event types without a handler are never touched.** This is the platform's single outbox
-   worker; other modules (live-shopping `live_session.*`, CRM `crm.campaign.scheduled`, CRM
-   consumers of `sub-order.delivered` / `.completed`) will fold their handlers in here. Until a
+   worker; other modules fold their handlers in here (vendor CRM did — see "CRM" below; live-shopping
+   `live_session.*` will). One handler per type: several consumers of a type are combined with
+   `fanOut` (`src/handlers/crm.ts`), DB-only consumers first, email last. Until a
    type is registered, its rows keep `attempts = 0`, `processed_at` NULL and their
    `next_attempt_at`, and they cannot starve a batch (the claim filters by type). The handler
    table (`createHandlers`) is the single source of the claimed types. A payload that fails its
@@ -99,16 +103,13 @@ every SQL "now" in the dispatcher is `now() AT TIME ZONE 'UTC'` — correct what
 | `order.paid`, `order.cancelled` (reason)                                                              | Customer email                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `refund.requested {refundId, orderId, subOrderId}`                                                    | Provider refund — see "Refund handler" below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `sub-order.shipped {orderId, subOrderId, customerId}`                                                 | Customer email: vendor name, carrier + tracking number                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `sub-order.delivered {orderId, subOrderId, customerId}`                                               | Customer email: vendor marked it delivered — confirm receipt on the order page, or contact us before it auto-completes. CRM consumers of this event must fold into this handler (one handler per type)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `sub-order.delivered {orderId, subOrderId, customerId}`                                               | `fanOut`: CRM first — `scheduleAutomationMessages(…, 'delivered')` (THANK_YOU / REVIEW_REQUEST rows, see "CRM") — then the customer email: vendor marked it delivered — confirm receipt on the order page, or contact us before it auto-completes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `sub-order.completed {orderId, subOrderId, vendorId}`                                                 | CRM: ids must match the sub-order (else dead-letter); `scheduleAutomationMessages(…, 'completed')` — REORDER_REMINDER, plus THANK_YOU / REVIEW_REQUEST when receipt was confirmed straight from SHIPPED (no `sub-order.delivered`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `crm.campaign.scheduled {campaignId, vendorId}`                                                       | CRM: campaign must belong to the vendor (else dead-letter); `startCampaign` when due — the API sets the row's `next_attempt_at` to the send time; not due / no longer SCHEDULED → no-op (`crm-start-campaigns` is the backstop)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `payout.released {subOrderId, vendorId}`                                                              | Vendor owner email with the amount credited = the payout's `VENDOR_WALLET` / `PAYOUT_OUT` ledger entry of that sub-order (no entry, i.e. net 0 → email skipped)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `vendor.application.approved {applicationId, vendorId, userId}` / `.rejected {applicationId, userId}` | Applicant email (+ `rejectReason`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `vendor.invitation.created {invitationId, vendorId, email, token}`                                    | Email to the invitation's address with `ADMIN_ORIGIN/invite?token=`. Token must hash to the stored `token_hash` (else dead-letter); revoked / accepted / expired → skipped. Declared `secretKeys: ['token']`: the dispatcher strips `token` from the stored payload when the event is processed **or** dead-lettered (kept only while retries need it). Never log payloads. Invitee locale = matching user's, else `vi`.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
-- **Not handled** (rows wait untouched, see dispatcher rule 6): `sub-order.completed` (emitted by
-  the API and by `auto-complete-sub-orders`; CRM will consume it). Registering a handler means this
-  dispatcher claims the type — add one only together with its consumer. Until then these rows stay
-  unprocessed, so `outbox-retention` never deletes them: one row per completed sub-order
-  accumulates (ids only) until the CRM handler ships and processes the backlog.
 - **Zero-amount confirmation** (`src/domain/zero-amount.ts`, mirror of the API's
   `confirmZeroAmount` → `markOrderPaid`, server CLAUDE.md "Payments → Zero amount"), inside the
   event's `ctx.tx`: lock the order row, then the payment row; only a PENDING payment of 0 on an
@@ -149,7 +150,7 @@ Refund.amount, paymentAmount = Payment.amount, reason, initiatedBy = requestedBy
 - **PII:** log ids only. `describeError` replaces email addresses in `last_error` / logs (SMTP
   rejections echo the recipient). pino `redact` covers `email` / `to` / `redirectUrl` as a net.
 
-## Adding a handler (e.g. `live_session.*`, `crm.campaign.scheduled`, CRM consumers)
+## Adding a handler (e.g. `live_session.*`)
 
 1. Payload schema (ids only, unless a secret is unavoidable) in `@repo/core/schemas/outbox` and its
    entry in `OUTBOX_EVENT_SCHEMAS`. The emitter (API) writes the row in its business transaction.
@@ -190,9 +191,11 @@ re-read each run; no settings row → the run fails.
 | Job (scheduler id)         | Default every | Selects                                                                                                                 | Per row (after locking the ORDER row first)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | -------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `expire-unpaid-orders`     | 1 min         | orders AWAITING_PAYMENT with `payment_deadline_at < now`                                                                | The API's `cancelOrder` contract with reason `PAYMENT_EXPIRED` (server `order-cancellation.ts`): re-check AWAITING_PAYMENT + overdue + every sub-order AWAITING_PAYMENT (else skip, nothing written); sub-orders CANCELLED + `cancelledAt` `WHERE status = 'AWAITING_PAYMENT'` (count mismatch → rollback); release `stock_reserved` in variant-id order (clamped at 0); delete CouponRedemptions; PENDING payments → FAILED; `deriveOrderStatus`; outbox `order.cancelled`. A payment confirmed later goes to the API's late-payment refund path.                                                                                                                      |
-| `auto-complete-sub-orders` | 1 h           | sub-orders DELIVERED with `delivered_at + refundWindowDays <= now`                                                      | Mirror of `transitionSubOrder(…, COMPLETED, SYSTEM)`: re-check status + window, `assertTransition('DELIVERED','COMPLETED','SYSTEM')`, `UPDATE … WHERE status = 'DELIVERED'` + `completedAt`, `deriveOrderStatus`, outbox `sub-order.completed {orderId, subOrderId, vendorId}` (not handled here — waits for CRM).                                                                                                                                                                                                                                                                                                                                                      |
+| `auto-complete-sub-orders` | 1 h           | sub-orders DELIVERED with `delivered_at + refundWindowDays <= now`                                                      | Mirror of `transitionSubOrder(…, COMPLETED, SYSTEM)`: re-check status + window, `assertTransition('DELIVERED','COMPLETED','SYSTEM')`, `UPDATE … WHERE status = 'DELIVERED'` + `completedAt`, `deriveOrderStatus`, outbox `sub-order.completed {orderId, subOrderId, vendorId}` (consumed by the CRM handler).                                                                                                                                                                                                                                                                                                                                                           |
 | `release-payouts`          | 1 h           | sub-orders COMPLETED, `payout_released_at IS NULL`, `completed_at + holdPeriodDays <= now`, no Refund PENDING/SUCCEEDED | Re-check all of it under the lock (a concurrent run → skip); wallet must exist in the sub-order currency (else skip + `error` log, every run, until fixed by hand); `payoutReleasedAt = now` `WHERE … IS NULL AND status = 'COMPLETED'`; one ledger group `PAYOUT_OUT` from `computePayoutPostings` (`subOrderPaid` / `subOrderNet` from `@repo/core`): `PLATFORM_ESCROW −paid`, `VENDOR_WALLET +net` (with `vendorId`), `PLATFORM_REVENUE +(commission − platformDiscount)` (may be negative), zero postings dropped, `assertZeroSum`; `UPDATE wallets SET balance_amount = balance_amount + net` (currency-guarded); outbox `payout.released {subOrderId, vendorId}`. |
 | `outbox-retention`         | 1 day         | —                                                                                                                       | `DELETE` processed outbox rows with `processed_at < now − OUTBOX_RETENTION_DAYS` in batches of `JOB_BATCH_SIZE`. Unprocessed rows (pending, retrying, dead-lettered — `processed_at` NULL) are never deleted.                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `crm-start-campaigns`      | 1 min         | campaigns SCHEDULED with `scheduled_at <= now`                                                                          | `startCampaign` in its own 60 s transaction (usually already started by the `crm.campaign.scheduled` handler → skipped), then `finishSentCampaigns`. See "CRM"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `crm-dispatch-messages`    | 1 min         | ≤ 200 `crm_messages` SCHEDULED with `scheduled_for <= now` (partial index `crm_messages_due_idx`)                       | `dispatchMessage` in its own 15 s transaction (SENT / SKIPPED), email sent after the commit; a failure → `attempts + 1`, `lastError`, retried after 5 min · 2^(n−1) (≤ 6 h, DB clock), FAILED at the 5th failure; then `finishSentCampaigns`. See "CRM"                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 **Driving time (E2E / ops):** there is no fake clock — move the data instead: back-date
 `orders.payment_deadline_at`, `sub_orders.delivered_at` / `completed_at` (UTC, e.g. `now() AT TIME
@@ -201,6 +204,64 @@ ZONE 'UTC' - interval '8 days'`), or lower `platform_settings.hold_period_days` 
 run-job <job-name>` (`node dist/run-job.js <job-name>`: runs once against `DATABASE_URL`, no Redis
 or BullMQ, exit 1 if a row failed; safe next to the scheduled worker), or set
 `JOB_*_EVERY_MS=1000` on the worker. Each run logs a summary `{candidates, done, skipped, failed}`.
+
+## CRM (vendor CRM, `src/crm/`)
+
+Plan + decisions C1–C13: `docs/superpowers/plans/2026-11-23-vendor-crm.md` (K5). The API (`server/src/crm`,
+`server/src/crm-consent`) writes automations, campaigns, consent; this worker turns them into messages.
+Every message is a durable `crm_messages` row (C9) — no BullMQ delays.
+
+- **Scheduling (`automations.ts`):** `sub-order.delivered` → THANK_YOU + REVIEW_REQUEST; `sub-order.completed` →
+  REORDER_REMINDER, plus the two service ones ONLY for a sub-order that never went through DELIVERED
+  (confirm-received from SHIPPED: `deliveredAt` null or equal to `completedAt`) — an automation enabled after
+  delivery must not fire when the order auto-completes days later. Only automations `isEnabled` now get a row:
+  `scheduledFor` = `deliveredAt` (fallback `completedAt`) or `completedAt` (reminder) + `delayDays`, channels
+  `[IN_APP, EMAIL]`. Sub-order not DELIVERED / COMPLETED → nothing. Unique `(automation_kind, sub_order_id)` +
+  `skipDuplicates` → replays are no-ops. The backlog of `sub-order.completed` rows from before this handler is
+  processed on deploy; anything already more than `CRM_STALE_AFTER_DAYS` (3) past due is skipped STALE.
+- **Campaigns (`campaigns.ts`):** `startCampaign` locks the campaign row (`FOR UPDATE`, same lock as the API's
+  update / schedule / cancel), requires SCHEDULED + `scheduledAt ≤ now` (DB clock), vendor ACTIVE and the coupon
+  still valid (else CANCELLED, `cancelReason` `vendor-inactive` / `coupon-invalid` / `audience-invalid`), resolves
+  the audience NOW with `@repo/db` `crmAudienceIds` (the same SQL the API previews with), sets SENDING +
+  `startedAt` + `recipientCount` and inserts one MARKETING message per recipient (batches of 500, unique
+  `(campaign_id, user_id)`). `finishSentCampaigns` moves SENDING campaigns without SCHEDULED messages to SENT
+  (`completedAt`) — so SENDING = "messages still going out"; an empty audience ends SENT with 0 recipients.
+  Platform staff can cancel a SENDING campaign (API): its SCHEDULED messages become SKIPPED.
+- **Sending (`dispatch.ts`, job `crm-dispatch-messages`, ≤ `CRM_DISPATCH_MAX_PER_RUN` = 200 messages per run so a
+  big campaign never holds the single job slot for long):** per message, one short transaction (15 s, no network
+  I/O): lock it `FOR UPDATE SKIP LOCKED` (two workers never take one message) → re-check, in order: not more than 3
+  days past `scheduledFor` (STALE), vendor ACTIVE, campaign SENDING / automation enabled + sub-order DELIVERED or
+  COMPLETED → preference row created if missing (with the current token hash; a hash from an older secret is
+  refreshed) and LOCKED like every consent writer → SERVICE: no service opt-out; MARKETING: consent (C5) →
+  REVIEW_REQUEST: some product of the sub-order not yet reviewed; REORDER_REMINDER: no other valid sub-order at
+  this shop created after this one → MARKETING: fewer than `crmMaxMarketingPerCustomerPerWeek` SENT in 7 days (the
+  preference lock makes the cap race-free) → coupon valid now (a template with `{couponCode}` and no valid coupon
+  → skip; otherwise an invalid coupon is just left out) → a channel left. Failing a check = SKIPPED + `skipReason`
+  (core `CrmSkipReason`: STALE, VENDOR_INACTIVE, CAMPAIGN_CANCELLED, AUTOMATION_DISABLED, ORDER_REFUNDED,
+  OPTED_OUT, NO_CONSENT, ALREADY_REVIEWED, ALREADY_REORDERED, FREQUENCY_CAP, COUPON_INVALID, NO_CHANNEL).
+- **Order of effects:** the transaction writes the notification + SENT (`attempts + 1`) and commits — releasing
+  the message and preference locks, so a slow SMTP server never blocks the customer's unsubscribe — THEN the
+  email is sent. A failed send reverts (one transaction): SENT mark undone, notification deleted, `attempts` /
+  `lastError` (first line, emails scrubbed) recorded, retried at `now + 5 min · 2^(n−1)` (DB clock, ≤ 6 h); FAILED
+  at the 5th failure (nothing delivered). A throwing decision transaction is recorded the same way. A shop name
+  that looks like a link makes the render throw → FAILED at once (`PermanentError`, retrying cannot help). A
+  crash between commit and send loses that email (the in-app notification stays) — never a duplicate.
+- **Content:** customer's `primaryLocale`; en falls back to the vi template; an empty automation template uses
+  `crm.defaultTemplates.*`; `renderCrmTemplate` (plain text). A customer name that looks like a link (names come
+  from OAuth providers) is replaced by `crm.customerFallbackName`. Title = `crm.notificationTitle.*`. In-app:
+  `notifications` row, `linkPath` `/vendors/{slug}` (REVIEW_REQUEST: `/account/orders/{orderId}`). Email (only
+  with `CRM_EMAIL_ENABLED=true` and a `User.email`): `renderCrmEmail` — text paragraphs, coupon line when the
+  template does not already show the code, "write a review" / "visit shop" links (`WEB_ORIGIN/{locale}/…`),
+  footer with `WEB_ORIGIN/{locale}/unsubscribe?token=…&scope=MARKETING|ALL` (marketing link on marketing mail
+  only), headers `List-Unsubscribe: <API_PUBLIC_URL/v1/crm/unsubscribe/one-click?token=…&scope=…>` +
+  `List-Unsubscribe-Post: List-Unsubscribe=One-Click` (RFC 8058; scope MARKETING on marketing mail, ALL on service
+  mail). Token = `deriveUnsubscribeToken(CRM_UNSUBSCRIBE_SECRET, userId, vendorId)`. No tracking pixel.
+- **Known gaps / limits:** `CRM_EMAIL_ENABLED` stays `false` (in-app only) until the storefront
+  `/{locale}/unsubscribe` page exists — every CRM email links to it; the notification UI does not exist yet
+  either. Campaign start resolves and inserts the whole audience in one 60 s transaction — fine for thousands of
+  recipients, not for 100k+ (then chunk it; watch for campaigns SCHEDULED long past `scheduled_at`). The CRM part
+  of `sub-order.delivered` shares the event with the delivery email: an SMTP outage retries both, and if the
+  event dead-letters (10 attempts) no THANK_YOU / REVIEW_REQUEST is scheduled — requeue it. No Zalo channel (C6).
 
 ## Env
 
@@ -211,8 +272,11 @@ VNPay enabled); `STRIPE_SECRET_KEY` (→ Stripe enabled; `STRIPE_WEBHOOK_SECRET`
 `OUTBOX_POLL_INTERVAL_MS` (1000), `OUTBOX_BATCH_SIZE` (50), `OUTBOX_CONCURRENCY` (2), `LOG_LEVEL`,
 `NODE_ENV`; scheduled jobs: `JOB_EXPIRE_UNPAID_ORDERS_EVERY_MS` (60000),
 `JOB_AUTO_COMPLETE_SUB_ORDERS_EVERY_MS` (3600000), `JOB_RELEASE_PAYOUTS_EVERY_MS` (3600000),
-`JOB_OUTBOX_RETENTION_EVERY_MS` (86400000), all ≥ 1000; `JOB_BATCH_SIZE` (100),
-`OUTBOX_RETENTION_DAYS` (30). A disabled provider does not stop the worker: its
+`JOB_OUTBOX_RETENTION_EVERY_MS` (86400000), `JOB_CRM_START_CAMPAIGNS_EVERY_MS` (60000),
+`JOB_CRM_DISPATCH_MESSAGES_EVERY_MS` (60000), all ≥ 1000; `JOB_BATCH_SIZE` (100),
+`OUTBOX_RETENTION_DAYS` (30); `CRM_UNSUBSCRIBE_SECRET` (required, ≥ 32 chars, `change-me…` refused in
+production — the SAME value as the API's, or every emailed unsubscribe link 404s); `CRM_EMAIL_ENABLED`
+(`false`: CRM messages in-app only — see "CRM"). A disabled provider does not stop the worker: its
 `payment.requested` / `refund.requested` events dead-letter with `payment provider X is not
 configured`. The worker does not read `.env`: use Doppler or export.
 

@@ -1,5 +1,7 @@
+import type { CrmDispatchDeps } from '../crm/dispatch';
 import type { Logger } from '../logger';
 import { autoCompleteSubOrders } from './auto-complete-sub-orders';
+import { dispatchDueCrmMessages, startDueCampaigns } from './crm';
 import { expireUnpaidOrders } from './expire-unpaid-orders';
 import { pruneOutbox } from './outbox-retention';
 import { releasePayouts } from './release-payouts';
@@ -11,6 +13,8 @@ export const JOB_NAMES = [
   'auto-complete-sub-orders',
   'release-payouts',
   'outbox-retention',
+  'crm-start-campaigns',
+  'crm-dispatch-messages',
 ] as const;
 
 export type JobName = (typeof JOB_NAMES)[number];
@@ -23,6 +27,8 @@ export interface JobsConfig {
   batchSize: number;
   /** Processed outbox rows older than this are deleted by `outbox-retention`. */
   outboxRetentionDays: number;
+  /** Mailer, origins and unsubscribe secret for `crm-dispatch-messages`. */
+  crm: CrmDispatchDeps;
 }
 
 /** A job run over every due row; stops between rows once `signal` aborts. */
@@ -45,5 +51,8 @@ export function createJobs(config: JobsConfig, log: Logger): Record<JobName, Job
         ...ctx('outbox-retention', signal),
         retentionDays: config.outboxRetentionDays,
       }),
+    'crm-start-campaigns': (signal) => startDueCampaigns(ctx('crm-start-campaigns', signal)),
+    'crm-dispatch-messages': (signal) =>
+      dispatchDueCrmMessages(ctx('crm-dispatch-messages', signal), config.crm),
   };
 }

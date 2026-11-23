@@ -134,8 +134,11 @@ fly launch --no-deploy --name elma-worker-dev  --region sin --copy-config worker
 fly launch --no-deploy --name elma-worker-prod --region sin --copy-config workers/jobs/fly.toml
 fly secrets set --app elma-worker-dev DATABASE_URL=... REDIS_URL=... SMTP_HOST=... SMTP_PORT=... SMTP_USER=... SMTP_PASS=... SMTP_FROM=... \
   WEB_ORIGIN=... ADMIN_ORIGIN=... API_PUBLIC_URL=https://elma-api-dev.fly.dev VNPAY_TMN_CODE=... VNPAY_HASH_SECRET=... \
-  VNPAY_PAY_URL=... VNPAY_API_URL=... STRIPE_SECRET_KEY=...
+  VNPAY_PAY_URL=... VNPAY_API_URL=... STRIPE_SECRET_KEY=... CRM_UNSUBSCRIBE_SECRET=<same value as elma-api-dev>
 ```
+
+`CRM_UNSUBSCRIBE_SECRET` is required by the worker (it fails to boot without it) and must equal the API's
+value of the same environment: the worker derives the unsubscribe token for CRM emails, the API verifies it.
 
 Run exactly one machine per worker app for now (`fly scale count 1`); more are safe (claims use `FOR UPDATE SKIP LOCKED`) but not needed.
 
@@ -234,7 +237,7 @@ JWT_ACCESS_SECRET_PROD
 JWT_REFRESH_SECRET_DEV
 JWT_REFRESH_SECRET_PROD
 
-CRM_UNSUBSCRIBE_SECRET_DEV / _PROD
+CRM_UNSUBSCRIBE_SECRET_DEV / _PROD   (API + worker, same value per env)
 GOOGLE_OAUTH_CLIENT_ID_DEV
 GOOGLE_OAUTH_CLIENT_ID_PROD
 GOOGLE_OAUTH_CLIENT_SECRET_DEV
