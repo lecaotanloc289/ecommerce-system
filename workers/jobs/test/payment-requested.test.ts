@@ -1,5 +1,6 @@
 import { DomainError } from '@repo/core';
 import type { CreateSessionInput, CreateSessionResult, PaymentProvider } from '@repo/payments';
+import { ulid } from 'ulid';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { createHandlers } from '../src/handlers';
 import { DEAD_LETTER_AT, OutboxDispatcher } from '../src/outbox/dispatcher';
@@ -15,6 +16,7 @@ import {
   resetDb,
   silentLog,
 } from './support/fixtures';
+import { makeMarketOrder } from './support/market';
 
 const EXPIRES_AT = new Date('2030-01-01T00:15:00.000Z');
 
@@ -165,15 +167,90 @@ describe('payment.requested handler', () => {
     expect((await eventRow(event.id)).processedAt).not.toBeNull();
   });
 
-  it('skips the provider for a zero-amount payment', async () => {
-    const vnpay = fakeProvider('VNPAY');
-    const { payment, event } = await pendingPayment({ amount: 0n });
+  describe('zero amount (free order)', () => {
+    const free = {
+      status: 'AWAITING_PAYMENT' as const,
+      shipping: 0n,
+      discount: 100_000n,
+      commission: 0n,
+    };
 
-    await dispatcherWith({ VNPAY: vnpay }).pollOnce();
+    async function freeOrder(status: 'AWAITING_PAYMENT' | 'CANCELLED' = 'AWAITING_PAYMENT') {
+      const fixture = await makeMarketOrder({
+        status,
+        subOrders: [
+          { ...free, quantity: 2, stockOnHand: 10, stockReserved: 2 },
+          { ...free, quantity: 1, stockOnHand: 4, stockReserved: 3 },
+        ],
+        payment: { status: 'PENDING', amount: 0n },
+      });
+      const payment = fixture.payment;
+      if (!payment) throw new Error('fixture');
+      const event = await insertEvent('payment.requested', {
+        orderId: fixture.order.id,
+        paymentId: payment.id,
+        provider: payment.provider,
+        attemptNo: 1,
+      });
+      return { ...fixture, payment, event };
+    }
 
-    expect(vnpay.calls).toHaveLength(0);
-    expect((await paymentRow(payment.id)).redirectUrl).toBeNull();
-    expect((await eventRow(event.id)).processedAt).not.toBeNull();
+    it('confirms it without a provider: payment CONFIRMED, order PAID, stock committed, order.paid', async () => {
+      const vnpay = fakeProvider('VNPAY');
+      const { order, payment, subOrders, event, customer } = await freeOrder();
+      // Another PENDING attempt of the same order (failed by the confirmation, as in the API).
+      const older = await prisma.payment.create({
+        data: {
+          id: ulid(),
+          orderId: order.id,
+          provider: 'VNPAY',
+          amount: 0n,
+          currency: 'VND',
+          attemptNo: 2,
+        },
+      });
+
+      await dispatcherWith({ VNPAY: vnpay }).pollOnce();
+
+      expect(vnpay.calls).toHaveLength(0);
+      expect(await paymentRow(payment.id)).toMatchObject({
+        status: 'CONFIRMED',
+        providerTxnId: payment.id,
+        rawPayload: { zeroAmount: true },
+        redirectUrl: null,
+      });
+      expect((await paymentRow(older.id)).status).toBe('FAILED');
+      expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe(
+        'PAID',
+      );
+      const statuses = await prisma.subOrder.findMany({ where: { orderId: order.id } });
+      expect(statuses.map((s) => s.status)).toEqual(['PAID', 'PAID']);
+      const variants = await prisma.productVariant.findMany({
+        where: { id: { in: subOrders.map((s) => s.variant.id) } },
+        orderBy: { stockOnHand: 'desc' },
+      });
+      expect(variants.map((v) => [v.stockOnHand, v.stockReserved])).toEqual([
+        [8, 0],
+        [3, 2],
+      ]);
+      expect(await prisma.ledgerEntry.count()).toBe(0); // paid_i = 0 → no escrow rows
+      const paid = await prisma.outboxEvent.findMany({ where: { eventType: 'order.paid' } });
+      expect(paid.map((e) => e.payload)).toEqual([{ orderId: order.id, customerId: customer.id }]);
+      expect((await eventRow(event.id)).processedAt).not.toBeNull();
+    });
+
+    it('writes nothing for an order that is no longer awaiting payment', async () => {
+      const { order, payment, event } = await freeOrder('CANCELLED');
+
+      await dispatcherWith({ VNPAY: fakeProvider('VNPAY') }).pollOnce();
+
+      expect((await paymentRow(payment.id)).status).toBe('PENDING');
+      expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe(
+        'CANCELLED',
+      );
+      expect(await prisma.outboxEvent.count({ where: { eventType: 'order.paid' } })).toBe(0);
+      expect((await eventRow(event.id)).processedAt).not.toBeNull();
+    });
   });
 
   it('retries with backoff when the provider is unavailable', async () => {

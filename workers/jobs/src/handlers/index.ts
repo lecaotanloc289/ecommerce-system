@@ -2,8 +2,9 @@ import type { OutboxEventType } from '@repo/core';
 import type { OutboxHandler } from '../outbox/handler';
 import { emailHandlers, type EmailDeps } from './notifications';
 import { paymentRequestedHandler, type PaymentRequestedDeps } from './payment-requested';
+import { refundRequestedHandler, type RefundRequestedDeps } from './refund-requested';
 
-export type HandlerDeps = EmailDeps & PaymentRequestedDeps;
+export type HandlerDeps = EmailDeps & PaymentRequestedDeps & RefundRequestedDeps;
 
 /**
  * The dispatcher's handler table — and the single source of the event types it claims: a type
@@ -14,5 +15,6 @@ export function createHandlers(deps: HandlerDeps): Partial<Record<OutboxEventTyp
   return {
     ...emailHandlers(deps),
     'payment.requested': paymentRequestedHandler(deps),
+    'refund.requested': refundRequestedHandler(deps),
   } satisfies Partial<Record<OutboxEventType, OutboxHandler>>;
 }

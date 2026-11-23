@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { Money, OUTBOX_EVENT_SCHEMAS } from '@repo/core';
+import { OUTBOX_EVENT_SCHEMAS } from '@repo/core';
 import { toMoney } from '@repo/db';
 import { DEFAULT_LOCALE, fromCoreLocale, type AppLocale } from '@repo/i18n';
 import type { EmailContent, Mailer } from '../email/mailer';
@@ -9,6 +9,7 @@ import {
   renderOrderCreated,
   renderOrderPaid,
   renderPayoutReleased,
+  renderSubOrderDelivered,
   renderSubOrderShipped,
   renderVendorApplicationApproved,
   renderVendorApplicationRejected,
@@ -82,11 +83,6 @@ async function loadSubOrder(
     select: {
       orderId: true,
       vendorId: true,
-      currency: true,
-      subtotalAmount: true,
-      shippingAmount: true,
-      discountAmount: true,
-      commissionAmount: true,
       carrier: true,
       trackingNumber: true,
       order: { select: { customerId: true } },
@@ -181,22 +177,50 @@ export function emailHandlers(deps: EmailDeps) {
       },
     ),
 
+    'sub-order.delivered': defineHandler(
+      OUTBOX_EVENT_SCHEMAS['sub-order.delivered'],
+      async (event, ctx) => {
+        const subOrder = await loadSubOrder(ctx, event.subOrderId, { orderId: event.orderId });
+        await sendToUser(deps, ctx, subOrder.order.customerId, (r) =>
+          renderSubOrderDelivered({
+            ...r,
+            orderId: event.orderId,
+            vendorName: subOrder.vendor.displayName,
+            url: orderUrl(deps.webOrigin, r.locale, event.orderId),
+          }),
+        );
+      },
+    ),
+
     'payout.released': defineHandler(
       OUTBOX_EVENT_SCHEMAS['payout.released'],
       async (event, ctx) => {
         const subOrder = await loadSubOrder(ctx, event.subOrderId, { vendorId: event.vendorId });
-        const m = (amount: bigint) => toMoney(amount, subOrder.currency);
-        // D7: net = subtotal + shipping − vendor discount − commission.
-        const net = Money.subtract(
-          Money.add(m(subOrder.subtotalAmount), m(subOrder.shippingAmount)),
-          Money.add(m(subOrder.discountAmount), m(subOrder.commissionAmount)),
-        );
+        // The amount actually credited: the payout's VENDOR_WALLET ledger entry (D7 net), not a
+        // recomputation from the sub-order columns.
+        const credit = await ctx.tx.ledgerEntry.findFirst({
+          where: {
+            subOrderId: event.subOrderId,
+            vendorId: event.vendorId,
+            account: 'VENDOR_WALLET',
+            entryType: 'PAYOUT_OUT',
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { amount: true, currency: true },
+        });
+        if (!credit) {
+          ctx.log.info(
+            { subOrderId: event.subOrderId },
+            'payout credited nothing to the wallet (net 0); email skipped',
+          );
+          return;
+        }
         await sendToUser(deps, ctx, subOrder.vendor.ownerId, (r) =>
           renderPayoutReleased({
             ...r,
             orderId: subOrder.orderId,
             vendorName: subOrder.vendor.displayName,
-            amount: net,
+            amount: toMoney(credit.amount, credit.currency),
             portalUrl,
           }),
         );

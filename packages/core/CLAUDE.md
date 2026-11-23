@@ -5,15 +5,15 @@ Pure TypeScript + `zod` — runs in browser and Node. Never imports `@repo/db`, 
 
 ## Layout
 
-| Path            | Subpath export         | What                                                                                                                                                                                                                           |
-| --------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/money/`    | `@repo/core/money`     | `of`, `zero`, `add`, `subtract`, `sum`, `multiply`, `applyBps`, `allocate`, `compare`, `equals`, …                                                                                                                             |
-| `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`                                                                                                                                     |
-| `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum                                                                                                                                  |
-| `src/pricing/`  | `@repo/core/pricing`   | `priceOrder`, `evaluateCoupon`, `couponDiscount`, `resolveCommissionBps`, `computePayoutPostings`, `refundAmount`, `refundPostings` — pure checkout/payout/refund money math (D5-D8, D12)                                      |
-| `src/orders/`   | `@repo/core/orders`    | `deriveOrderStatus` (Order status from its sub-orders, D11); `subOrderPaid`, `computeEscrowInPostings`, `computeRefundPostings` (escrow ledger pairs, D3/D7/D12); sub-order state machine `canTransition` / `assertTransition` |
-| `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                                                                                                                                                       |
-| `src/schemas/*` | `@repo/core/schemas/*` | one file per area — see "Schemas" below                                                                                                                                                                                        |
+| Path            | Subpath export         | What                                                                                                                                                                                                                                          |
+| --------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/money/`    | `@repo/core/money`     | `of`, `zero`, `add`, `subtract`, `sum`, `multiply`, `applyBps`, `allocate`, `compare`, `equals`, …                                                                                                                                            |
+| `src/ids/`      | `@repo/core/ids`       | `Brand<T, Name>`, `UlidSchema`, `XxxIdSchema` / `XxxId` per entity, `IdempotencyKeySchema`                                                                                                                                                    |
+| `src/enums/`    | `@repo/core/enums`     | `XxxSchema` + `Xxx` (type and value object, e.g. `Role.CUSTOMER`) mirroring every Prisma enum                                                                                                                                                 |
+| `src/pricing/`  | `@repo/core/pricing`   | `priceOrder`, `evaluateCoupon`, `couponDiscount`, `resolveCommissionBps`, `computePayoutPostings`, `refundAmount`, `refundPostings` — pure checkout/payout/refund money math (D5-D8, D12)                                                     |
+| `src/orders/`   | `@repo/core/orders`    | `deriveOrderStatus` (Order status from its sub-orders, D11); `subOrderPaid`, `subOrderNet`, `computeEscrowInPostings`, `computeRefundPostings` (escrow ledger pairs, D3/D7/D12); sub-order state machine `canTransition` / `assertTransition` |
+| `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                                                                                                                                                                      |
+| `src/schemas/*` | `@repo/core/schemas/*` | one file per area — see "Schemas" below                                                                                                                                                                                                       |
 
 The root export (`@repo/core`) re-exports everything; Money helpers are namespaced there:
 `const m: Money = Money.of(150_000, 'VND')`. Every export (root and subpaths) resolves to `dist/`, built
@@ -83,10 +83,10 @@ DELIVERED (VENDOR) | COMPLETED (CUSTOMER); DELIVERED → COMPLETED (CUSTOMER, SY
 (PLATFORM). COMPLETED / REFUNDED / CANCELLED are terminal. Every writer of `SubOrder.status` checks it.
 
 Escrow (`src/orders/escrow.ts`, D3/D7/D12): `subOrderPaid({subtotal, shipping, vendorDiscount, platformDiscount})` =
-`paid_i` (throws if negative); `computeEscrowInPostings(paid)` → `[CUSTOMER −paid, PLATFORM_ESCROW +paid]` (payment
+`paid_i` (throws if negative); `subOrderNet({...same, commission})` = `net_i` = subtotal + shipping − vendorDiscount − commission (throws if negative; the payout job feeds `subOrderPaid` + `subOrderNet` into `computePayoutPostings`); `computeEscrowInPostings(paid)` → `[CUSTOMER −paid, PLATFORM_ESCROW +paid]` (payment
 confirmed, entry type `ESCROW_IN`); `computeRefundPostings(paid)` → `[PLATFORM_ESCROW −paid, CUSTOMER +paid]` (refund,
 `REFUND`). One ledger txn group per sub-order; skip a group when `paid_i` is 0. Shared by the API (payment confirmation)
-and the worker (zero-amount confirmation, refunds).
+and the worker (zero-amount confirmation, payouts).
 
 `PROVIDER_CURRENCIES` / `providerSupportsCurrency(provider, currency)`: VNPay charges VND only, Stripe VND + USD.
 Checked at checkout and payment retry (`payment.error.provider-currency-unsupported`).

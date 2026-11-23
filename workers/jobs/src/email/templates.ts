@@ -165,6 +165,22 @@ export function renderSubOrderShipped(
   });
 }
 
+export function renderSubOrderDelivered(
+  input: Recipient & { orderId: string; vendorName: string; url: string },
+): EmailContent {
+  const t = createTranslator(input.locale);
+  return layout({
+    t,
+    name: input.name,
+    subject: t('email.subOrderDelivered.subject', { orderId: input.orderId }),
+    paragraphs: [
+      t('email.subOrderDelivered.intro', { vendor: input.vendorName }),
+      t('email.subOrderDelivered.confirm'),
+    ],
+    action: { label: t('email.viewOrder'), url: input.url },
+  });
+}
+
 export function renderVendorApplicationApproved(
   input: Recipient & { portalUrl: string },
 ): EmailContent {

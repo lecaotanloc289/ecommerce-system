@@ -34,6 +34,22 @@ export function subOrderPaid(so: SubOrderCharges): Money {
   return paid;
 }
 
+/**
+ * What the vendor earns for one sub-order (D7), credited to its wallet at payout:
+ * `net_i = subtotal + shipping − vendorDiscount − commission` (platform coupons are
+ * platform-funded, so they do not reduce it). Throws `money.error.invalid-operand` if negative.
+ */
+export function subOrderNet(so: SubOrderCharges & { commission: Money }): Money {
+  const net = M.subtract(
+    M.subtract(M.add(so.subtotal, so.shipping), so.vendorDiscount),
+    so.commission,
+  );
+  if (M.isNegative(net)) {
+    throw new DomainError('money.error.invalid-operand', { reason: 'negative sub-order net' });
+  }
+  return net;
+}
+
 export interface EscrowPosting {
   account: Extract<LedgerAccount, 'CUSTOMER' | 'PLATFORM_ESCROW'>;
   /** Signed: negative = debit out of the account. */
