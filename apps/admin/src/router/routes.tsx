@@ -29,6 +29,18 @@ function portalRoute(config: PortalConfig): RouteObject {
         );
         return path === '' ? { index: true, element: guarded } : { path, element: guarded };
       }),
+      ...(config.subRoutes ?? []).map(
+        ({ path, roles, element }): RouteObject => ({
+          path,
+          element: roles ? (
+            <RequireRole roles={roles} fallback={config.basePath}>
+              {element}
+            </RequireRole>
+          ) : (
+            element
+          ),
+        }),
+      ),
       { path: '*', element: <NotFoundPage /> },
     ],
   };
