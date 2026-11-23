@@ -18,7 +18,7 @@ pnpm e2e:headed          # same, visible browser
 pnpm e2e -- -g payout    # extra args go to `playwright test`
 ```
 
-Needs Postgres and Redis reachable (`pnpm services:up`, or the CI services). Env:
+Session minting (`server/test/e2e/mint-sessions.ts`) only runs with `E2E_MINT_SESSIONS=1` (set by the runner) against an `e2e_<hex>` database. Needs Postgres and Redis reachable (`pnpm services:up`, or the CI services). Env:
 
 | Var                                     | Default                                                  | Meaning                                                                          |
 | --------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------- |

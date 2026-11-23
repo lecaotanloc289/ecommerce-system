@@ -14,6 +14,8 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "e2e": "pnpm --filter @repo/e2e e2e",
+    "e2e:headed": "pnpm --filter @repo/e2e e2e:headed",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
     "sdk:generate": "turbo run generate --filter=@repo/sdk && pnpm --filter @repo/sdk build",

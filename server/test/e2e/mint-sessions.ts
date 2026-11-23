@@ -24,6 +24,12 @@ async function main(): Promise<void> {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('mint-sessions refuses to run with NODE_ENV=production');
   }
+  // Explicit opt-in (set only by e2e/scripts/run.ts) and only against a throwaway e2e database,
+  // so shell secrets for a real environment can never be used to mint sessions by accident.
+  const database = new URL(process.env.DATABASE_URL ?? 'postgresql://invalid/none').pathname;
+  if (process.env.E2E_MINT_SESSIONS !== '1' || !/^\/e2e_[0-9a-f]{8}$/.test(database)) {
+    throw new Error('mint-sessions only runs for the throwaway e2e database (via `pnpm e2e`)');
+  }
   const [countArg, ...emails] = process.argv.slice(2);
   const perUser = Number(countArg);
   if (!Number.isInteger(perUser) || perUser < 1 || emails.length === 0) {

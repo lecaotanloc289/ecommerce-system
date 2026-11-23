@@ -38,6 +38,17 @@ if (process.env.NODE_ENV === 'production') {
 const pgAdminUrl =
   process.env.E2E_PG_ADMIN_URL ?? 'postgresql://postgres:postgres@localhost:5432/postgres';
 const redisUrl = process.env.E2E_REDIS_URL ?? 'redis://localhost:6379/13';
+// The runner FLUSHES this Redis logical DB at start and end: never DB 0, never a remote host.
+{
+  const parsed = new URL(redisUrl);
+  const index = Number(parsed.pathname.replace('/', '') || '0');
+  const isLocal = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(parsed.hostname);
+  if (!Number.isInteger(index) || index < 1 || (!isLocal && process.env.CI !== 'true')) {
+    throw new Error(
+      `E2E_REDIS_URL must name a dedicated logical DB (index >= 1) on localhost (or run in CI): ${parsed.hostname}/${index}`,
+    );
+  }
+}
 const dbName = `e2e_${randomBytes(4).toString('hex')}`;
 const databaseUrl = withDatabase(pgAdminUrl, dbName);
 
@@ -103,8 +114,14 @@ async function waitFor(url: string, label: string, timeoutMs = 180_000): Promise
 }
 
 let tearingDown = false;
-async function teardown(): Promise<void> {
-  if (tearingDown) return;
+let teardownPromise: Promise<void> | undefined;
+/** Idempotent: every caller (signal handler, `finally`) awaits the same single teardown. */
+function teardown(): Promise<void> {
+  teardownPromise ??= doTeardown();
+  return teardownPromise;
+}
+
+async function doTeardown(): Promise<void> {
   tearingDown = true;
   for (const child of children) {
     if (child.pid !== undefined) {
@@ -301,7 +318,7 @@ async function main(): Promise<number> {
       String(SESSIONS_PER_USER),
       ...emails,
     ],
-    { cwd: root, env: apiEnv(), encoding: 'utf8' },
+    { cwd: root, env: { ...apiEnv(), E2E_MINT_SESSIONS: '1' }, encoding: 'utf8' },
   );
   if (minted.status !== 0) throw new Error(`mint-sessions failed: ${minted.stderr}`);
   const jsonLine = minted.stdout
