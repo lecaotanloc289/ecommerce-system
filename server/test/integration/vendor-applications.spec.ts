@@ -214,6 +214,26 @@ describe('platform review', () => {
     expect(row.status).toBe('PENDING');
   });
 
+  it('refuses to approve an applicant who already belongs to a vendor (e.g. as staff)', async () => {
+    const { vendor } = await makeVendor(t.db);
+    const user = await makeUser(t.db);
+    const created = await submit(user);
+    await t.db.userRole.create({
+      data: { id: ulid(), userId: user.id, role: Role.VENDOR_STAFF, vendorId: vendor.id },
+    });
+    const res = await call(
+      await staff(),
+      'POST',
+      `/platform/vendor-applications/${created.id}/approve`,
+      { slug: 'new-shop', displayName: 'New' },
+    );
+    expect(res.status).toBe(409);
+    expect(res.json).toMatchObject({ errorCode: 'common.error.conflict' });
+    expect(await t.db.vendor.count()).toBe(1);
+    const row = await t.db.vendorApplication.findUniqueOrThrow({ where: { id: created.id } });
+    expect(row.status).toBe('PENDING');
+  });
+
   it('forbids staff from reviewing their own application', async () => {
     const reviewer = await makeUser(t.db, { roles: [Role.CUSTOMER, Role.PLATFORM_ADMIN] });
     const created = await submit(reviewer);

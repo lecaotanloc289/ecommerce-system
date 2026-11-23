@@ -207,6 +207,17 @@ export class VendorApplicationsService {
         const settings = await tx.platformSettings.findFirst({ orderBy: { createdAt: 'asc' } });
         if (!settings) throw new Error('PlatformSettings row is missing (run the seed)');
 
+        // Same user-row lock as invitation accept, so approve + accept cannot make one user OWNER
+        // of one vendor and STAFF of another (the JWT carries a single vendorId).
+        await tx.$queryRaw`SELECT id FROM users WHERE id = ${row.applicantId} FOR UPDATE`;
+        const heldRoles = await tx.userRole.count({
+          where: {
+            userId: row.applicantId,
+            role: { in: [Role.VENDOR_OWNER, Role.VENDOR_STAFF] },
+          },
+        });
+        if (heldRoles > 0) throw new DomainError('common.error.conflict', { field: 'vendor' });
+
         const taken = await tx.vendor.findFirst({
           where: { OR: [{ slug: input.slug }, { ownerId: row.applicantId }] },
           select: { id: true },
