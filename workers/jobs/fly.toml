@@ -1,0 +1,22 @@
+# Fly app config for the background worker — a separate app per env: elma-worker-{dev|prod}.
+# The deploy workflow always passes --app explicitly; the name here is the dev placeholder.
+# No [http_service]: the worker serves no traffic. Secrets (DATABASE_URL, REDIS_URL, SMTP_*,
+# VNPAY_*, STRIPE_*) are set with `fly secrets set --app elma-worker-<env> …`.
+app = "elma-worker-dev"
+primary_region = "sin"
+# Let the in-flight batch finish on deploys (SIGTERM → stop claiming → exit).
+kill_signal = "SIGTERM"
+kill_timeout = "90s"
+
+[build]
+  # Build context is the repo root (the workflow passes `.` and --dockerfile workers/jobs/Dockerfile).
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  OUTBOX_CONCURRENCY = "2"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256

@@ -145,3 +145,24 @@ export const ConsentActionSchema = z.enum([
 ]);
 export type ConsentAction = z.infer<typeof ConsentActionSchema>;
 export const ConsentAction = ConsentActionSchema.enum;
+export const ZaloAccountStatusSchema = z.enum(['ACTIVE', 'EXPIRED', 'DISCONNECTED']);
+export type ZaloAccountStatus = z.infer<typeof ZaloAccountStatusSchema>;
+export const ZaloAccountStatus = ZaloAccountStatusSchema.enum;
+
+export const ZaloMessageEventSchema = z.enum([
+  'ORDER_PLACED',
+  'ORDER_PAID',
+  'ORDER_PROCESSING',
+  'ORDER_SHIPPED',
+  'ORDER_DELIVERED',
+  'ORDER_COMPLETED',
+  'ORDER_CANCELLED',
+  'ORDER_REFUNDED',
+  'AFTER_DELIVERY',
+]);
+export type ZaloMessageEvent = z.infer<typeof ZaloMessageEventSchema>;
+export const ZaloMessageEvent = ZaloMessageEventSchema.enum;
+
+export const ZaloMessageStatusSchema = z.enum(['PENDING', 'SENDING', 'SENT', 'SKIPPED', 'FAILED']);
+export type ZaloMessageStatus = z.infer<typeof ZaloMessageStatusSchema>;
+export const ZaloMessageStatus = ZaloMessageStatusSchema.enum;

@@ -94,6 +94,10 @@ export const errorsEn: ErrorMessages = {
   'crm.error.empty-audience': 'No customers match this audience.',
   'crm.error.unsubscribe-invalid': 'This unsubscribe link is invalid or has expired.',
   'notification.error.not-found': 'This notification could not be found.',
+  'zalo.error.account-not-connected': 'No Zalo account is connected to this shop.',
+  'zalo.error.login-not-found': 'This Zalo login request has expired. Please start a new one.',
+  'zalo.error.unknown-placeholder':
+    'The message uses a {{…}} field that doesn’t exist. Please check it.',
 };
 
 export const errorsVi: ErrorMessages = {
@@ -184,4 +188,8 @@ export const errorsVi: ErrorMessages = {
   'crm.error.empty-audience': 'Không có khách hàng nào phù hợp với nhóm này.',
   'crm.error.unsubscribe-invalid': 'Liên kết hủy đăng ký không hợp lệ hoặc đã hết hạn.',
   'notification.error.not-found': 'Không tìm thấy thông báo này.',
+  'zalo.error.account-not-connected': 'Cửa hàng chưa kết nối tài khoản Zalo.',
+  'zalo.error.login-not-found': 'Yêu cầu đăng nhập Zalo đã hết hạn. Vui lòng thử lại.',
+  'zalo.error.unknown-placeholder':
+    'Tin nhắn dùng trường {{…}} không tồn tại. Vui lòng kiểm tra lại.',
 };

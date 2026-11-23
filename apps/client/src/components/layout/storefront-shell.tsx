@@ -2,8 +2,10 @@ import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { AppLocale } from '@repo/i18n';
 import '@/app/globals.css';
+import { AuthProvider } from '@/store/auth-provider';
 import { CartProvider } from '@/store/cart-store';
 import { CheckoutProvider } from '@/store/checkout-store';
+import { Toaster } from '@repo/ui';
 import { Navbar } from './navbar';
 import { Footer } from './footer';
 
@@ -34,13 +36,16 @@ export function StorefrontShell({ locale, children }: { locale: AppLocale; child
         {/* Locale only: text is translated with @repo/i18n's createTranslator (useT/useLocale),
             so next-intl gets no message catalog. */}
         <NextIntlClientProvider locale={locale} messages={null}>
-          <CartProvider>
-            <CheckoutProvider>
-              <Navbar />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </CheckoutProvider>
-          </CartProvider>
+          <AuthProvider>
+            <CartProvider>
+              <CheckoutProvider>
+                <Navbar />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <Toaster />
+              </CheckoutProvider>
+            </CartProvider>
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

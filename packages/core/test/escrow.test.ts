@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { DomainError } from '../src/errors';
 import { of } from '../src/money';
-import { computeEscrowInPostings, computeRefundPostings, subOrderPaid } from '../src/orders';
+import {
+  computeEscrowInPostings,
+  computeRefundPostings,
+  subOrderNet,
+  subOrderPaid,
+} from '../src/orders';
+import { computePayoutPostings } from '../src/pricing';
 import {
   OrderPaidEventSchema,
   OUTBOX_EVENT_SCHEMAS,
@@ -50,6 +56,39 @@ describe('subOrderPaid (D7)', () => {
         platformDiscount: vnd(0),
       }),
     ).toThrow(DomainError);
+  });
+});
+
+describe('subOrderNet (D7)', () => {
+  const charges = {
+    subtotal: vnd(200_000),
+    shipping: vnd(30_000),
+    vendorDiscount: vnd(10_000),
+    platformDiscount: vnd(19_000),
+    commission: vnd(22_000),
+  };
+
+  it('= subtotal + shipping − vendorDiscount − commission (platform discount ignored)', () => {
+    expect(subOrderNet(charges)).toEqual(vnd(198_000));
+  });
+
+  it('feeds zero-sum payout postings together with subOrderPaid', () => {
+    const postings = computePayoutPostings({
+      paid: subOrderPaid(charges),
+      net: subOrderNet(charges),
+      commission: charges.commission,
+      platformDiscount: charges.platformDiscount,
+    });
+    expect(postings).toEqual([
+      { account: 'PLATFORM_ESCROW', amount: vnd(-201_000) },
+      { account: 'VENDOR_WALLET', amount: vnd(198_000) },
+      { account: 'PLATFORM_REVENUE', amount: vnd(3_000) },
+    ]);
+  });
+
+  it('rejects a negative net and mixed currencies', () => {
+    expect(() => subOrderNet({ ...charges, commission: vnd(300_000) })).toThrow(DomainError);
+    expect(() => subOrderNet({ ...charges, commission: of(1, 'USD') })).toThrow(DomainError);
   });
 });
 

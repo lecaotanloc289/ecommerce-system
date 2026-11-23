@@ -1,81 +1,132 @@
 'use client';
 
 import * as React from 'react';
-import type { CartLine, ShippingMethod, Voucher } from '../types';
-import { computeTotals, type OrderTotals } from '../lib/cart';
-import { findShippingMethod, findVoucher, shippingMethods } from '../mocks/cart';
+import { CouponCodeSchema, type CartShippingOptions, type PaymentProvider } from '@repo/core';
+import {
+  EMPTY_CHOICES,
+  cartCurrency,
+  chosenShippingFees,
+  sanitizeChoices,
+  vendorIdsOf,
+  type CheckoutChoices,
+} from '../lib/checkout';
+import { computeTotals, type CartLineView, type OrderTotals } from '../lib/cart';
 import { platformSettings } from '../mocks/platform-settings';
 import { useCart } from './cart-store';
 import { readStored, writeStored } from './persisted';
 
 /**
- * Checkout choices shared by the cart and every checkout step. Persisted to
- * sessionStorage so they survive navigating between steps (and reloads) in a tab.
+ * Checkout choices shared by the cart and every checkout step (address, shipping method per
+ * vendor, payment provider, coupon codes). Ids and codes only, persisted to sessionStorage so
+ * they survive navigating between steps (and reloads) in a tab. The server re-validates all of it.
  */
-const STORAGE_KEY = 'checkout';
+const STORAGE_KEY = 'checkout.v2';
 
-interface CheckoutState {
-  shippingMethodId: string | null;
-  voucherCode: string | null;
+/** Why the customer was sent back to a step (an API error to show there). */
+export interface CheckoutNotice {
+  errorCode: string;
+  params?: Record<string, string | number | boolean>;
 }
 
-interface CheckoutContextValue extends CheckoutState {
-  setShippingMethodId: (id: string) => void;
-  setVoucherCode: (code: string | null) => void;
+interface CheckoutContextValue {
+  hydrated: boolean;
+  choices: CheckoutChoices;
+  setAddressId: (id: string | null) => void;
+  /** Replace the vendor → shipping method map (e.g. after loading the options). */
+  setShipping: (shipping: Record<string, string>) => void;
+  setShippingFor: (vendorId: string, methodId: string) => void;
+  setProvider: (provider: PaymentProvider | null) => void;
+  /** Adds a coupon code; 'invalid' = malformed, 'duplicate' = already in the list. */
+  addCouponCode: (code: string) => 'added' | 'invalid' | 'duplicate';
+  removeCouponCode: (code: string) => void;
+  setZaloOptIn: (optIn: boolean) => void;
   /** Back to defaults — called once an order is placed. */
   reset: () => void;
+  notice: CheckoutNotice | null;
+  setNotice: (notice: CheckoutNotice | null) => void;
 }
-
-const DEFAULT_STATE: CheckoutState = {
-  shippingMethodId: shippingMethods[0]?.id ?? null,
-  voucherCode: null,
-};
 
 const CheckoutContext = React.createContext<CheckoutContextValue | null>(null);
 
-function sanitize(stored: unknown): CheckoutState | undefined {
-  if (typeof stored !== 'object' || stored === null) return undefined;
-  const shippingMethodId =
-    'shippingMethodId' in stored && typeof stored.shippingMethodId === 'string'
-      ? stored.shippingMethodId
-      : null;
-  const voucherCode =
-    'voucherCode' in stored && typeof stored.voucherCode === 'string' ? stored.voucherCode : null;
-  return {
-    shippingMethodId: findShippingMethod(shippingMethodId)
-      ? shippingMethodId
-      : DEFAULT_STATE.shippingMethodId,
-    voucherCode: findVoucher(voucherCode) ? voucherCode : null,
-  };
-}
-
 export function CheckoutProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = React.useState<CheckoutState>(DEFAULT_STATE);
+  const [choices, setChoices] = React.useState<CheckoutChoices>(EMPTY_CHOICES);
   const [hydrated, setHydrated] = React.useState(false);
+  const [notice, setNotice] = React.useState<CheckoutNotice | null>(null);
 
   React.useEffect(() => {
-    const saved = sanitize(readStored('session', STORAGE_KEY));
-    if (saved) setState(saved);
+    setChoices(sanitizeChoices(readStored('session', STORAGE_KEY)));
     setHydrated(true);
   }, []);
 
   React.useEffect(() => {
-    if (hydrated) writeStored('session', STORAGE_KEY, state);
-  }, [hydrated, state]);
+    if (hydrated) writeStored('session', STORAGE_KEY, choices);
+  }, [hydrated, choices]);
 
-  const setShippingMethodId = React.useCallback((id: string) => {
-    if (findShippingMethod(id)) setState((s) => ({ ...s, shippingMethodId: id }));
+  const setAddressId = React.useCallback(
+    (addressId: string | null) => setChoices((c) => ({ ...c, addressId })),
+    [],
+  );
+  const setShipping = React.useCallback(
+    (shipping: Record<string, string>) => setChoices((c) => ({ ...c, shipping })),
+    [],
+  );
+  const setShippingFor = React.useCallback(
+    (vendorId: string, methodId: string) =>
+      setChoices((c) => ({ ...c, shipping: { ...c.shipping, [vendorId]: methodId } })),
+    [],
+  );
+  const setProvider = React.useCallback(
+    (provider: PaymentProvider | null) => setChoices((c) => ({ ...c, provider })),
+    [],
+  );
+  const choicesRef = React.useRef(choices);
+  choicesRef.current = choices;
+  const addCouponCode = React.useCallback((raw: string): 'added' | 'invalid' | 'duplicate' => {
+    const parsed = CouponCodeSchema.safeParse(raw);
+    if (!parsed.success) return 'invalid';
+    if (choicesRef.current.couponCodes.includes(parsed.data)) return 'duplicate';
+    setChoices((c) => ({ ...c, couponCodes: [...c.couponCodes, parsed.data] }));
+    return 'added';
   }, []);
-
-  const setVoucherCode = React.useCallback((code: string | null) => {
-    setState((s) => ({ ...s, voucherCode: findVoucher(code)?.code ?? null }));
-  }, []);
-
-  const reset = React.useCallback(() => setState(DEFAULT_STATE), []);
+  const removeCouponCode = React.useCallback(
+    (code: string) =>
+      setChoices((c) => ({ ...c, couponCodes: c.couponCodes.filter((x) => x !== code) })),
+    [],
+  );
+  const setZaloOptIn = React.useCallback(
+    (zaloOptIn: boolean) => setChoices((c) => ({ ...c, zaloOptIn })),
+    [],
+  );
+  const reset = React.useCallback(() => setChoices(EMPTY_CHOICES), []);
 
   const value = React.useMemo<CheckoutContextValue>(
-    () => ({ ...state, setShippingMethodId, setVoucherCode, reset }),
-    [state, setShippingMethodId, setVoucherCode, reset],
+    () => ({
+      hydrated,
+      choices,
+      setAddressId,
+      setShipping,
+      setShippingFor,
+      setProvider,
+      addCouponCode,
+      removeCouponCode,
+      setZaloOptIn,
+      reset,
+      notice,
+      setNotice,
+    }),
+    [
+      hydrated,
+      choices,
+      setAddressId,
+      setShipping,
+      setShippingFor,
+      setProvider,
+      addCouponCode,
+      removeCouponCode,
+      setZaloOptIn,
+      reset,
+      notice,
+    ],
   );
 
   return <CheckoutContext.Provider value={value}>{children}</CheckoutContext.Provider>;
@@ -87,25 +138,27 @@ export function useCheckout(): CheckoutContextValue {
   return ctx;
 }
 
-/** Cart lines + checkout choices → totals. Every summary on cart/checkout reads this. */
-export function useOrderTotals(): {
+/**
+ * Cart lines + checkout choices → an ESTIMATE of the totals (subtotal of available lines + the
+ * chosen shipping fees; coupons and rounding are the server's). Every summary reads this until
+ * the order is placed.
+ */
+export function useOrderTotals(shippingOptions: CartShippingOptions | null = null): {
   hydrated: boolean;
-  lines: CartLine[];
+  lines: CartLineView[];
+  hasMixedCurrency: boolean;
   totals: OrderTotals;
-  shippingMethod: ShippingMethod | undefined;
-  voucher: Voucher | undefined;
 } {
-  const { hydrated, lines } = useCart();
-  const { shippingMethodId, voucherCode } = useCheckout();
+  const { hydrated, lines, hasMixedCurrency } = useCart();
+  const { choices } = useCheckout();
   return React.useMemo(() => {
-    const shippingMethod = findShippingMethod(shippingMethodId);
-    const voucher = findVoucher(voucherCode);
+    const currency = cartCurrency(lines);
+    const fees = chosenShippingFees(choices, vendorIdsOf(lines), shippingOptions, currency);
     return {
       hydrated,
       lines,
-      shippingMethod,
-      voucher,
-      totals: computeTotals(lines, shippingMethod, voucher, platformSettings.defaultCurrency),
+      hasMixedCurrency,
+      totals: computeTotals(lines, fees, platformSettings.defaultCurrency),
     };
-  }, [hydrated, lines, shippingMethodId, voucherCode]);
+  }, [hydrated, lines, hasMixedCurrency, choices, shippingOptions]);
 }

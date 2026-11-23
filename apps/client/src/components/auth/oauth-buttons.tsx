@@ -3,14 +3,28 @@
 import { Facebook } from 'lucide-react';
 import { Button } from '@repo/ui';
 import { useT } from '../../i18n/use-locale';
+import { useAuth } from '../../store/auth-provider';
+import type { OAuthProvider } from '../../store/auth-store';
 
-/** OAuth sign-in buttons — the only auth path (Golden Rule #5: Google + Facebook,
- * no email/password). Handlers are no-ops until wired through `@repo/sdk`. */
+/**
+ * OAuth sign-in buttons — the only auth path (Golden Rule #5: Google + Facebook, no
+ * email/password). Navigates to `${API}/v1/auth/<provider>?app=web`; the page's `?returnTo=`
+ * (set by the navbar link) is kept in sessionStorage for `/auth/callback`.
+ */
 export function OAuthButtons() {
   const t = useT();
+  const { signIn } = useAuth();
+  const start = (provider: OAuthProvider) =>
+    signIn(provider, new URLSearchParams(window.location.search).get('returnTo'));
   return (
     <div className="flex flex-col gap-2">
-      <Button variant="secondary" size="lg" fullWidth iconLeft={<GoogleIcon />}>
+      <Button
+        variant="secondary"
+        size="lg"
+        fullWidth
+        iconLeft={<GoogleIcon />}
+        onClick={() => start('google')}
+      >
         {t('auth.continueGoogle')}
       </Button>
       <Button
@@ -18,6 +32,7 @@ export function OAuthButtons() {
         size="lg"
         fullWidth
         iconLeft={<Facebook className="size-5" aria-hidden />}
+        onClick={() => start('facebook')}
       >
         {t('auth.continueFacebook')}
       </Button>

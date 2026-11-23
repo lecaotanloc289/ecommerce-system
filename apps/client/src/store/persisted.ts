@@ -15,6 +15,14 @@ export function readStored(storage: 'local' | 'session', key: string): unknown {
   }
 }
 
+export function removeStored(storage: 'local' | 'session', key: string): void {
+  try {
+    (storage === 'local' ? window.localStorage : window.sessionStorage).removeItem(key);
+  } catch {
+    // Storage blocked: nothing to remove.
+  }
+}
+
 export function writeStored(storage: 'local' | 'session', key: string, value: unknown): void {
   try {
     (storage === 'local' ? window.localStorage : window.sessionStorage).setItem(

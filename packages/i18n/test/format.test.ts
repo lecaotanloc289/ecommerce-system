@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCompact, formatDate, formatMoney } from '../src/format';
+import { formatCompact, formatDate, formatDateTime, formatMoney } from '../src/format';
 import { fromCoreLocale, intlLocale, isAppLocale, toCoreLocale } from '../src/locale';
 
 // Intl separates number and symbol with NBSP / narrow NBSP; normalise for readable assertions.
@@ -32,6 +32,13 @@ describe('formatDate', () => {
     expect(formatDate('2026-11-18T18:30:00Z', 'en')).toBe('Nov 19, 2026');
     expect(formatDate('2026-11-18T18:30:00Z', 'vi')).toBe('19 thg 11, 2026');
     expect(formatDate('2026-11-18T16:00:00Z', 'en')).toBe('Nov 18, 2026');
+  });
+});
+
+describe('formatDateTime', () => {
+  it('adds a 24-hour time in the fixed Asia/Ho_Chi_Minh zone', () => {
+    expect(plain(formatDateTime('2026-11-18T18:30:00Z', 'en'))).toBe('Nov 19, 2026, 01:30');
+    expect(plain(formatDateTime('2026-11-18T18:30:00Z', 'vi'))).toBe('01:30 19 thg 11, 2026');
   });
 });
 

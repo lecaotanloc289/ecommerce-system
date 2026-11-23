@@ -158,6 +158,34 @@ enum DiscountType {
   FIXED
 }
 
+enum ZaloAccountStatus {
+  ACTIVE
+  EXPIRED
+  DISCONNECTED
+}
+
+/// What a vendor's automated Zalo message reacts to: one per sub-order status the customer
+/// cares about, plus the post-delivery customer-care message (sent delayMinutes after delivery).
+enum ZaloMessageEvent {
+  ORDER_PLACED
+  ORDER_PAID
+  ORDER_PROCESSING
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_COMPLETED
+  ORDER_CANCELLED
+  ORDER_REFUNDED
+  AFTER_DELIVERY
+}
+
+enum ZaloMessageStatus {
+  PENDING
+  SENDING
+  SENT
+  SKIPPED
+  FAILED
+}
+
 model User {
   id            String   @id
   email         String?  @unique
@@ -258,7 +286,7 @@ model Vendor {
   createdAt             DateTime     @default(now()) @map("created_at")
   updatedAt             DateTime     @updatedAt @map("updated_at")
 
-  owner            User               @relation("VendorOwner", fields: [ownerId], references: [id])
+  owner            User                  @relation("VendorOwner", fields: [ownerId], references: [id])
   staffRoles       UserRole[]
   wallet           Wallet?
   products         Product[]
@@ -268,6 +296,9 @@ model Vendor {
   ledgerEntries    LedgerEntry[]
   invitations      VendorInvitation[]
   crmConsentEvents CrmConsentEvent[]
+  zaloAccount      ZaloAccount?
+  zaloTemplates    ZaloMessageTemplate[]
+  zaloMessages     ZaloMessage[]
 
   customers           VendorCustomer[]
   customerNotes       VendorCustomerNote[]
@@ -481,6 +512,8 @@ model Order {
   grandTotalAmount    BigInt      @map("grand_total_amount")
   idempotencyKey      String      @unique @map("idempotency_key")
   paymentDeadlineAt   DateTime?   @map("payment_deadline_at")
+  /// Customer ticked "notify me on Zalo" at checkout; vendors message only opted-in orders.
+  zaloOptIn           Boolean     @default(false) @map("zalo_opt_in")
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
 
@@ -530,6 +563,7 @@ model SubOrder {
   reviews           Review[]
   refunds           Refund[]
   crmMessages       CrmMessage[]
+  zaloMessages      ZaloMessage[]
 
   @@index([orderId])
   @@index([vendorId])
@@ -591,6 +625,11 @@ model Payment {
   /// Provider checkout URL, written by the worker after createSession (roadmap D2). Null until then.
   redirectUrl   String?         @map("redirect_url")
   expiresAt     DateTime?       @map("expires_at")
+  /// Provider session reference from createSession (VNPay `vnp_CreateDate`, Stripe session id),
+  /// written by the worker with `redirectUrl`. VNPay refund needs it.
+  providerRef   String?         @map("provider_ref")
+  /// Customer IP captured by the API at checkout / payment retry (VNPay `vnp_IpAddr`).
+  clientIp      String?         @map("client_ip")
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
 
@@ -964,4 +1003,79 @@ model CrmConsentEvent {
   @@index([userId, vendorId, createdAt])
   @@index([vendorId])
   @@map("crm_consent_events")
+}
+
+/// A vendor's personal Zalo account, logged in by QR through workers/zalo (zca-js). One per vendor.
+/// `credentials` is AES-256-GCM ciphertext of the zca-js session ({ imei, cookie, userAgent }),
+/// readable only by workers/zalo (ZALO_CREDENTIALS_KEY); null once DISCONNECTED.
+model ZaloAccount {
+  id          String            @id
+  vendorId    String            @unique @map("vendor_id")
+  status      ZaloAccountStatus
+  /// Zalo user id of the logged-in account; unique so one Zalo number serves one shop. Cleared on disconnect.
+  zaloUid     String?           @unique @map("zalo_uid")
+  displayName String?           @map("display_name")
+  avatarUrl   String?           @map("avatar_url")
+  credentials String?
+  lastLoginAt DateTime?         @map("last_login_at")
+  /// Last successful keep-alive.
+  lastSeenAt  DateTime?         @map("last_seen_at")
+  lastError   String?           @map("last_error")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("zalo_accounts")
+}
+
+/// Vendor-authored text for one ZaloMessageEvent (placeholders: @repo/core ZALO_TEMPLATE_PLACEHOLDERS).
+/// No row = disabled. `delayMinutes` is only used by AFTER_DELIVERY (0 for every other event).
+model ZaloMessageTemplate {
+  id           String           @id
+  vendorId     String           @map("vendor_id")
+  event        ZaloMessageEvent
+  isEnabled    Boolean          @default(true) @map("is_enabled")
+  body         String
+  delayMinutes Int              @default(0) @map("delay_minutes")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, event])
+  @@map("zalo_message_templates")
+}
+
+/// One automated message for one sub-order + event. Written by the API in the same transaction as
+/// the order change (a Zalo-specific outbox); delivered by workers/zalo at or after `scheduledAt`.
+/// The text is rendered at send time and kept in `renderedBody`.
+model ZaloMessage {
+  id            String            @id
+  vendorId      String            @map("vendor_id")
+  subOrderId    String            @map("sub_order_id")
+  event         ZaloMessageEvent
+  status        ZaloMessageStatus @default(PENDING)
+  scheduledAt   DateTime          @map("scheduled_at")
+  /// Retry backoff: the worker skips the row until then.
+  nextAttemptAt DateTime          @default(now()) @map("next_attempt_at")
+  /// SENDING claim lease; an expired lease (crashed worker) is put back to PENDING.
+  lockedUntil   DateTime?         @map("locked_until")
+  attempts      Int               @default(0)
+  lastError     String?           @map("last_error")
+  skipReason    String?           @map("skip_reason")
+  renderedBody  String?           @map("rendered_body")
+  zaloMessageId String?           @map("zalo_message_id")
+  sentAt        DateTime?         @map("sent_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  vendor   Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  subOrder SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([subOrderId, event])
+  @@index([vendorId, status, scheduledAt])
+  @@index([status, scheduledAt])
+  @@map("zalo_messages")
 }

@@ -100,6 +100,10 @@ export const ERROR_CODES = [
   'crm.error.empty-audience',
   'crm.error.unsubscribe-invalid',
   'notification.error.not-found',
+  // zalo notifications
+  'zalo.error.account-not-connected',
+  'zalo.error.login-not-found',
+  'zalo.error.unknown-placeholder',
 ] as const;
 
 export const ErrorCodeSchema = z.enum(ERROR_CODES);
@@ -183,6 +187,9 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'crm.error.empty-audience': 422,
   'crm.error.unsubscribe-invalid': 404,
   'notification.error.not-found': 404,
+  'zalo.error.account-not-connected': 404,
+  'zalo.error.login-not-found': 404,
+  'zalo.error.unknown-placeholder': 422,
 };
 
 /** Interpolation values for the translated message (e.g. `{ sku, available }`). */

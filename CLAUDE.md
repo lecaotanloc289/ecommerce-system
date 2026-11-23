@@ -14,15 +14,17 @@ A single order may contain products from multiple vendors → the backend automa
 
 This file is the **constitution**. Every PR must respect the Golden Rules and NEVER DO list. Any deviation must be justified in the PR description and the file updated accordingly.
 
-### Implementation status (as of 2026-11-19)
+### Implementation status (as of 2026-11-23)
 
 - `packages/db` — done: full Prisma schema, migrations, seed, tests (see `packages/db/CLAUDE.md`).
-- `apps/client` — storefront UI for all `SCREENS.md` screens, on mock data (see `apps/client/CLAUDE.md`).
+- `apps/client` — storefront UI for all `SCREENS.md` screens; catalog (home, categories, search, product, vendor pages) read from the API in RSC, OAuth sign-in + in-memory session, guest + server cart (merge once on sign-in), checkout (address, per-vendor shipping, VNPay/Stripe, coupons, place order + payment-session polling), order success / payment-failed / account orders on the API (T5.1; see `apps/client/CLAUDE.md`).
 - `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), `@Idempotent()` interceptor, Redis-backed rate limit (`@RateLimit('strict')`), cursor pagination helper, Zod-validated env, ESLint, Jest with a Testcontainers integration harness + factories; me/addresses, cart, public catalog, checkout + customer orders (see `server/CLAUDE.md`).
-- `apps/admin` — scaffold only.
+- `apps/admin` — scaffold (T4.2): React Router 7 routes (`/login`, `/auth/callback`, `/invite`, `/vendor/*`, `/platform/*`), sidebar layout, in-memory auth session (boot silent refresh, single-flight) + role guards, TanStack Query + `@repo/sdk` with `useApiMutation` (stable Idempotency-Key), `admin.*` i18n, ESLint + Vitest; portal pages are placeholders (see `apps/admin/CLAUDE.md`).
+- `workers/jobs` (`@workers/jobs`) — outbox dispatcher (claims only event types it has a handler for, `FOR UPDATE SKIP LOCKED`, exponential backoff, dead-letter after 10 attempts) with handlers for `payment.requested` (provider session via `@repo/payments`, or the zero-amount confirmation), `refund.requested` (provider refund → Refund SUCCEEDED / FAILED / PENDING, Payment REFUNDED when fully refunded) and transactional emails (nodemailer, vi/en via `@repo/i18n`); BullMQ repeatable jobs `expire-unpaid-orders`, `auto-complete-sub-orders`, `release-payouts` (D7 payout ledger + wallet credit), `outbox-retention`, plus `run-job` for one-off runs; Vitest + Testcontainers; own Dockerfile / Fly app `elma-worker-{env}` (see `workers/jobs/CLAUDE.md`).
 - `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
-- `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
+- `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront and admin (see `packages/i18n/CLAUDE.md`).
 - `packages/sdk` — OpenAPI pipeline + `createApiClient` (openapi-fetch; Bearer, auto Idempotency-Key, single-flight 401 refresh); `pnpm sdk:generate` (see `packages/sdk/CLAUDE.md`).
+- `workers/zalo` — Zalo session keeper + automated order messages per shop (zca-js QR login, encrypted sessions, Redis leases, keep-alive, paced sending with retries); the API side is `server/src/zalo/` (see `workers/zalo/CLAUDE.md`).
 - `packages/payments` — `PaymentProvider` interface + VNPay (v2.1.0 HMAC-SHA512 pay URL, IPN/return verify, merchant-webapi refund) and Stripe (Checkout Session, `constructEvent` webhook verify, refunds) adapters; config via factory params, injectable `fetch` / Stripe client; ESLint + Vitest (see `packages/payments/CLAUDE.md`).
 - Vendor CRM (wave 7) — backend done on `feat/crm`: customer 360 / segments / tags / notes, post-purchase automations config, segment campaigns with coupons, customer notifications + per-shop consent + unsubscribe (see `docs/superpowers/plans/2026-11-23-vendor-crm.md`). Worker delivery (K5) pending `@workers/jobs`.
 
@@ -74,9 +76,12 @@ ecommerce-system/
 │   └── admin/                     Vite + React dashboard, package `@apps/admin` (platform admin + vendor portal)
 ├── server/                        Backend API (NestJS + Fastify), single workspace, package `@server/api`.
 │                                   Versioned /v1, OpenAPI exposed. Code in `server/src/`.
-│                                   Future async workers (outbox dispatcher, payout cron, email sender)
-│                                   live OUTSIDE this workspace — likely a sibling top-level dir like
-│                                   `workers/<name>/` if/when added.
+│                                   Async work lives OUTSIDE this workspace, in `workers/`.
+├── workers/                       Background processes (no HTTP); never import from server/ or apps/.
+│   └── jobs/                      `@workers/jobs`: outbox dispatcher → payment sessions, refunds,
+│                                  emails; scheduled jobs (payment expiry, auto-complete, payouts).
+│   └── zalo/                      `@workers/zalo`: holds shops' Zalo sessions (zca-js) + sends automated
+│                                  order messages from `zalo_messages` (roadmap D16).
 ├── packages/                      Shared libraries
 │   ├── core/                      Domain layer: Zod schemas, types (z.infer), enums, error codes,
 │   │                              Money utility, ID brands, shared constants.
@@ -104,10 +109,12 @@ ecommerce-system/
 ```
 apps/*      → packages/*           (OK)
 server      → packages/*           (OK)
+workers/*   → packages/*           (OK)
 packages/*  → packages/*           (OK, in dependency direction: core → ui/i18n/db/sdk/payments; no cycles)
 apps/*      ↔ apps/*               (FORBIDDEN — share via packages/*)
 apps/*      ↔ server               (FORBIDDEN — frontends call HTTP via @repo/sdk)
-packages/*  → apps/* | server      (FORBIDDEN — packages don't depend on consumers)
+workers/*   ↔ server | apps/*      (FORBIDDEN — workers talk to the API only through the DB / outbox)
+packages/*  → apps/* | server | workers/* (FORBIDDEN — packages don't depend on consumers)
 ```
 
 ---
@@ -185,7 +192,7 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
 
 8. **Migrations are forward-only and reviewed.** Created with `pnpm db:migrate dev`. Never edit an applied migration. Destructive changes (drop column, rename) require a 2-phase migration: ship code that reads both → migrate → cleanup migration.
 
-9. **Side effects go through the Outbox.** Email, webhooks, payouts, notifications — write to `outbox_events` inside the same transaction as the business change; a BullMQ worker dispatches them. Do NOT `await externalApi()` in the request thread.
+9. **Side effects go through the Outbox.** Email, webhooks, payouts, notifications — write to `outbox_events` inside the same transaction as the business change; a BullMQ worker dispatches them. Do NOT `await externalApi()` in the request thread. _Exception:_ automated Zalo messages use their own outbox table `zalo_messages` (same transaction, written by `queueZaloMessages` / `queueZaloStatusMessages` in `server/src/zalo/`, delivered by `workers/zalo`) because they need a per-row send time (post-delivery care), per-shop session affinity and a vendor-visible send log.
 
 10. **CI gate must pass.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` must be green before merge. The pre-commit hook runs `lint-staged` + `typecheck` on changed files.
 
@@ -213,26 +220,26 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
 
 ## 7. Naming conventions
 
-| Scope               | Convention                                                             | Example                                                 |
-| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
-| File                | kebab-case                                                             | `product-card.tsx`, `vendor-payout.service.ts`          |
-| React component     | PascalCase export                                                      | `export function ProductCard()`                         |
-| React hook          | `useXxx`                                                               | `useCartQuery`, `useCurrentVendor`                      |
-| Zod schema          | `XxxSchema`                                                            | `CheckoutSchema`, `VendorApplicationSchema`             |
-| Type from schema    | `Xxx = z.infer<typeof XxxSchema>`                                      | `type Checkout = z.infer<typeof CheckoutSchema>`        |
-| NestJS class        | `XxxController` / `XxxService` / `XxxModule` / `XxxRepository`         | `OrdersService`                                         |
-| Prisma model        | PascalCase, **singular**                                               | `Product`, `Order`, `OrderItem`, `SubOrder`             |
-| DB table (physical) | snake_case, **plural** via `@@map`                                     | `@@map("order_items")`                                  |
-| Enum (Prisma + TS)  | SCREAMING_SNAKE_CASE values                                            | `OrderStatus.AWAITING_PAYMENT`                          |
-| API route           | kebab-case, plural noun, versioned                                     | `POST /v1/vendor-applications`                          |
-| Env var             | SCREAMING_SNAKE_CASE                                                   | `DATABASE_URL`, `GOOGLE_OAUTH_CLIENT_ID`                |
-| i18n key            | dot-namespaced; namespaces + error codes kebab, UI leaf keys camelCase | `checkout.error.out-of-stock`, `common.addToCart`       |
-| Branch              | `feat/`, `fix/`, `chore/`, `refactor/`                                 | `feat/vendor-payout-cron`                               |
-| Commit              | Conventional Commits                                                   | `feat(orders): split multi-vendor cart into sub-orders` |
-| Workspace package   | `@apps/<n>` (UI), `@server/<n>` (backend), `@repo/<n>` (shared)        | `@apps/web`, `@server/api`, `@repo/core`                |
-| ID                  | ULID (text), brand type per entity                                     | `type OrderId = Brand<string, 'OrderId'>`               |
-| Boolean             | `is/has/can/should` prefix                                             | `isActive`, `hasShipped`, `canRefund`                   |
-| Money field         | suffix `_amount` + `_currency`                                         | `subtotal_amount`, `subtotal_currency`                  |
+| Scope               | Convention                                                                                   | Example                                                   |
+| ------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| File                | kebab-case                                                                                   | `product-card.tsx`, `vendor-payout.service.ts`            |
+| React component     | PascalCase export                                                                            | `export function ProductCard()`                           |
+| React hook          | `useXxx`                                                                                     | `useCartQuery`, `useCurrentVendor`                        |
+| Zod schema          | `XxxSchema`                                                                                  | `CheckoutSchema`, `VendorApplicationSchema`               |
+| Type from schema    | `Xxx = z.infer<typeof XxxSchema>`                                                            | `type Checkout = z.infer<typeof CheckoutSchema>`          |
+| NestJS class        | `XxxController` / `XxxService` / `XxxModule` / `XxxRepository`                               | `OrdersService`                                           |
+| Prisma model        | PascalCase, **singular**                                                                     | `Product`, `Order`, `OrderItem`, `SubOrder`               |
+| DB table (physical) | snake_case, **plural** via `@@map`                                                           | `@@map("order_items")`                                    |
+| Enum (Prisma + TS)  | SCREAMING_SNAKE_CASE values                                                                  | `OrderStatus.AWAITING_PAYMENT`                            |
+| API route           | kebab-case, plural noun, versioned                                                           | `POST /v1/vendor-applications`                            |
+| Env var             | SCREAMING_SNAKE_CASE                                                                         | `DATABASE_URL`, `GOOGLE_OAUTH_CLIENT_ID`                  |
+| i18n key            | dot-namespaced; namespaces + error codes kebab, UI leaf keys camelCase                       | `checkout.error.out-of-stock`, `common.addToCart`         |
+| Branch              | `feat/`, `fix/`, `chore/`, `refactor/`                                                       | `feat/vendor-payout-cron`                                 |
+| Commit              | Conventional Commits                                                                         | `feat(orders): split multi-vendor cart into sub-orders`   |
+| Workspace package   | `@apps/<n>` (UI), `@server/<n>` (backend), `@workers/<n>` (background), `@repo/<n>` (shared) | `@apps/web`, `@server/api`, `@workers/jobs`, `@repo/core` |
+| ID                  | ULID (text), brand type per entity                                                           | `type OrderId = Brand<string, 'OrderId'>`                 |
+| Boolean             | `is/has/can/should` prefix                                                                   | `isActive`, `hasShipped`, `canRefund`                     |
+| Money field         | suffix `_amount` + `_currency`                                                               | `subtotal_amount`, `subtotal_currency`                    |
 
 ---
 
@@ -371,7 +378,7 @@ Never rename or drop in a single migration:
 | `VENDOR_OWNER`, `VENDOR_STAFF`     | `apps/admin` → `/vendor/*` routes   |
 | `PLATFORM_STAFF`, `PLATFORM_ADMIN` | `apps/admin` → `/platform/*` routes |
 
-`server/` (HTTP, package `@server/api`) serves all roles via REST; webhooks (payment, OAuth callback) terminate here. Future async workers (outbox dispatch, payout cron, email send) will live in a separate top-level dir (e.g. `workers/*`) — not nested inside `server/`.
+`server/` (HTTP, package `@server/api`) serves all roles via REST; webhooks (payment, OAuth callback) terminate here. Async work (outbox dispatch, emails, payment sessions, provider refunds; scheduled payment expiry, auto-complete and payouts) runs in `workers/jobs` (`@workers/jobs`) — not nested inside `server/`.
 
 ### Customer journey (features in scope for MVP)
 
@@ -470,6 +477,7 @@ pnpm dev                            # all workspaces in parallel via Turbo
 pnpm --filter @apps/web dev         # storefront only       → http://localhost:3000
 pnpm --filter @apps/admin dev       # admin only            → http://localhost:5173
 pnpm --filter @server/api dev       # API only              → http://localhost:3001
+pnpm --filter @workers/jobs dev     # outbox worker + scheduled jobs (no HTTP; needs DATABASE_URL + REDIS_URL, SMTP → Mailhog)
 ```
 
 ### Build / lint / typecheck / test

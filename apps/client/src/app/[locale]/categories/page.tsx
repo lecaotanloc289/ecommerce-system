@@ -1,15 +1,29 @@
-'use client';
-
-import { Link } from '@/i18n/navigation';
+import type { Metadata } from 'next';
 import { ChevronRight } from 'lucide-react';
+import { createTranslator } from '@repo/i18n';
+import { Link } from '@/i18n/navigation';
+import { pageLocale } from '@/i18n/page-locale';
 import { Container } from '@/components/layout/container';
-import { SectionHeading } from '@/components/common/section-heading';
-import { BrandLogoRow } from '@/components/product/brand-logo-row';
-import { useT } from '@/i18n/use-locale';
-import { categories } from '@/mocks/categories';
+import { Breadcrumb } from '@/components/common/breadcrumb';
+import { CategoryItem } from '@/components/product/category-item';
+import { getCategoryTree } from '@/lib/api/server';
 
-export default function CategoriesPage() {
-  const t = useT();
+export const dynamic = 'force-dynamic';
+
+type Props = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const t = createTranslator(await pageLocale(params));
+  return {
+    title: `${t('categories.title')} | ${t('common.brand')}`,
+    description: t('categories.subtitle'),
+  };
+}
+
+export default async function CategoriesPage({ params }: Props) {
+  const locale = await pageLocale(params);
+  const t = createTranslator(locale);
+  const tree = await getCategoryTree(locale);
 
   return (
     <div className="flex flex-col">
@@ -22,73 +36,44 @@ export default function CategoriesPage() {
             </h1>
             <p className="mt-1 text-body-m text-text-muted">{t('categories.subtitle')}</p>
           </div>
-          <nav className="flex items-center gap-2 text-body-s text-text-muted">
-            <Link href="/" className="hover:text-brand-text">
-              {t('common.home')}
-            </Link>
-            <span>/</span>
-            <Link href="/search" className="hover:text-brand-text">
-              {t('nav.shop')}
-            </Link>
-            <span>/</span>
-            <span className="text-brand-text">{t('nav.categories')}</span>
-          </nav>
+          <Breadcrumb
+            label={t('catalog.breadcrumb')}
+            items={[{ label: t('common.home'), href: '/' }, { label: t('nav.categories') }]}
+          />
         </Container>
       </section>
 
-      {/* Category cards with sub-category lists */}
+      {/* Root categories with their children */}
       <Container as="section" className="py-12 lg:py-16">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((category) => (
-            <div
-              key={category.id}
-              className="flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-bg-elevated"
-            >
-              <Link href={`/search?category=${category.slug}`} className="block bg-bg-muted/50">
-                <img
-                  src={category.image}
-                  alt={category.name}
-                  className="aspect-[16/10] w-full object-cover"
-                />
-              </Link>
-              <div className="flex flex-1 flex-col p-5">
-                <div className="mb-3 flex items-center justify-between">
-                  <Link
-                    href={`/search?category=${category.slug}`}
-                    className="font-heading text-h6 font-bold text-text-primary hover:text-brand-text"
-                  >
-                    {category.name}
-                  </Link>
-                  <span className="text-body-s font-medium text-brand-text">
-                    {t('categories.productsCount', { count: category.productCount })}
-                  </span>
-                </div>
-                <ul className="flex flex-col">
-                  {category.subcategories.map((sub) => (
-                    <li key={sub}>
-                      <Link
-                        href={`/search?category=${category.slug}`}
-                        className="flex items-center gap-2 border-t border-border-subtle py-2.5 text-body-m text-text-body transition-colors hover:text-brand-text"
-                      >
-                        <ChevronRight className="size-4 text-text-muted" />
-                        {t(`subcategories.${sub}`)}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+        {tree.items.length === 0 ? (
+          <p className="text-center text-body-m text-text-muted">{t('catalog.noCategories')}</p>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {tree.items.map((category) => (
+              <div
+                key={category.id}
+                className="flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-bg-elevated"
+              >
+                <CategoryItem category={category} className="rounded-none border-0 border-b" />
+                {category.children.length > 0 ? (
+                  <ul className="flex flex-col px-5 pb-2">
+                    {category.children.map((sub) => (
+                      <li key={sub.id}>
+                        <Link
+                          href={`/categories/${sub.slug}`}
+                          className="flex items-center gap-2 border-t border-border-subtle py-2.5 text-body-m text-text-body transition-colors first:border-t-0 hover:text-brand-text"
+                        >
+                          <ChevronRight className="size-4 text-text-muted" aria-hidden />
+                          {sub.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
-            </div>
-          ))}
-        </div>
-      </Container>
-
-      {/* Popular brands */}
-      <Container as="section" className="pb-16">
-        <SectionHeading title={t('categories.popularBrands')} align="center" />
-        <p className="-mt-4 mb-8 text-center text-body-m text-text-muted">
-          {t('categories.popularBrandsDesc')}
-        </p>
-        <BrandLogoRow boxed />
+            ))}
+          </div>
+        )}
       </Container>
     </div>
   );

@@ -1,19 +1,20 @@
 # @repo/i18n
 
-UI text and formatting for web + admin (Golden Rule #7). Framework-agnostic TypeScript: no React,
-no next-intl. React glue (`useT` / `useLocale`) lives in each app — see `apps/client/src/i18n/use-locale.ts`.
+UI text and formatting for web + admin + the worker's emails (Golden Rule #7). Framework-agnostic TypeScript: no React,
+no next-intl. React glue (`useT` / `useLocale`) lives in each app — see `apps/client/src/i18n/use-locale.ts`
+and `apps/admin/src/i18n/use-locale.ts`. Admin text lives under the `admin.*` namespace.
 Depends on `@repo/core` (Money, Locale, ErrorCode types); never on apps or server.
 
 ## Layout
 
-| File                     | What                                                                                   |
-| ------------------------ | -------------------------------------------------------------------------------------- |
-| `src/messages/en.ts`     | English catalog — **the shape source**. `Messages` type is derived from it.            |
-| `src/messages/vi.ts`     | Vietnamese catalog, typed `Messages` (a missing/extra key is a compile error).         |
-| `src/messages/errors.ts` | `errorsEn` / `errorsVi`: `Record<ErrorCode, string>` for every core error code.        |
-| `src/translator.ts`      | `MessageKey` (dot paths), `createTranslator(locale)`, `interpolate`, `translateError`. |
-| `src/format.ts`          | `formatMoney`, `formatDate` (fixed `Asia/Ho_Chi_Minh`), `formatCompact`.               |
-| `src/locale.ts`          | `AppLocale`, `DEFAULT_LOCALE`, `isAppLocale`, `toCoreLocale` / `fromCoreLocale`.       |
+| File                     | What                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------- |
+| `src/messages/en.ts`     | English catalog — **the shape source**. `Messages` type is derived from it.                 |
+| `src/messages/vi.ts`     | Vietnamese catalog, typed `Messages` (a missing/extra key is a compile error).              |
+| `src/messages/errors.ts` | `errorsEn` / `errorsVi`: `Record<ErrorCode, string>` for every core error code.             |
+| `src/translator.ts`      | `MessageKey` (dot paths), `createTranslator(locale)`, `interpolate`, `translateError`.      |
+| `src/format.ts`          | `formatMoney`, `formatDate` / `formatDateTime` (fixed `Asia/Ho_Chi_Minh`), `formatCompact`. |
+| `src/locale.ts`          | `AppLocale`, `DEFAULT_LOCALE`, `isAppLocale`, `toCoreLocale` / `fromCoreLocale`.            |
 
 Root export only (`@repo/i18n`), built by tsup to `dist/`.
 
@@ -33,6 +34,8 @@ Root export only (`@repo/i18n`), built by tsup to `dist/`.
 - **`crm.*` namespace:** platform default CRM templates (each must pass core `assertCrmTemplate`, and none may
   contain `{couponCode}`; tested in `test/crm-templates.test.ts`), notification titles, and the email /
   unsubscribe / preferences strings.
+- Transactional email text lives under `email.*` (+ `paymentSession.description`, sent to payment
+  providers); `@workers/jobs` renders it in the recipient's `User.primaryLocale` (`fromCoreLocale`).
 
 ## Commands
 
