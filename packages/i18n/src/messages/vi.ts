@@ -433,6 +433,8 @@ export const vi: Messages = {
     subscribe: 'Đăng ký',
   },
   crm: {
+    /** Replaces a customer name that looks like a link in CRM messages. */
+    customerFallbackName: 'bạn',
     defaultTemplates: {
       thankYou:
         'Chào {customerName}, cảm ơn bạn đã mua hàng tại {shopName}! Chúc bạn hài lòng với sản phẩm.',

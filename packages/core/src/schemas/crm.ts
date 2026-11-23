@@ -40,6 +40,10 @@ export const CrmSkipReasonSchema = z.enum([
   'ORDER_REFUNDED',
   'NO_CHANNEL',
   'CAMPAIGN_CANCELLED',
+  /** The template needs `{couponCode}` but the attached coupon is no longer valid at send time. */
+  'COUPON_INVALID',
+  /** Still unsent days after `scheduledFor` (worker outage, backlog, automation enabled late). */
+  'STALE',
 ]);
 export type CrmSkipReason = z.infer<typeof CrmSkipReasonSchema>;
 export const CrmSkipReason = CrmSkipReasonSchema.enum;

@@ -433,6 +433,8 @@ export const en = {
     subscribe: 'Subscribe',
   },
   crm: {
+    /** Replaces a customer name that looks like a link in CRM messages. */
+    customerFallbackName: 'there',
     defaultTemplates: {
       thankYou:
         'Hi {customerName}, thank you for shopping at {shopName}! We hope you enjoy your purchase.',
