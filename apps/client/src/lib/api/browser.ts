@@ -93,11 +93,11 @@ export async function fetchProduct(
   return parseResult(result, ProductDetailSchema);
 }
 
-/** Next page of a product's reviews (newest first). */
-export async function fetchReviews(productId: string, cursor: string): Promise<ReviewPage> {
+/** A page of a product's reviews (newest first); no cursor = the first page. */
+export async function fetchReviews(productId: string, cursor?: string): Promise<ReviewPage> {
   return parseResult(
     await browserApi().GET('/v1/products/{id}/reviews', {
-      params: { path: { id: productId }, query: { cursor } },
+      params: { path: { id: productId }, query: cursor ? { cursor } : {} },
     }),
     ReviewPageSchema,
   );

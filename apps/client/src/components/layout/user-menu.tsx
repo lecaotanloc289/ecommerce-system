@@ -5,8 +5,15 @@ import { useSearchParams } from 'next/navigation';
 import { LogOut, User } from 'lucide-react';
 import { Button, Popover, PopoverContent, PopoverTrigger } from '@repo/ui';
 import { Link, usePathname } from '@/i18n/navigation';
-import { useT } from '../../i18n/use-locale';
+import { useT, type MessageKey } from '../../i18n/use-locale';
 import { useAuth } from '../../store/auth-provider';
+
+/** Signed-in shortcuts (`/account/orders` is built by T5.1). */
+const ACCOUNT_LINKS: readonly { href: string; label: MessageKey }[] = [
+  { href: '/account', label: 'account.profile' },
+  { href: '/account/orders', label: 'account.orders' },
+  { href: '/sell', label: 'account.sell' },
+];
 
 const triggerClass =
   'ml-1 flex items-center gap-2 rounded-md px-2 py-1.5 text-text-body transition-colors hover:bg-bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus';
@@ -35,6 +42,7 @@ function AccountSlot({ search }: { search: string }) {
   const { status, user, signOut } = useAuth();
   const [busy, setBusy] = React.useState(false);
   const [failed, setFailed] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
 
   if (status !== 'authenticated' || !user) {
     const returnTo = new URLSearchParams({ returnTo: search ? `${pathname}?${search}` : pathname });
@@ -57,7 +65,13 @@ function AccountSlot({ search }: { search: string }) {
   }
 
   return (
-    <Popover onOpenChange={() => setFailed(false)}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        setFailed(false);
+      }}
+    >
       <PopoverTrigger
         className={triggerClass}
         aria-label={t('auth.accountMenu', { name: user.name })}
@@ -78,11 +92,26 @@ function AccountSlot({ search }: { search: string }) {
         <p className="text-body-s text-text-muted">{t('auth.signedInAs')}</p>
         <p className="truncate text-body-m font-semibold text-text-primary">{user.name}</p>
         {user.email ? <p className="truncate text-body-s text-text-muted">{user.email}</p> : null}
+        <nav
+          aria-label={t('account.navLabel')}
+          className="mt-3 flex flex-col border-t border-border-faint pt-2"
+        >
+          {ACCOUNT_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setOpen(false)}
+              className="rounded-md px-2 py-1.5 text-body-m text-text-body hover:bg-bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+            >
+              {t(label)}
+            </Link>
+          ))}
+        </nav>
         <Button
           variant="secondary"
           size="md"
           fullWidth
-          className="mt-4"
+          className="mt-3"
           disabled={busy}
           iconLeft={<LogOut className="size-4" />}
           onClick={async () => {

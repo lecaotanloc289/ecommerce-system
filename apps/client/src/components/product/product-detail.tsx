@@ -17,6 +17,7 @@ import { SectionHeading } from '../common/section-heading';
 import { ProductCard } from './product-card';
 import { ProductImage } from './product-image';
 import { ProductReviews } from './product-reviews';
+import { useReviewSubOrderId } from '../review/review-entry';
 import { StarRating } from './star-rating';
 import { QuantityStepper } from '../checkout/quantity-stepper';
 import { useLocale, type MessageKey } from '../../i18n/use-locale';
@@ -77,7 +78,9 @@ export function ProductDetail({
     'reviews',
     ...(related.length > 0 ? (['related'] as const) : []),
   ];
-  const [tab, setTab] = React.useState<Tab>(tabs[0] ?? 'reviews');
+  // `?reviewSubOrderId=` (link from a delivered order) opens the reviews tab with the form.
+  const wantsReview = useReviewSubOrderId() !== null;
+  const [tab, setTab] = React.useState<Tab>(wantsReview ? 'reviews' : (tabs[0] ?? 'reviews'));
   const tabRefs = React.useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
   const tabId = (key: Tab) => `${ids}-tab-${key}`;
   const panelId = (key: Tab) => `${ids}-panel-${key}`;

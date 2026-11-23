@@ -8,10 +8,11 @@ import { StarRating } from './star-rating';
 import { useLocale } from '../../i18n/use-locale';
 import { fetchReviews } from '../../lib/api/browser';
 import { ratingBars } from '../../lib/reviews';
+import { ReviewEntry } from '../review/review-entry';
 
 /**
  * Rating summary + review list (`GET /v1/products/:id/reviews`), first page from the RSC page,
- * more pages on demand. Writing a review happens from a delivered order (T5.2).
+ * more pages on demand. A review can be written when the URL has `?reviewSubOrderId=` (T5.2).
  */
 export function ProductReviews({
   productId,
@@ -24,11 +25,23 @@ export function ProductReviews({
   fallbackSummary: RatingSummary;
 }) {
   const { locale, t } = useLocale();
-  const summary = initialPage?.summary ?? fallbackSummary;
+  const [summary, setSummary] = React.useState(initialPage?.summary ?? fallbackSummary);
   const [items, setItems] = React.useState<Review[]>(initialPage?.items ?? []);
   const [cursor, setCursor] = React.useState(initialPage?.nextCursor ?? null);
   const [loading, setLoading] = React.useState(false);
   const [failed, setFailed] = React.useState(false);
+
+  /** After a new review: re-read the first page so the list and the rating summary are current. */
+  const refreshAfterReview = async () => {
+    try {
+      const page = await fetchReviews(productId);
+      setItems(page.items);
+      setCursor(page.nextCursor);
+      setSummary(page.summary);
+    } catch {
+      // The review is stored; a stale list is fixed by the next page load.
+    }
+  };
 
   const loadMore = async () => {
     if (!cursor) return;
@@ -50,6 +63,7 @@ export function ProductReviews({
 
   return (
     <div className="flex flex-col gap-8">
+      <ReviewEntry productId={productId} onCreated={() => void refreshAfterReview()} />
       <div className="grid items-center gap-8 rounded-xl border border-border-subtle bg-bg-muted/30 p-6 sm:grid-cols-[200px_1fr]">
         <div className="flex flex-col items-center gap-1 text-center">
           <span className="text-h1 font-bold text-text-primary">
