@@ -37,6 +37,14 @@ export interface AuthStore {
    */
   restore(): Promise<AuthState>;
   /**
+   * Force a new `POST /v1/auth/refresh` + `GET /v1/auth/me` even when already signed in, so
+   * freshly granted roles (approved vendor application) show up. A failure keeps the current
+   * session. Shares the in-flight restore, if any.
+   */
+  reload(): Promise<AuthState>;
+  /** Re-read `GET /v1/auth/me` only (no token rotation), e.g. after a profile edit. */
+  refreshUser(): Promise<void>;
+  /**
    * Revoke the session server-side (`POST /v1/auth/logout`), then forget the token + user.
    * Resolves false — and keeps the session — when the API did not confirm (network/5xx/429):
    * the refresh cookie would otherwise sign the user back in on the next page load.
@@ -111,11 +119,11 @@ export function createAuthStore(options: AuthStoreOptions): AuthStore {
     return parsed.success ? parsed.data.accessToken : null;
   }
 
-  async function loadSession(): Promise<AuthState> {
+  async function loadSession(keepOnFailure = false): Promise<AuthState> {
     const started = epoch;
     const current = () => epoch === started;
     refreshing = requestToken().then((token) => {
-      if (current()) accessToken = token;
+      if (current() && (token !== null || !keepOnFailure)) accessToken = token;
       return current() ? token : null;
     });
     let token: string | null;
@@ -126,14 +134,14 @@ export function createAuthStore(options: AuthStoreOptions): AuthStore {
     }
     if (!current()) return state;
     if (token === null) {
-      clearSession();
+      if (!keepOnFailure) clearSession();
       return state;
     }
     const { data } = await api.GET('/v1/auth/me').catch(() => ({ data: undefined }));
     if (!current()) return state;
     const me = MeResponseSchema.safeParse(data);
     if (!me.success) {
-      clearSession();
+      if (!keepOnFailure) clearSession();
       return state;
     }
     setState({ status: 'authenticated', user: me.data });
@@ -146,6 +154,22 @@ export function createAuthStore(options: AuthStoreOptions): AuthStore {
       restoring = null;
     });
     return restoring;
+  }
+
+  function reload(): Promise<AuthState> {
+    restoring ??= loadSession(true).finally(() => {
+      restoring = null;
+    });
+    return restoring;
+  }
+
+  async function refreshUser(): Promise<void> {
+    if (state.status !== 'authenticated') return;
+    const { data } = await api.GET('/v1/auth/me').catch(() => ({ data: undefined }));
+    const me = MeResponseSchema.safeParse(data);
+    if (me.success && state.status === 'authenticated') {
+      setState({ status: 'authenticated', user: me.data });
+    }
   }
 
   async function signOut(): Promise<boolean> {
@@ -170,6 +194,8 @@ export function createAuthStore(options: AuthStoreOptions): AuthStore {
     },
     getAccessToken,
     restore,
+    reload,
+    refreshUser,
     signOut,
     oauthStartUrl: (provider) => `${baseUrl}/v1/auth/${provider}?app=web`,
   };

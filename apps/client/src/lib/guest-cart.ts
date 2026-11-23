@@ -2,6 +2,7 @@ import { CartLineInputSchema, type CartLineInput, type ProductDetail } from '@re
 import {
   CartItemSnapshotSchema,
   maxQtyFor,
+  mixesCurrency,
   toCartSnapshot,
   type CartItemSnapshot,
   type CartLineView,
@@ -74,9 +75,7 @@ export function addBlocker(
 ): Exclude<AddToCartResult, 'added'> | null {
   if (maxQtyFor(item.stockAvailable) < 1) return 'out-of-stock';
   // One order = one currency (roadmap D6): refuse to mix here rather than fail at checkout.
-  if (cart.items.some((i) => i.unitPrice.currency !== item.unitPrice.currency)) {
-    return 'currency-mismatch';
-  }
+  if (mixesCurrency(cart.items, item)) return 'currency-mismatch';
   return null;
 }
 
@@ -134,7 +133,14 @@ export function cartViews(cart: GuestCart): CartLineView[] {
   return cart.lines.flatMap((line) => {
     const item = items.get(line.variantId);
     return item
-      ? [{ ...item, quantity: line.quantity, maxQty: maxQtyFor(item.stockAvailable) }]
+      ? [
+          {
+            ...item,
+            quantity: line.quantity,
+            unavailable: false,
+            maxQty: maxQtyFor(item.stockAvailable),
+          },
+        ]
       : [];
   });
 }

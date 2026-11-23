@@ -1,8 +1,18 @@
 'use client';
 
 import * as React from 'react';
-import type { AppLocale } from '@repo/i18n';
-import { cartItemCount, type CartItemSnapshot, type CartLineView } from '../lib/cart';
+import { useLocale as useRouteLocale } from 'next-intl';
+import { toast } from '@repo/ui';
+import { createTranslator, type AppLocale } from '@repo/i18n';
+import type { Cart } from '@repo/core';
+import {
+  cartItemCount,
+  maxQtyFor,
+  mixesCurrency,
+  payableLines,
+  type CartItemSnapshot,
+  type CartLineView,
+} from '../lib/cart';
 import {
   EMPTY_CART,
   addBlocker,
@@ -16,104 +26,313 @@ import {
   type GuestCart,
   type ProductRefresh,
 } from '../lib/guest-cart';
+import { createCartMerger, summarizeAdjustments, type PendingMerge } from '../lib/cart-merge';
+import { cartToViews } from '../lib/server-cart';
 import { fetchProduct } from '../lib/api/browser';
+import { deleteCartItem, fetchCart, mergeCart, putCartItem } from '../lib/api/commerce';
+import { describeError } from '../lib/api/error-message';
+import { useAuth } from './auth-provider';
 import { readStored, removeStored, writeStored } from './persisted';
 
 export type { AddToCartResult } from '../lib/guest-cart';
 
 /**
- * Guest cart provider (storefront CLAUDE.md §6). State logic is pure (`lib/guest-cart.ts`);
- * this persists it to localStorage (`guest-cart.v2`), syncs tabs and refreshes snapshots
- * from the catalog API. T5.1 merges it into the server cart on sign-in.
+ * Cart provider (storefront CLAUDE.md "Cart"). One interface, two sources:
+ * - **guest** (anonymous): pure state in `lib/guest-cart.ts`, persisted in localStorage
+ *   (`guest-cart.v2`), synced across tabs, refreshed from the catalog API;
+ * - **server** (signed in): the API cart (`GET/PUT/DELETE /v1/cart…`) is the source of truth.
+ *   On the transition to authenticated the guest lines are merged ONCE (`POST /v1/cart/merge`,
+ *   fixed idempotency key kept until it succeeds), the guest cart is cleared and the
+ *   adjustments are shown as a toast.
  */
 const STORAGE_KEY = 'guest-cart.v2';
 /** Pre-API format (mock product ids) — dropped on first load. */
 const LEGACY_STORAGE_KEY = 'guest-cart';
+/** sessionStorage: the pending merge's idempotency key (never a token). */
+const MERGE_STORAGE_KEY = 'cart-merge';
 
 interface CartContextValue {
-  /** False until localStorage has been read — render no cart-dependent UI before that. */
+  /** False until the cart source is known and loaded — render no cart-dependent UI before that. */
   hydrated: boolean;
+  source: 'guest' | 'server';
   lines: CartLineView[];
+  /** Sum of quantities of the available lines (the header badge). */
   itemCount: number;
-  add: (item: CartItemSnapshot, quantity: number) => AddToCartResult;
-  setQty: (variantId: string, quantity: number) => void;
-  remove: (variantId: string) => void;
-  clear: () => void;
-  /** Re-read every product in the cart (current price/stock/name in `locale`); drops gone items. */
+  /** Available lines span several currencies — checkout is blocked (roadmap D6). */
+  hasMixedCurrency: boolean;
+  /** A server mutation is in flight. */
+  busy: boolean;
+  /** The last failed server call (translate with `describeError`); null when none. */
+  error: unknown;
+  dismissError: () => void;
+  add: (item: CartItemSnapshot, quantity: number) => Promise<AddToCartResult>;
+  setQty: (variantId: string, quantity: number) => Promise<void>;
+  remove: (variantId: string) => Promise<void>;
+  /** Re-read the cart: server cart, or every product of the guest cart (current price/stock/name). */
   refresh: (locale: AppLocale) => Promise<void>;
 }
 
 const CartContext = React.createContext<CartContextValue | null>(null);
 
+function readPendingMerge(): PendingMerge | null {
+  const stored = readStored('session', MERGE_STORAGE_KEY);
+  if (typeof stored !== 'object' || stored === null) return null;
+  const key = 'key' in stored ? stored.key : undefined;
+  const fingerprint = 'fingerprint' in stored ? stored.fingerprint : undefined;
+  return typeof key === 'string' && typeof fingerprint === 'string' ? { key, fingerprint } : null;
+}
+
+function hasMixedCurrencyLines(lines: readonly CartLineView[]): boolean {
+  const payable = payableLines(lines);
+  const first = payable[0];
+  return first ? payable.some((l) => mixesCurrency([first], l)) : false;
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  // Empty until hydrated, so the prerendered HTML never shows a stale cart.
-  const [cart, setCart] = React.useState<GuestCart>(EMPTY_CART);
-  const [hydrated, setHydrated] = React.useState(false);
-  // Latest committed cart, for synchronous checks in callbacks (updaters run later).
-  const cartRef = React.useRef(cart);
-  cartRef.current = cart;
+  const routeLocale = useRouteLocale();
+  const { status, user } = useAuth();
+  const userId = user?.id ?? null;
+  const authenticated = status === 'authenticated';
+
+  // Guest cart: empty until hydrated, so the prerendered HTML never shows a stale cart.
+  const [guest, setGuest] = React.useState<GuestCart>(EMPTY_CART);
+  const [guestHydrated, setGuestHydrated] = React.useState(false);
+  const guestRef = React.useRef(guest);
+  guestRef.current = guest;
+
+  // Server cart (signed in).
+  const [serverCart, setServerCart] = React.useState<Cart | null>(null);
+  const [serverLoaded, setServerLoaded] = React.useState(false);
+  const [busyCount, setBusyCount] = React.useState(0);
+  const [error, setError] = React.useState<unknown>(null);
+  const serverCartRef = React.useRef(serverCart);
+  serverCartRef.current = serverCart;
+  const localeRef = React.useRef(routeLocale);
+  localeRef.current = routeLocale;
+
+  const merger = React.useMemo(
+    () =>
+      createCartMerger({
+        post: (items, key) => mergeCart(items, localeRef.current, key),
+        keys: {
+          get: readPendingMerge,
+          set: (pending) =>
+            pending
+              ? writeStored('session', MERGE_STORAGE_KEY, pending)
+              : removeStored('session', MERGE_STORAGE_KEY),
+        },
+      }),
+    [],
+  );
 
   React.useEffect(() => {
     removeStored('local', LEGACY_STORAGE_KEY);
-    setCart(sanitizeCart(readStored('local', STORAGE_KEY)));
-    setHydrated(true);
+    setGuest(sanitizeCart(readStored('local', STORAGE_KEY)));
+    setGuestHydrated(true);
     // Keep tabs in sync: another tab's write replaces this tab's state.
     const onStorage = (e: StorageEvent) => {
       if (e.key !== STORAGE_KEY) return;
-      setCart(sanitizeCart(readStored('local', STORAGE_KEY)));
+      setGuest(sanitizeCart(readStored('local', STORAGE_KEY)));
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   React.useEffect(() => {
-    if (hydrated) writeStored('local', STORAGE_KEY, cart);
-  }, [hydrated, cart]);
+    if (guestHydrated) writeStored('local', STORAGE_KEY, guest);
+  }, [guestHydrated, guest]);
 
-  const add = React.useCallback((item: CartItemSnapshot, quantity: number): AddToCartResult => {
-    const blocker = addBlocker(cartRef.current, item);
-    if (blocker) return blocker;
-    setCart((prev) => addItem(prev, item, quantity));
-    return 'added';
-  }, []);
+  // Signed in: merge the guest cart once, then load the server cart. Signed out: drop it.
+  React.useEffect(() => {
+    if (!guestHydrated) return;
+    if (!authenticated) {
+      if (status === 'anonymous') {
+        setServerCart(null);
+        setServerLoaded(false);
+        setError(null);
+      }
+      return;
+    }
+    let cancelled = false;
+    const t = createTranslator(localeRef.current);
+    void (async () => {
+      let cart: Cart | null = null;
+      try {
+        const merged = await merger.merge(guestRef.current.lines);
+        if (merged) {
+          cart = merged.cart;
+          setGuest(EMPTY_CART);
+          const { clamped, unavailable } = summarizeAdjustments(merged.adjustments);
+          if (!cancelled && (clamped > 0 || unavailable > 0)) {
+            toast.warning(t('cart.merge.adjustedTitle'), {
+              description: [
+                clamped > 0 ? t('cart.merge.clamped', { count: clamped }) : '',
+                unavailable > 0 ? t('cart.merge.unavailable', { count: unavailable }) : '',
+              ]
+                .filter(Boolean)
+                .join(' '),
+            });
+          }
+        }
+      } catch (e) {
+        // Guest lines stay in storage; the pending key makes the next attempt a safe replay.
+        if (!cancelled) {
+          toast.error(t('cart.merge.failed'), {
+            description: describeError(localeRef.current, e),
+          });
+        }
+      }
+      try {
+        cart ??= await fetchCart(localeRef.current);
+        if (!cancelled) setServerCart(cart);
+      } catch (e) {
+        if (!cancelled) setError(e);
+      } finally {
+        if (!cancelled) setServerLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [guestHydrated, authenticated, status, userId, merger]);
 
-  const setQty = React.useCallback((variantId: string, quantity: number) => {
-    setCart((prev) => setItemQuantity(prev, variantId, quantity));
-  }, []);
+  // The API resolves product names / slugs in the requested locale.
+  const loadedLocaleRef = React.useRef(routeLocale);
+  React.useEffect(() => {
+    if (loadedLocaleRef.current === routeLocale) return;
+    loadedLocaleRef.current = routeLocale;
+    if (!authenticated || !serverLoaded) return;
+    void fetchCart(routeLocale).then(setServerCart, setError);
+  }, [routeLocale, authenticated, serverLoaded]);
 
-  const remove = React.useCallback((variantId: string) => {
-    setCart((prev) => removeItem(prev, variantId));
-  }, []);
-
-  const clear = React.useCallback(() => setCart(EMPTY_CART), []);
-
-  const refresh = React.useCallback(async (locale: AppLocale) => {
-    const slugs = [...new Set(cartRef.current.items.map((i) => i.productSlug))];
-    if (slugs.length === 0) return;
-    const results = await Promise.all(
-      slugs.map((slug) =>
-        fetchProduct(slug, locale).then(
-          (product): ProductRefresh => ({ slug, ok: true, product }),
-          (): ProductRefresh => ({ slug, ok: false }),
-        ),
-      ),
+  // Server mutations run one at a time, so rapid +/- clicks can't reorder.
+  const queueRef = React.useRef<Promise<unknown>>(Promise.resolve());
+  const enqueue = React.useCallback(<T,>(task: () => Promise<T>): Promise<T> => {
+    setBusyCount((n) => n + 1);
+    const run = queueRef.current.then(task, task);
+    queueRef.current = run.then(
+      () => undefined,
+      () => undefined,
     );
-    setCart((prev) => applyRefresh(prev, results));
+    return run.finally(() => setBusyCount((n) => n - 1));
   }, []);
+
+  /** Run a server mutation: apply the returned cart, or surface the error and resync. */
+  const mutate = React.useCallback(
+    async (call: () => Promise<Cart>): Promise<void> => {
+      try {
+        setServerCart(await enqueue(call));
+        setError(null);
+      } catch (e) {
+        setError(e);
+        void fetchCart(localeRef.current).then(setServerCart, () => undefined);
+      }
+    },
+    [enqueue],
+  );
+
+  const serverMode = authenticated;
+
+  const add = React.useCallback(
+    async (item: CartItemSnapshot, quantity: number): Promise<AddToCartResult> => {
+      if (!serverMode) {
+        const blocker = addBlocker(guestRef.current, item);
+        if (blocker) return blocker;
+        setGuest((prev) => addItem(prev, item, quantity));
+        return 'added';
+      }
+      const existing = serverCartRef.current ? cartToViews(serverCartRef.current) : [];
+      if (maxQtyFor(item.stockAvailable) < 1) return 'out-of-stock';
+      if (mixesCurrency(payableLines(existing), item)) return 'currency-mismatch';
+      const current = existing.find((l) => l.variantId === item.variantId)?.quantity ?? 0;
+      const next = Math.min(current + Math.max(1, quantity), maxQtyFor(item.stockAvailable));
+      // Throws ApiError: the caller shows the translated message.
+      const cart = await enqueue(() => putCartItem(item.variantId, next, localeRef.current));
+      setServerCart(cart);
+      return 'added';
+    },
+    [serverMode, enqueue],
+  );
+
+  const setQty = React.useCallback(
+    async (variantId: string, quantity: number): Promise<void> => {
+      if (!serverMode) {
+        setGuest((prev) => setItemQuantity(prev, variantId, quantity));
+        return;
+      }
+      await mutate(() => putCartItem(variantId, quantity, localeRef.current));
+    },
+    [serverMode, mutate],
+  );
+
+  const remove = React.useCallback(
+    async (variantId: string): Promise<void> => {
+      if (!serverMode) {
+        setGuest((prev) => removeItem(prev, variantId));
+        return;
+      }
+      await mutate(() => deleteCartItem(variantId, localeRef.current));
+    },
+    [serverMode, mutate],
+  );
+
+  const refresh = React.useCallback(
+    async (locale: AppLocale) => {
+      if (serverMode) {
+        await mutate(() => fetchCart(locale));
+        return;
+      }
+      const slugs = [...new Set(guestRef.current.items.map((i) => i.productSlug))];
+      if (slugs.length === 0) return;
+      const results = await Promise.all(
+        slugs.map((slug) =>
+          fetchProduct(slug, locale).then(
+            (product): ProductRefresh => ({ slug, ok: true, product }),
+            (): ProductRefresh => ({ slug, ok: false }),
+          ),
+        ),
+      );
+      setGuest((prev) => applyRefresh(prev, results));
+    },
+    [serverMode, mutate],
+  );
+
+  const dismissError = React.useCallback(() => setError(null), []);
 
   const value = React.useMemo<CartContextValue>(() => {
-    const lines = cartViews(cart);
+    const lines = serverMode ? (serverCart ? cartToViews(serverCart) : []) : cartViews(guest);
+    // While the session is still being restored the cart source is unknown.
+    const hydrated = guestHydrated && status !== 'loading' && (!serverMode || serverLoaded);
     return {
       hydrated,
+      source: serverMode ? 'server' : 'guest',
       lines,
-      itemCount: cartItemCount(lines),
+      itemCount: cartItemCount(payableLines(lines)),
+      hasMixedCurrency:
+        serverMode && serverCart ? serverCart.hasMixedCurrency : hasMixedCurrencyLines(lines),
+      busy: busyCount > 0,
+      error,
+      dismissError,
       add,
       setQty,
       remove,
-      clear,
       refresh,
     };
-  }, [hydrated, cart, add, setQty, remove, clear, refresh]);
+  }, [
+    serverMode,
+    serverCart,
+    serverLoaded,
+    guest,
+    guestHydrated,
+    status,
+    busyCount,
+    error,
+    dismissError,
+    add,
+    setQty,
+    remove,
+    refresh,
+  ]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

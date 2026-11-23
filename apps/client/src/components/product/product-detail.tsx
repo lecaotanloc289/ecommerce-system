@@ -11,12 +11,14 @@ import type {
   ReviewPage,
 } from '@repo/core';
 import { formatMoney, translateError } from '@repo/i18n';
+import { describeError } from '../../lib/api/error-message';
 import { Container } from '../layout/container';
 import { Breadcrumb } from '../common/breadcrumb';
 import { SectionHeading } from '../common/section-heading';
 import { ProductCard } from './product-card';
 import { ProductImage } from './product-image';
 import { ProductReviews } from './product-reviews';
+import { useReviewSubOrderId } from '../review/review-entry';
 import { StarRating } from './star-rating';
 import { QuantityStepper } from '../checkout/quantity-stepper';
 import { useLocale, type MessageKey } from '../../i18n/use-locale';
@@ -77,15 +79,23 @@ export function ProductDetail({
     'reviews',
     ...(related.length > 0 ? (['related'] as const) : []),
   ];
-  const [tab, setTab] = React.useState<Tab>(tabs[0] ?? 'reviews');
+  // `?reviewSubOrderId=` (link from a delivered order) opens the reviews tab with the form.
+  const wantsReview = useReviewSubOrderId() !== null;
+  const [tab, setTab] = React.useState<Tab>(wantsReview ? 'reviews' : (tabs[0] ?? 'reviews'));
   const tabRefs = React.useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
   const tabId = (key: Tab) => `${ids}-tab-${key}`;
   const panelId = (key: Tab) => `${ids}-panel-${key}`;
 
   /** Adds the selected variant; true when it landed in the cart. */
-  const addToCart = (): boolean => {
+  const addToCart = async (): Promise<boolean> => {
     if (!selected) return false;
-    const result = add(toCartSnapshot(product, selected), qty);
+    let result: Awaited<ReturnType<typeof add>>;
+    try {
+      result = await add(toCartSnapshot(product, selected), qty);
+    } catch (e) {
+      setMessage({ tone: 'error', text: describeError(locale, e) });
+      return false;
+    }
     if (result === 'added') {
       setMessage({ tone: 'success', text: t('product.added') });
       return true;
@@ -272,7 +282,9 @@ export function ProductDetail({
                 fullWidth
                 disabled={!canBuy}
                 onClick={() => {
-                  if (addToCart()) router.push('/cart');
+                  void addToCart().then((added) => {
+                    if (added) router.push('/cart');
+                  });
                 }}
               >
                 {t('common.buyNow')}
@@ -282,7 +294,7 @@ export function ProductDetail({
                 fullWidth
                 iconLeft={<ShoppingCart className="size-5" />}
                 disabled={!canBuy}
-                onClick={addToCart}
+                onClick={() => void addToCart()}
               >
                 {canBuy ? t('common.addToCart') : t('product.outOfStock')}
               </Button>

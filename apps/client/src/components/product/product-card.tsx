@@ -6,6 +6,7 @@ import { Check, ShoppingCart } from 'lucide-react';
 import { Button } from '@repo/ui';
 import type { ProductSummary } from '@repo/core';
 import { formatMoney, translateError } from '@repo/i18n';
+import { describeError } from '../../lib/api/error-message';
 import { StarRating } from './star-rating';
 import { ProductImage } from './product-image';
 import { useLocale } from '../../i18n/use-locale';
@@ -136,7 +137,7 @@ function QuickAdd({ product, label }: { product: ProductSummary; label: string }
         router.push(`/product/${product.slug}`);
         return;
       }
-      const result = add(toCartSnapshot(detail, only), 1);
+      const result = await add(toCartSnapshot(detail, only), 1);
       if (result === 'added') {
         setState('added');
         return;
@@ -147,9 +148,9 @@ function QuickAdd({ product, label }: { product: ProductSummary; label: string }
           ? translateError(locale, 'checkout.error.currency-mismatch')
           : t('product.outOfStock'),
       );
-    } catch {
+    } catch (e) {
       setState('error');
-      setMessage(translateError(locale, 'common.error.internal'));
+      setMessage(describeError(locale, e));
     }
   };
 
