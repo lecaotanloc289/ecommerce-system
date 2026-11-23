@@ -18,8 +18,8 @@ Read the root `CLAUDE.md` first — it is the constitution (Golden Rules, NEVER 
 
 ## State (as of 2026-11-23)
 
-Scaffold done (T4.2): routing, layout, auth session, role guards, data layer, i18n, tests. Every portal
-page except the dashboards is a "coming soon" placeholder — T5.3 (vendor) and T5.4 (platform) fill them in.
+Scaffold done (T4.2): routing, layout, auth session, role guards, data layer, i18n, tests. Vendor portal
+done (T5.3, see "Vendor portal" below). Platform pages are still "coming soon" placeholders — T5.4 fills them in.
 
 ## Structure
 
@@ -38,25 +38,28 @@ src/
     routes.tsx             appRoutes (route table, also used by tests with createMemoryRouter)
     portals.tsx            VENDOR_PORTAL / PLATFORM_PORTAL: pages = sidebar links + routes + role limits
   components/              layout/ (portal-layout, sidebar-nav, user-menu), splash, centered-card,
-                           page-header, locale-switcher, sign-out-button, error-alert
+                           page-header, locale-switcher, sign-out-button, error-alert, data-table, money-input,
+                           status-badge, form-field, confirm-dialog, image-list-editor
+  pages/vendor/            vendor portal pages (see "Vendor portal")
   pages/                   login, auth-callback, invite, home (redirect / chooser / no access),
                            dashboard, coming-soon, not-found, route-error
-  lib/                     api-error (ApiError, unwrap, errorMessage), idempotency, use-api-mutation, query-client
+  lib/                     api-error (ApiError, unwrap, errorMessage), idempotency, use-api-mutation, query-client,
+                           money-input, use-cursor-list, upload, row-id
   i18n/use-locale.ts       useLocale() / useT() + locale store
 test/                      Vitest: guards.test.tsx, auth-store.test.ts, idempotency.test.tsx, lib.test.ts
 ```
 
 ## Routes
 
-| Path                       | Access                             | Notes                                                                             |
-| -------------------------- | ---------------------------------- | --------------------------------------------------------------------------------- |
-| `/login`                   | public (authenticated → `/`)       | Google / Facebook buttons → `${API}/v1/auth/<provider>?app=admin`                 |
-| `/auth/callback`           | public                             | OAuth landing; shows `?error=<errorCode>` translated                              |
-| `/invite`                  | public                             | Placeholder; T5.3 accepts staff invitations here                                  |
-| `/`                        | signed in                          | 0 portals → "no access" + sign out; 1 → redirect; 2 → workspace chooser           |
-| `/vendor`, `/vendor/*`     | `VENDOR_OWNER`, `VENDOR_STAFF`     | products, orders, shipping; wallet + staff **owner only**                         |
-| `/platform`, `/platform/*` | `PLATFORM_STAFF`, `PLATFORM_ADMIN` | applications, vendors, products, orders, refunds; settings + users **admin only** |
-| `*`                        | —                                  | 404 (inside the portal layout under `/vendor/*`, `/platform/*`)                   |
+| Path                       | Access                             | Notes                                                                                         |
+| -------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------- |
+| `/login`                   | public (authenticated → `/`)       | Google / Facebook buttons → `${API}/v1/auth/<provider>?app=admin`                             |
+| `/auth/callback`           | public                             | OAuth landing; shows `?error=<errorCode>` translated                                          |
+| `/invite?token=`           | public                             | Staff invitation: signed out → `/login` (deep link kept); signed in → Accept → `/vendor`      |
+| `/`                        | signed in                          | 0 portals → "no access" + sign out; 1 → redirect; 2 → workspace chooser                       |
+| `/vendor`, `/vendor/*`     | `VENDOR_OWNER`, `VENDOR_STAFF`     | dashboard, products (+`new`, `:id`), orders (+`:id`), shipping; wallet + staff **owner only** |
+| `/platform`, `/platform/*` | `PLATFORM_STAFF`, `PLATFORM_ADMIN` | applications, vendors, products, orders, refunds; settings + users **admin only**             |
+| `*`                        | —                                  | 404 (inside the portal layout under `/vendor/*`, `/platform/*`)                               |
 
 A user without the portal role is redirected to `/` (which re-routes them); a user lacking a page's
 narrower role is redirected to the portal dashboard, and the sidebar hides that link. Guards are UX
@@ -111,6 +114,9 @@ only — the API enforces `@Roles` + ownership on every endpoint.
   Different variables get their own key (interleaved `mutate(a)` / `mutate(b)` stay separate); success
   drops that action's key; `resetAction()` drops all. If you don't forward `headers`, the SDK generates a
   fresh key per request and retries are no longer idempotent.
+  **Typed ops that declare the header** (every vendor mutation in the generated schema) want it under
+  `params.header`, not `headers`: `api.POST('/v1/…/{id}/accept', { params: { path: { id }, header: headers } })`
+  (`headers` fails typecheck there; `params.header` is sent as the same request header).
 
 - Errors: `<ErrorAlert error={query.error} />` or `errorMessage(locale, error)` — translates
   `errorCode` + `params` via `@repo/i18n`; a `fetch` rejection shows `admin.error.network`.
@@ -123,6 +129,27 @@ only — the API enforces `@Roles` + ownership on every endpoint.
 - **Locale storage:** a Zustand store remembered in `localStorage` (`admin.locale`, default `vi`). An SPA
   has no locale URL segment or server cookie, and a locale preference is not sensitive. `App` keeps
   `<html lang>` in sync. Tokens never go to storage.
+
+## Vendor portal (T5.3, `src/pages/vendor/`)
+
+| Page (file)                                                           | API                                                                                                                       | Notes                                                                                                                                                                                                             |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/vendor` (`vendor-dashboard-page`)                                   | `GET /v1/vendor/sub-orders?status=PAID\|PROCESSING&limit=100`; owner: `GET /v1/vendor/wallet`                             | counts cap at "100+"; tiles link to the filtered list; wallet tile owner only                                                                                                                                     |
+| `products` (`products-page`)                                          | `GET /v1/vendor/products` (cursor, status filter)                                                                         | BLOCKED rows show `blockedReason`                                                                                                                                                                                 |
+| `products/new`, `products/:id` (`product-edit-page` + `product-form`) | `POST/PUT /v1/vendor/products[/:id]`, `/publish`, `/archive`, `PATCH /v1/vendor/variants/:id/stock`, `GET /v1/categories` | vi + en both required; stock cannot go below `stockReserved`; BLOCKED = read-only; create → DRAFT; after a save the form remounts so new variants/images carry their ids                                          |
+| `orders`, `orders/:id`                                                | `GET /v1/vendor/sub-orders[/:id]`, `POST …/accept\|ship\|deliver`                                                         | one action per status (`actionFor`): PAID accept, PROCESSING ship (carrier + tracking dialog), SHIPPED deliver; 409 `order.error.invalid-status-transition` refetches `['vendor','orders']`                       |
+| `shipping`                                                            | `GET/POST /v1/vendor/shipping-methods`, `PUT /:id`, `POST /:id/deactivate`                                                | the edit dialog also re-activates (`isActive`)                                                                                                                                                                    |
+| `wallet` (owner)                                                      | `GET /v1/vendor/wallet`, `GET /v1/vendor/ledger` (cursor)                                                                 | `pending[]` one line per currency                                                                                                                                                                                 |
+| `staff` (owner)                                                       | `GET /v1/vendor/staff`, `GET/POST /v1/vendor/invitations`, `POST …/revoke`, `DELETE /v1/vendor/staff/:userId`             | owner and yourself cannot be removed; revoke only for PENDING                                                                                                                                                     |
+| `/invite` (`pages/invite-page`)                                       | `POST /v1/vendor-invitations/accept` → `restoreSession()` (`/auth/refresh` + `/auth/me`) → `/vendor`                      | the new role exists only in a fresh token. 409 conflict = account already in a shop. The token rides in the return path (sessionStorage, same tab) across the OAuth round-trip and is removed by `/auth/callback` |
+
+- Responses are parsed with the core Zod schemas (`VendorProductSchema`, …): branded ids, and a drifting API fails loudly.
+- **Money:** prices are typed as text and parsed to minor units with `lib/money-input.ts` (`parseMoneyInput`, BigInt, exact; extra decimals are rejected, never rounded; VND 0 decimals, USD 2). Shown with `formatMoney`.
+- Product attributes are one text field per variant: `Color=Red, Size=M` (`parseAttributes`). The slug follows the name until edited by hand.
+- Images: `lib/upload.ts` presigns (`product-image`), PUTs with the returned headers (no cookies), then sends `{ key }` for new images and `{ id }` for kept ones; array order = display order.
+- Reusable widgets (neutral names, `src/components/` and `src/lib/`): `DataTable` + `useCursorList` (cursor pagination), `MoneyInput`, `StatusBadge`, `FormField`, `ConfirmDialog`, `ImageListEditor`, `uploadFile`, `newRowId`.
+- Sub-routes without a sidebar link are declared in `PortalConfig.subRoutes` (`router/portals.tsx`).
+- Tests: `test/vendor/*` (product form model + component, order actions, owner gating, invite flows) with `test/vendor/fake-api.ts` (`stubApi` replaces global `fetch`); `test/money-input.test.ts`. Signed-in flows against a real API (OAuth) are not exercised.
 
 ## Env
 
