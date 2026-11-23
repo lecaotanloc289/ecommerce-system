@@ -6,6 +6,17 @@
  * still get generated when @apps/admin is built. */
 @source '../../../packages/ui/src';
 
+/* Vietnamese uses Inter — full diacritics, avoids Rubik/Roboto glyph gaps (same as apps/client).
+ * `App` keeps <html lang> in sync with the selected locale. */
+html[lang='vi'] {
+  --font-heading:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial,
+    sans-serif;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

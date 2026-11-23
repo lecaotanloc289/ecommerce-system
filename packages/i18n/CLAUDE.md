@@ -1,7 +1,8 @@
 # @repo/i18n
 
 UI text and formatting for web + admin + the worker's emails (Golden Rule #7). Framework-agnostic TypeScript: no React,
-no next-intl. React glue (`useT` / `useLocale`) lives in each app — see `apps/client/src/i18n/use-locale.ts`.
+no next-intl. React glue (`useT` / `useLocale`) lives in each app — see `apps/client/src/i18n/use-locale.ts`
+and `apps/admin/src/i18n/use-locale.ts`. Admin text lives under the `admin.*` namespace.
 Depends on `@repo/core` (Money, Locale, ErrorCode types); never on apps or server.
 
 ## Layout
