@@ -39,7 +39,7 @@ export function maskAuthorName(name: string): string {
   if (words.length === 1) return first;
   const last = words[words.length - 1] ?? '';
   const [initial] = Array.from(last);
-  return `${first} ${(initial ?? '').toLocaleUpperCase()}.`;
+  return `${first} ${(initial ?? '').toUpperCase()}.`;
 }
 
 export const ReviewSchema = z.object({

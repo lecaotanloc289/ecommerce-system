@@ -456,7 +456,8 @@ export class CheckoutService {
       ORDER BY id
       FOR UPDATE`;
     const ids = locked.map((r) => r.id);
-    const rows = await tx.coupon.findMany({ where: { id: { in: ids } } });
+    // id order: deterministic pick if legacy rows differ only by case (no migration this wave).
+    const rows = await tx.coupon.findMany({ where: { id: { in: ids } }, orderBy: { id: 'asc' } });
     const [totals, mine] = await Promise.all([
       tx.couponRedemption.groupBy({
         by: ['couponId'],
