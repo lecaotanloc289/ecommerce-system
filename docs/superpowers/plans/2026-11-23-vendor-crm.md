@@ -221,6 +221,7 @@ Handler cho cả ba nằm ở K5. Dispatcher `@workers/jobs` chỉ claim event c
 ### K5 — Worker CRM (đợt sau, khi `@workers/jobs` + T3.3 vào integration) · opus
 
 - Handler `sub-order.delivered` / `sub-order.completed` → tạo `crm_messages` SCHEDULED cho automation đang bật (unique `(automationKind, subOrderId)`), `scheduledFor = mốc + delayDays`.
+  - **Mỗi event type chỉ có một handler** trong `@workers/jobs` (dispatcher đánh dấu processed sau handler). `sub-order.delivered` đã có handler gửi email "xác nhận đã nhận hàng" (T3.2, `c03544e`): K5 **mở rộng** handler đó thành fan-out các sub-handler chạy trong cùng transaction, không đăng ký handler thứ hai. `sub-order.completed` chưa có handler — các dòng outbox nằm chờ tới khi K5 đăng ký.
 - Handler `crm.campaign.scheduled` + job lặp mỗi phút: chiến dịch SCHEDULED đến hạn → SENDING, `resolveAudience` lúc gửi, chèn `crm_messages` theo lô 500 (unique `(campaignId, userId)`), cập nhật `recipientCount`, xong → SENT.
 - Job lặp mỗi phút `crm.dispatch-due-messages`: lấy ≤ 200 tin đến hạn `FOR UPDATE SKIP LOCKED`, kiểm lại C5/C8/C9/C11 → tạo `Notification` + email (template `@repo/i18n` theo `primaryLocale`, escape HTML, link huỷ đăng ký xoay token, `List-Unsubscribe`), `SENT`/`SKIPPED`/`FAILED` (+ `attempts`, `lastError`).
 - Test: Testcontainers, transport email giả, mọi lý do SKIPPED, không gửi trùng khi 2 worker chạy song song.
