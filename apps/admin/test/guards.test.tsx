@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Role } from '@repo/core';
+import { readReturnPath, saveReturnPath } from '@/auth/return-path';
 import { authStore } from '@/auth/session';
 import { useLocaleStore } from '@/i18n/use-locale';
 import { appRoutes } from '@/router/routes';
@@ -33,6 +34,7 @@ const navLinks = () =>
     .map((link) => link.textContent);
 
 beforeEach(() => {
+  sessionStorage.clear();
   useLocaleStore.setState({ locale: 'en' });
   signOut();
 });
@@ -200,6 +202,30 @@ describe('public pages', () => {
     renderAt('/auth/callback?error=auth.error.oauth-failed');
     expect(screen.getByRole('heading', { name: 'Sign-in failed' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Back to sign in' })).toBeTruthy();
+  });
+
+  it('/auth/callback sends the user to the deep link saved before OAuth, then forgets it', async () => {
+    saveReturnPath('/platform/refunds?status=open');
+    signInAs(['PLATFORM_STAFF']);
+    const router = renderAt('/auth/callback');
+    expect(await screen.findByRole('heading', { name: 'Refunds' })).toBeTruthy();
+    expect(router.state.location.pathname).toBe('/platform/refunds');
+    expect(router.state.location.search).toBe('?status=open');
+    expect(readReturnPath()).toBe('/');
+  });
+
+  it('/auth/callback ignores an unsafe saved path', async () => {
+    sessionStorage.setItem('admin.returnTo', '//evil.example');
+    signInAs(['VENDOR_OWNER']);
+    const router = renderAt('/auth/callback');
+    expect(await screen.findByRole('heading', { name: 'Vendor portal' })).toBeTruthy();
+    expect(router.state.location.pathname).toBe('/vendor');
+  });
+
+  it('/auth/callback offers a retry (not a new login) when the API was unreachable', () => {
+    authStore.setState({ status: 'error' });
+    renderAt('/auth/callback');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 
   it('unknown top-level paths render the 404 page', () => {

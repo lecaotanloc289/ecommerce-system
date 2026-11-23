@@ -390,6 +390,7 @@ export const en = {
     user: {
       menu: 'Account menu',
       signOut: 'Sign out',
+      signOutFailed: 'Could not sign out. Check your connection and try again.',
     },
     role: {
       guest: 'Guest',

@@ -69,15 +69,20 @@ only — the API enforces `@Roles` + ownership on every endpoint.
   with the core Zod schema). The refresh token is the API's HttpOnly cookie — the app never sees it.
 - **Boot:** `main.tsx` calls `restoreSession()`: `POST /v1/auth/refresh` (`credentials: 'include'`) →
   `GET /v1/auth/me`. Single-flight (StrictMode, `/auth/callback` and the retry button share one call).
-  401/403 → `anonymous`; network error / 5xx → `error` (retry screen, the cookie may still be valid).
-  Guards show the splash while `restoring`.
+  401/403 → `anonymous`; network error / 5xx → `error` (retry screen on guarded pages and on
+  `/auth/callback`, the cookie may still be valid). Guards show the splash while `restoring`. A
+  session end (sign-out, rejected SDK refresh) bumps an epoch, so a restore still in flight cannot
+  resurrect it.
 - **Afterwards** `@repo/sdk` refreshes on any 401 (its own single-flight) and writes the new token back
   via `onAccessToken`; a rejected refresh calls `onUnauthorized` → `anonymous` → `RequireAuth` sends the
   user to `/login`, and `App` clears the query cache.
 - **Login flow:** `/login` saves the requested deep link (`location.state.from`) with `saveReturnPath`,
   leaves for the API OAuth start; the API redirects to `/auth/callback` (`AUTH_REDIRECT_URL_ADMIN`),
-  where the boot refresh completes and the user is sent to the saved path (same-origin paths only).
-- **Sign out:** `authStore.getState().signOut()` → `POST /v1/auth/logout` (best effort) → `anonymous`.
+  where the boot refresh completes and the user is sent to the saved path (same-origin paths only;
+  backslashes and control characters rejected), which is then cleared.
+- **Sign out:** `authStore.getState().signOut()` → `POST /v1/auth/logout` → `anonymous` and resolves
+  `true` (2xx, or 401 = no live session). Offline / 5xx resolves `false` and **keeps** the session — the
+  cookie was not revoked and would sign the user back in on reload; `SignOutButton` shows a toast.
 - Roles come from `/v1/auth/me` at boot; vendor roles count only while the vendor is ACTIVE (server).
 
 ## Data layer
@@ -86,25 +91,26 @@ only — the API enforces `@Roles` + ownership on every endpoint.
   `useQuery({ queryKey: ['vendor', 'products', params], queryFn: () => unwrap(api.GET('/v1/vendor/products', { params })) })`.
   `unwrap` returns `data` or throws `ApiError { status, errorCode, params }`.
 - Queries retry only transient failures (network, 5xx, 429) — `retryTransient` in `lib/query-client.ts`.
-- **Mutations: always `useApiMutation`** (`lib/use-api-mutation.ts`). It hands your function an
-  `idempotencyKey` — pass it as the `Idempotency-Key` header:
+- **Mutations: always `useApiMutation`** (`lib/use-api-mutation.ts`). It hands your function
+  `headers` (`{ 'Idempotency-Key': … }`) — forward them to the request:
 
   ```ts
-  const approve = useApiMutation((id: string, idempotencyKey) =>
+  const approve = useApiMutation((id: string, headers) =>
     unwrap(
       api.POST('/v1/platform/vendor-applications/{id}/approve', {
         params: { path: { id } },
-        headers: { 'Idempotency-Key': idempotencyKey },
+        headers,
       }),
     ),
   );
   ```
 
-  Key reuse: one key per **user action** = same variables until it succeeds. TanStack's automatic
+  Key reuse: one key per **user action** = one set of variables until it succeeds. TanStack's automatic
   retries (transient errors, ≤ 2) and the user pressing "Try again" with the same input reuse the key, so
   the server replays instead of executing twice (it never caches errors, so reuse after a failure is safe).
-  Success or changed variables → new key; `resetAction()` forces one. If you skip the header the SDK
-  generates a fresh key per request and retries are no longer idempotent.
+  Different variables get their own key (interleaved `mutate(a)` / `mutate(b)` stay separate); success
+  drops that action's key; `resetAction()` drops all. If you don't forward `headers`, the SDK generates a
+  fresh key per request and retries are no longer idempotent.
 
 - Errors: `<ErrorAlert error={query.error} />` or `errorMessage(locale, error)` — translates
   `errorCode` + `params` via `@repo/i18n`; a `fetch` rejection shows `admin.error.network`.
@@ -126,8 +132,12 @@ only — the API enforces `@Roles` + ownership on every endpoint.
 
 Vite reads `.env*` from the repo root (`envDir` in `vite.config.ts`). Anything `VITE_*` is public — never
 put a secret there. CI sets it in `.github/workflows/deploy-admin.yml` (`https://elma-api-<branch>.fly.dev`).
-The API must list the admin origin in `ADMIN_ORIGIN` (CORS with credentials) and be same-site in prod so
-the SameSite=Lax refresh cookie is sent.
+The API must list the admin origin in `ADMIN_ORIGIN` (CORS with credentials) and be **same-site** with
+the admin (one registrable domain, e.g. `admin.example.com` + `api.example.com`), otherwise browsers
+do not send the SameSite=Lax refresh cookie on the cross-site `POST /v1/auth/refresh` and every boot
+ends signed out. **Known gap:** the current deploy targets (`elma-admin.pages.dev` + `elma-api-*.fly.dev`)
+are cross-site, so login will not stick there until a shared custom domain (or a same-origin `/v1`
+proxy) is set up — an infra decision outside this app.
 
 ## Adding a portal page (T5.3 / T5.4)
 
@@ -137,7 +147,7 @@ the SameSite=Lax refresh cookie is sent.
    `{ path, labelKey, icon, roles?, element: <XxxPage /> }`. Keep `roles` for owner/admin-only pages —
    it drives both the sidebar and the route guard. Sub-routes (`products/:id`) go in `routes.tsx` under
    the same portal (wrap them in `RequireRole` with the same `roles`).
-3. Reads: `useQuery` + `unwrap(api.GET(...))`; writes: `useApiMutation` (pass the key), then
+3. Reads: `useQuery` + `unwrap(api.GET(...))`; writes: `useApiMutation` (forward its `headers`), then
    `queryClient.invalidateQueries`. Forms validate with the `@repo/core` schema.
 4. Text: add `admin.<area>.*` keys to `en.ts` then `vi.ts` (with diacritics).
 5. Test: component test under `test/` (render with `createMemoryRouter(appRoutes, …)` + set

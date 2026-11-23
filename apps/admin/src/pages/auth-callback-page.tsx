@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router';
 import { translateError } from '@repo/i18n';
-import { buttonVariants } from '@repo/ui';
-import { readReturnPath } from '@/auth/return-path';
-import { useAuth } from '@/auth/session';
+import { Button, buttonVariants } from '@repo/ui';
+import { clearReturnPath, readReturnPath } from '@/auth/return-path';
+import { authStore, useAuth } from '@/auth/session';
 import { CenteredCard } from '@/components/centered-card';
 import { Splash } from '@/components/splash';
 import { useLocale } from '@/i18n/use-locale';
@@ -19,9 +19,25 @@ export function AuthCallbackPage() {
   const status = useAuth((s) => s.status);
   const [returnPath] = useState(readReturnPath);
   const errorCode = params.get('error');
+  const signedIn = !errorCode && status === 'authenticated';
+
+  useEffect(() => {
+    if (signedIn) clearReturnPath();
+  }, [signedIn]);
 
   if (!errorCode && status === 'restoring') return <Splash messageKey="admin.callback.signingIn" />;
-  if (!errorCode && status === 'authenticated') return <Navigate to={returnPath} replace />;
+  if (signedIn) return <Navigate to={returnPath} replace />;
+
+  if (!errorCode && status === 'error') {
+    // API unreachable / 5xx: the cookie the API just set is probably fine — retry, don't re-login.
+    return (
+      <CenteredCard title={t('admin.callback.failedTitle')} description={t('admin.error.network')}>
+        <Button fullWidth onClick={() => void authStore.getState().restoreSession()}>
+          {t('admin.error.retry')}
+        </Button>
+      </CenteredCard>
+    );
+  }
 
   const description = errorCode
     ? translateError(locale, errorCode)

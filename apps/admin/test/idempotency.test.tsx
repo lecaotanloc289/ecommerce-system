@@ -24,16 +24,19 @@ describe('createIdempotencyKeyTracker', () => {
     expect(tracker.keyFor({ b: { d: 3, c: 2 }, a: 1 })).toBe('key-1');
   });
 
-  it('issues a new key when the variables change', () => {
+  it('gives different variables their own key, and keeps interleaved actions apart', () => {
     const tracker = createIdempotencyKeyTracker(sequentialKeys());
     expect(tracker.keyFor({ id: 'a' })).toBe('key-1');
     expect(tracker.keyFor({ id: 'b' })).toBe('key-2');
+    expect(tracker.keyFor({ id: 'a' })).toBe('key-1'); // a's retry after b started
+    tracker.succeeded({ id: 'b' });
+    expect(tracker.keyFor({ id: 'a' })).toBe('key-1'); // b's success does not drop a's key
   });
 
   it('issues a new key after success, or after reset', () => {
     const tracker = createIdempotencyKeyTracker(sequentialKeys());
     tracker.keyFor('x');
-    tracker.succeeded();
+    tracker.succeeded('x');
     expect(tracker.keyFor('x')).toBe('key-2');
     tracker.reset();
     expect(tracker.keyFor('x')).toBe('key-3');
@@ -52,8 +55,9 @@ describe('createIdempotencyKeyTracker', () => {
 });
 
 describe('useApiMutation', () => {
-  function setup<TVars>(fail: (attempt: number) => Error | null) {
-    const keys: string[] = [];
+  /** `fail(vars, attempt)` decides the outcome of the n-th attempt for those variables. */
+  function setup<TVars>(fail: (vars: TVars, attempt: number) => Error | null) {
+    const calls: { vars: TVars; key: string }[] = [];
     const client = new QueryClient();
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
@@ -61,27 +65,30 @@ describe('useApiMutation', () => {
     const hook = renderHook(
       () =>
         useApiMutation(
-          (_vars: TVars, key: string) => {
-            keys.push(key);
-            const error = fail(keys.length);
+          (vars: TVars, headers) => {
+            calls.push({ vars, key: headers['Idempotency-Key'] });
+            const attempt = calls.filter((c) => c.vars === vars).length;
+            const error = fail(vars, attempt);
             return error ? Promise.reject(error) : Promise.resolve('ok');
           },
           { retryDelay: 0 },
         ),
       { wrapper },
     );
-    return { keys, hook };
+    const keys = () => calls.map((c) => c.key);
+    const keysFor = (vars: TVars) => calls.filter((c) => c.vars === vars).map((c) => c.key);
+    return { keys, keysFor, hook };
   }
 
   it('automatic retries of a transient failure reuse the same key', async () => {
-    const { keys, hook } = setup<{ id: string }>((n) =>
+    const { keys, hook } = setup<string>((_v, n) =>
       n < 3 ? new ApiError(503, 'common.error.internal') : null,
     );
 
-    await act(() => hook.result.current.mutateAsync({ id: 'a' }));
+    await act(() => hook.result.current.mutateAsync('a'));
 
-    expect(keys).toHaveLength(3);
-    expect(new Set(keys).size).toBe(1);
+    expect(keys()).toHaveLength(3);
+    expect(new Set(keys()).size).toBe(1);
   });
 
   it('does not retry a definitive 4xx', async () => {
@@ -90,11 +97,25 @@ describe('useApiMutation', () => {
     act(() => hook.result.current.mutate('a'));
     await waitFor(() => expect(hook.result.current.isError).toBe(true));
 
-    expect(keys).toHaveLength(1);
+    expect(keys()).toHaveLength(1);
+  });
+
+  it('two actions in flight at once keep their own keys across retries', async () => {
+    const { keysFor, hook } = setup<string>((v, n) =>
+      v === 'a' && n === 1 ? new TypeError('offline') : null,
+    );
+
+    await act(() =>
+      Promise.all([hook.result.current.mutateAsync('a'), hook.result.current.mutateAsync('b')]),
+    );
+
+    const [aFirst, aRetry] = keysFor('a');
+    expect(aRetry).toBe(aFirst);
+    expect(keysFor('b')).not.toContain(aFirst);
   });
 
   it('the user retrying after a failure reuses the key; the next action after success gets a new one', async () => {
-    const { keys, hook } = setup<string>((n) =>
+    const { keys, hook } = setup<string>((_v, n) =>
       n === 1 ? new ApiError(409, 'common.error.conflict') : null,
     );
 
@@ -102,12 +123,12 @@ describe('useApiMutation', () => {
     await act(() => hook.result.current.mutateAsync('a')); // "Try again" button
     await act(() => hook.result.current.mutateAsync('a')); // a new action with the same input
 
-    expect(keys[1]).toBe(keys[0]);
-    expect(keys[2]).not.toBe(keys[1]);
+    expect(keys()[1]).toBe(keys()[0]);
+    expect(keys()[2]).not.toBe(keys()[1]);
   });
 
   it('resetAction forces a fresh key', async () => {
-    const { keys, hook } = setup<string>((n) =>
+    const { keys, hook } = setup<string>((_v, n) =>
       n === 1 ? new ApiError(409, 'common.error.conflict') : null,
     );
 
@@ -115,6 +136,6 @@ describe('useApiMutation', () => {
     act(() => hook.result.current.resetAction());
     await act(() => hook.result.current.mutateAsync('a'));
 
-    expect(keys[1]).not.toBe(keys[0]);
+    expect(keys()[1]).not.toBe(keys()[0]);
   });
 });

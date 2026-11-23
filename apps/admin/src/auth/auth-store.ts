@@ -17,8 +17,12 @@ export interface AuthState {
   user: MeResponse | null;
   /** Boot / retry: refresh cookie → access token → `GET /v1/auth/me`. Single-flight. */
   restoreSession: () => Promise<void>;
-  /** Revoke the refresh cookie server-side (best effort) and drop the in-memory session. */
-  signOut: () => Promise<void>;
+  /**
+   * Revoke the refresh cookie (`POST /v1/auth/logout`), then drop the in-memory session.
+   * Resolves `false` — and keeps the session — when the revoke failed (offline / 5xx): the cookie
+   * would still sign the user back in on reload, so the UI must say so instead of faking it.
+   */
+  signOut: () => Promise<boolean>;
 }
 
 export interface Session {
@@ -41,8 +45,16 @@ const SIGNED_OUT = { status: 'anonymous', accessToken: null, user: null } as con
  */
 export function createSession(options: SessionOptions): Session {
   let inflightRestore: Promise<void> | null = null;
+  // Bumped whenever the session ends. A `restore()` that began earlier (the user signed out, or
+  // the SDK refresh was rejected, while it was in flight) must not resurrect the session.
+  let epoch = 0;
 
-  const authStore = createStore<AuthState>()((set) => ({
+  function endSession(): void {
+    epoch += 1;
+    authStore.setState(SIGNED_OUT);
+  }
+
+  const authStore = createStore<AuthState>()(() => ({
     status: 'restoring',
     accessToken: null,
     user: null,
@@ -58,11 +70,14 @@ export function createSession(options: SessionOptions): Session {
 
     async signOut() {
       try {
-        await api.POST('/v1/auth/logout');
+        const { response } = await api.POST('/v1/auth/logout');
+        // 401: there was no live session to revoke — signed out either way.
+        if (!response.ok && response.status !== 401) return false;
       } catch {
-        // Offline: the cookie stays valid until it expires, but this tab forgets the session.
+        return false; // offline: the cookie was NOT revoked
       }
-      set(SIGNED_OUT);
+      endSession();
+      return true;
     },
   }));
 
@@ -70,38 +85,41 @@ export function createSession(options: SessionOptions): Session {
     baseUrl: options.baseUrl,
     getAccessToken: () => authStore.getState().accessToken,
     onAccessToken: (accessToken) => authStore.setState({ accessToken }),
-    onUnauthorized: () => authStore.setState(SIGNED_OUT),
+    onUnauthorized: endSession,
     ...(options.fetch ? { fetch: options.fetch } : {}),
   });
 
   async function restore(): Promise<void> {
+    const attempt = epoch;
+    /** Apply a result only if the session was not ended since this attempt began. */
+    const settle = (state: Partial<AuthState>) => {
+      if (attempt === epoch) authStore.setState(state);
+    };
+
     authStore.setState({ status: 'restoring' });
     try {
       const refreshed = await api.POST('/v1/auth/refresh');
       if (!refreshed.response.ok) {
-        authStore.setState(
-          isSessionRejected(refreshed.response) ? SIGNED_OUT : { status: 'error' },
-        );
+        settle(isSessionRejected(refreshed.response) ? SIGNED_OUT : { status: 'error' });
         return;
       }
       const token = TokenResponseSchema.safeParse(refreshed.data);
       if (!token.success) {
-        authStore.setState({ status: 'error' });
+        settle({ status: 'error' });
         return;
       }
-      authStore.setState({ accessToken: token.data.accessToken });
+      if (attempt !== epoch) return; // session ended meanwhile: don't fetch /me for it
+      settle({ accessToken: token.data.accessToken });
 
       const me = await api.GET('/v1/auth/me');
       if (!me.response.ok) {
-        authStore.setState(isSessionRejected(me.response) ? SIGNED_OUT : { status: 'error' });
+        settle(isSessionRejected(me.response) ? SIGNED_OUT : { status: 'error' });
         return;
       }
       const user = MeResponseSchema.safeParse(me.data);
-      authStore.setState(
-        user.success ? { status: 'authenticated', user: user.data } : { status: 'error' },
-      );
+      settle(user.success ? { status: 'authenticated', user: user.data } : { status: 'error' });
     } catch {
-      authStore.setState({ status: 'error' }); // network failure: not proof the session is over
+      settle({ status: 'error' }); // network failure: not proof the session is over
     }
   }
 

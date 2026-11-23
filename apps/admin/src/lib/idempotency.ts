@@ -5,34 +5,38 @@ import { ulid } from 'ulid';
  *
  * A "user action" is a submit with a given set of variables. Every attempt at it — TanStack
  * Query's automatic retry, or the user pressing the button again after a network error or a 5xx
- * — reuses the same key, so the server replays instead of executing twice. The key is dropped
- * once the action succeeds, or when the variables change (the server would answer
- * `idempotency.error.key-reused` for a different body under the same key). The server never caches
- * errors, so keeping the key after a failure is always safe.
+ * — reuses the same key, so the server replays instead of executing twice. Different variables
+ * are a different action with their own key (the server would answer
+ * `idempotency.error.key-reused` for a different body under the same key), and actions in flight
+ * at the same time (`mutate(a)` then `mutate(b)`) keep separate keys. A key is dropped once its
+ * action succeeds. The server never caches errors, so keeping a key after a failure is safe.
  */
 export interface IdempotencyKeyTracker {
   /** Key for an attempt with these variables: the pending action's key, or a fresh ULID. */
   keyFor: (variables: unknown) => string;
-  /** The action succeeded: the next submit is a new action with a new key. */
-  succeeded: () => void;
-  /** Forget the pending action (e.g. the form was reset). */
+  /** The action with these variables succeeded: submitting them again is a new action. */
+  succeeded: (variables: unknown) => void;
+  /** Forget every pending action (e.g. the form was reset). */
   reset: () => void;
 }
 
 export function createIdempotencyKeyTracker(newKey: () => string = ulid): IdempotencyKeyTracker {
-  let pending: { fingerprint: string; key: string } | null = null;
+  const pending = new Map<string, string>(); // fingerprint → key
 
   return {
     keyFor(variables) {
       const fingerprint = stableStringify(variables);
-      if (pending?.fingerprint !== fingerprint) pending = { fingerprint, key: newKey() };
-      return pending.key;
+      const existing = pending.get(fingerprint);
+      if (existing !== undefined) return existing;
+      const key = newKey();
+      pending.set(fingerprint, key);
+      return key;
     },
-    succeeded() {
-      pending = null;
+    succeeded(variables) {
+      pending.delete(stableStringify(variables));
     },
     reset() {
-      pending = null;
+      pending.clear();
     },
   };
 }

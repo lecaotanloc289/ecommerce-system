@@ -388,6 +388,7 @@ export const vi: Messages = {
     user: {
       menu: 'Menu tài khoản',
       signOut: 'Đăng xuất',
+      signOutFailed: 'Không thể đăng xuất. Kiểm tra kết nối mạng rồi thử lại.',
     },
     role: {
       guest: 'Khách',

@@ -169,7 +169,7 @@ describe('signOut', () => {
       user: makeUser(['VENDOR_OWNER']),
     });
 
-    await session.authStore.getState().signOut();
+    await expect(session.authStore.getState().signOut()).resolves.toBe(true);
 
     expect(api.calls[0]?.credentials).toBe('include');
     expect(session.authStore.getState()).toMatchObject({
@@ -179,17 +179,66 @@ describe('signOut', () => {
     });
   });
 
-  it('still signs out locally when the API is unreachable', async () => {
+  it('treats 401 (no live session) as signed out', async () => {
     const api = fakeApi({
-      'POST /v1/auth/logout': () => {
-        throw new TypeError('offline');
-      },
+      'POST /v1/auth/logout': () =>
+        json({ errorCode: 'auth.error.token-invalid', params: {} }, 401),
     });
     const session = createSession({ baseUrl: BASE, fetch: api.fetch });
     session.authStore.setState({ status: 'authenticated', accessToken: 'tok' });
 
-    await session.authStore.getState().signOut();
-
+    await expect(session.authStore.getState().signOut()).resolves.toBe(true);
     expect(session.authStore.getState().status).toBe('anonymous');
+  });
+
+  it.each([
+    [
+      'unreachable',
+      () => {
+        throw new TypeError('offline');
+      },
+    ],
+    ['5xx', () => json({ errorCode: 'common.error.internal', params: {} }, 503)],
+  ])(
+    'keeps the session and reports failure when the API is %s (cookie not revoked)',
+    async (_label, handler) => {
+      const api = fakeApi({ 'POST /v1/auth/logout': handler });
+      const session = createSession({ baseUrl: BASE, fetch: api.fetch });
+      session.authStore.setState({ status: 'authenticated', accessToken: 'tok' });
+
+      await expect(session.authStore.getState().signOut()).resolves.toBe(false);
+      expect(session.authStore.getState()).toMatchObject({
+        status: 'authenticated',
+        accessToken: 'tok',
+      });
+    },
+  );
+});
+
+describe('restore vs. session end', () => {
+  it('a sign-out during an in-flight restore is not undone by the restore finishing', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const api = fakeApi({
+      'POST /v1/auth/refresh': async () => {
+        await gate;
+        return json(TOKEN);
+      },
+      'GET /v1/auth/me': () => json(makeUser(['VENDOR_OWNER'])),
+      'POST /v1/auth/logout': () => new Response(null, { status: 204 }),
+    });
+    const { authStore } = createSession({ baseUrl: BASE, fetch: api.fetch });
+
+    const restoring = authStore.getState().restoreSession();
+    await authStore.getState().signOut();
+    release();
+    await restoring;
+
+    expect(authStore.getState()).toMatchObject({
+      status: 'anonymous',
+      accessToken: null,
+      user: null,
+    });
+    expect(api.count('GET /v1/auth/me')).toBe(0);
   });
 });
