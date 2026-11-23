@@ -8,33 +8,29 @@ The full constitution lives in [`CLAUDE.md`](./CLAUDE.md) — read that before c
 
 ## Workspaces
 
-| Path                | Package          | Role                                                              |
-| ------------------- | ---------------- | ----------------------------------------------------------------- |
-| `apps/web`          | `@apps/web`      | Next.js 15 storefront (customer-facing, i18n vi/en)               |
-| `apps/admin`        | `@apps/admin`    | Vite 6 + React 19 dashboard (platform admin + vendor portal)      |
-| `server`            | `@server/api`    | NestJS 11 + Fastify API, prefix `/v1`                             |
-| `packages/ui`       | `@repo/ui`       | shadcn/ui components + design tokens (Tailwind v4)                |
-| `packages/core`     | `@repo/core`     | Zod schemas, types, Money utility, enums (single source of truth) |
-| `packages/db`       | `@repo/db`       | Prisma client + schema + migrations + seed                        |
-| `packages/sdk`      | `@repo/sdk`      | Typed API client generated from OpenAPI                           |
-| `packages/payments` | `@repo/payments` | `PaymentProvider` interface + VNPay / Stripe adapters             |
-| `packages/i18n`     | `@repo/i18n`     | vi/en message catalogs + formatters                               |
-| `packages/config`   | `@repo/config`   | Shared ESLint / TS / Prettier configs                             |
+| Path                | Package          | Role                                                                   |
+| ------------------- | ---------------- | ---------------------------------------------------------------------- |
+| `apps/client`       | `@apps/web`      | Next.js 15 storefront on Cloudflare Workers (OpenNext), i18n vi/en     |
+| `apps/admin`        | `@apps/admin`    | Vite 6 + React 19 dashboard (platform console + vendor portal)         |
+| `server`            | `@server/api`    | NestJS 11 + Fastify API, prefix `/v1`, OpenAPI export                  |
+| `workers/jobs`      | `@workers/jobs`  | Outbox dispatcher (payment sessions, refunds, emails) + scheduled jobs |
+| `workers/zalo`      | `@workers/zalo`  | Shop Zalo sessions (zca-js) + automated order messages                 |
+| `e2e`               | `@repo/e2e`      | Playwright smoke flows over the whole stack                            |
+| `packages/core`     | `@repo/core`     | Zod schemas, types, Money utility, pricing + ledger rules, enums       |
+| `packages/db`       | `@repo/db`       | Prisma client + schema + migrations + seed                             |
+| `packages/sdk`      | `@repo/sdk`      | Typed API client generated from OpenAPI                                |
+| `packages/payments` | `@repo/payments` | `PaymentProvider` interface + VNPay / Stripe adapters                  |
+| `packages/i18n`     | `@repo/i18n`     | vi/en message catalogs + formatters                                    |
+| `packages/ui`       | `@repo/ui`       | shadcn/ui components + design tokens (Tailwind v4)                     |
+| `packages/config`   | `@repo/config`   | Shared ESLint / TS / Prettier configs                                  |
 
-Dependency rule: `apps/* → packages/*` and `server → packages/*` only. `apps/*` never imports from `apps/*` or `server`. Full map in [`CLAUDE.md` §3](./CLAUDE.md#3-monorepo-map).
+Dependency rule: `apps/* → packages/*` and `server → packages/*` only. `apps/*` never imports from `apps/*` or `server`; `workers/*` never imports from `server` or `apps/*` and talks to the API only through the DB / outbox. Full map in [`CLAUDE.md` §3](./CLAUDE.md#3-monorepo-map).
 
 ---
 
-## Current state (2026-05-21)
+## Current state
 
-| Workspace                                 | Status                                                                                                       |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `server`                                  | NestJS 11 + Fastify bootstrap with `GET /v1/health`; helmet + cors + cookie + pino                           |
-| `apps/web`                                | Next 15 App Router scaffold + `/design-system` showcase, Tailwind v4                                         |
-| `apps/admin`                              | Vite 6 + React 19 scaffold, Tailwind v4 (no routes yet)                                                      |
-| `packages/ui`                             | 20 base components (Button, Input, Select, Dialog, Drawer, Table, Pagination, Toast…) wired to design tokens |
-| `packages/sdk`                            | `openapi-fetch` client generated from the server's OpenAPI (`pnpm sdk:generate`)                             |
-| `packages/{core,db,payments,i18n,config}` | Placeholders only — empty `src/index.ts`                                                                     |
+Per-workspace status (what is done, known gaps) lives in [`CLAUDE.md` §1](./CLAUDE.md#implementation-status-as-of-2026-11-24) and in each workspace's own `CLAUDE.md`.
 
 Design tokens (`packages/ui/src/styles/tokens.css`) hold the **authoritative** values pulled from the Figma "Elma eCommerce UI Kit" style guide:
 
@@ -57,29 +53,36 @@ corepack enable       # provides pnpm
 # 2. Install
 pnpm install
 
-# 3. Env
-cp .env.example .env  # fill in OAuth client IDs, JWT secrets, etc.
-
-# 4. Local infra (Postgres + Redis + RustFS S3 + Mailhog)
+# 3. Local infra (Postgres 16 + Redis 7 + RustFS S3 + Mailhog)
 pnpm services:up
 
-# 5. Dev (all workspaces in parallel via Turbo)
+# 4. Env: Vite (admin) reads the root .env; the API and workers read the shell or Doppler
+#    (doppler.yaml). Fill in OAuth client IDs, JWT secrets, etc. See .env.example.
+cp .env.example .env
+
+# 5. Database: apply migrations and load the idempotent demo seed
+pnpm db:migrate
+pnpm db:seed
+
+# 6. Dev (all workspaces in parallel via Turbo)
 pnpm dev
 ```
 
 ### Filter to one workspace
 
 ```bash
-pnpm --filter @apps/web dev       # storefront         → http://localhost:3000
-pnpm --filter @apps/admin dev     # admin              → http://localhost:5173
-pnpm --filter @server/api dev     # API                → http://localhost:3001
+pnpm --filter @apps/web dev            # storefront          → http://localhost:3000
+pnpm --filter @apps/admin dev          # admin               → http://localhost:5173
+pnpm --filter @server/api dev          # API                 → http://localhost:3001
+pnpm --filter @workers/jobs dev        # jobs worker (no HTTP)
+pnpm --filter @workers/zalo dev        # Zalo worker (no HTTP)
 ```
 
 ### Design-system showcase
 
 ```bash
 pnpm --filter @apps/web dev
-# → http://localhost:3000/design-system
+# → http://localhost:3000/vi/design-system
 ```
 
 Every base component in `@repo/ui` rendered with all variants + states. Use this page to verify visual regressions before merging UI changes.
@@ -91,9 +94,10 @@ Every base component in `@repo/ui` rendered with all variants + states. Use this
 Every PR must pass:
 
 ```bash
+pnpm format:check  # Prettier --check (CI)
 pnpm lint          # ESLint flat config (@repo/config/eslint)
 pnpm typecheck     # tsc --noEmit per workspace
-pnpm test          # Vitest (packages, worker) + Jest (server); @repo/db tests need DATABASE_URL + SHADOW_DATABASE_URL, API/worker suites need Docker (Testcontainers)
+pnpm test          # Vitest (packages, workers, apps) + Jest (server); @repo/db tests need DATABASE_URL + SHADOW_DATABASE_URL, server and worker integration suites need Docker (Testcontainers)
 pnpm build         # Turbo: build all workspaces
 ```
 
@@ -106,7 +110,7 @@ pnpm e2e:headed    # same with a visible browser
 
 Details, env vars and how auth/payments are faked: [`e2e/CLAUDE.md`](./e2e/CLAUDE.md).
 
-CI runs the first four on GitHub Actions before merge (Postgres service for `@repo/db`, Docker for the Testcontainers suites); the e2e workflow runs on PRs into `prod` and on manual dispatch. The pre-commit hook (`husky` + `lint-staged`) runs `lint` + `typecheck` on changed files.
+CI (`ci.yml`, on PRs and pushes to `dev` / `prod`) runs the SDK drift check, format check, lint, typecheck, test and build (Postgres service for `@repo/db`; the Testcontainers suites use Docker on the runner). The e2e workflow (`e2e.yml`) runs on PRs into `prod` and on manual dispatch. The pre-commit hook (`husky` + `lint-staged`) runs Prettier `--write` on staged files.
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org). Branches: `feat/`, `fix/`, `chore/`, `refactor/`. Default base: `prod` (renamed from `main`); active work branches off `dev`.
 
@@ -117,6 +121,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org). Bran
 ```bash
 pnpm db:generate            # regenerate Prisma Client
 pnpm db:migrate             # migrate dev — creates a new migration
+pnpm --filter @repo/db migrate:deploy   # apply committed migrations only (CI / prod)
 pnpm db:reset               # drop + reapply + seed   — LOCAL ONLY
 pnpm db:seed                # idempotent seed
 ```
@@ -136,15 +141,17 @@ Migrations are **forward-only**. Destructive changes (drop column, rename) requi
 
 ## Ports
 
-| Service       | Port        | Notes                                |
-| ------------- | ----------- | ------------------------------------ |
-| `@apps/web`   | 3000        | Next.js storefront                   |
-| `@server/api` | 3001        | NestJS + Fastify, prefix `/v1`       |
-| `@apps/admin` | 5173        | Vite dev server                      |
-| Postgres      | 5432        | DBs: `ecommerce`, `ecommerce_shadow` |
-| Redis         | 6379        | Cache + BullMQ                       |
-| RustFS (S3)   | 9000 / 9001 | S3 API / web console                 |
-| Mailhog       | 1025 / 8025 | SMTP / web UI                        |
+| Service       | Port        | Notes                                                                                                      |
+| ------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
+| `@apps/web`   | 3000        | Next.js storefront                                                                                         |
+| `@server/api` | 3001        | NestJS + Fastify, prefix `/v1`                                                                             |
+| `@apps/admin` | 5173        | Vite dev server                                                                                            |
+| `workers/*`   | —           | No HTTP port (Postgres + Redis only)                                                                       |
+| `e2e`         | 4100–4104   | Test-only ports, never 3000 / 3001 / 5173 (see `e2e/CLAUDE.md`)                                            |
+| Postgres      | 5432        | DBs: `ecommerce`, `ecommerce_shadow` (created by `docker/postgres-init.sql`)                               |
+| Redis         | 6379        | Cache, rate limit, sessions, BullMQ                                                                        |
+| RustFS (S3)   | 9000 / 9001 | S3 API / web console (local `rustfsadmin` / `rustfsadmin`); buckets `kyc` (private), `media` (public read) |
+| Mailhog       | 1025 / 8025 | SMTP / web UI                                                                                              |
 
 ---
 
@@ -171,6 +178,8 @@ Workflows live in `.github/workflows/`:
 - `deploy-web.yml` — `opennextjs-cloudflare build` → `opennextjs-cloudflare deploy --env <branch>` (Next.js SSR on a Cloudflare Worker, `apps/client/wrangler.jsonc`)
 - `deploy-admin.yml` — `vite build` → `wrangler pages deploy apps/admin/dist`
 - `deploy-server.yml` — `flyctl deploy --remote-only --app elma-api-${{ github.ref_name }}` → smoke check `/v1/health`
+- `deploy-worker.yml` — `flyctl deploy` of `workers/jobs` (Fly app `elma-worker-{dev,prod}`) on changes under `workers/jobs/**`. `workers/zalo` has no deploy workflow yet.
+- `e2e.yml` — Playwright flows (`pnpm e2e`) on PRs into `prod` and on manual dispatch
 
 Each deploy workflow only fires when files in the relevant workspace change (path filters).
 
