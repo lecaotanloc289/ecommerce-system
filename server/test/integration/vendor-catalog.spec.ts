@@ -296,6 +296,39 @@ describe('vendor catalog API (Testcontainers)', () => {
     expect(code(foreign)).toBe('upload.error.invalid-key');
   });
 
+  it('refuses a product priced in a currency other than the vendor wallet currency', async () => {
+    // USD is supported by the platform, but this vendor's single wallet holds VND.
+    const usd = body();
+    const usdBody = {
+      ...usd,
+      basePrice: { amount: 1, currency: 'USD' },
+      variants: usd.variants.map((v) => ({ ...v, price: { amount: 100, currency: 'USD' } })),
+    };
+    const created = await call('POST', '/v1/vendor/products', usdBody);
+    expect(created.statusCode).toBe(422);
+    expect(created.json<unknown>()).toEqual({
+      errorCode: 'common.error.validation-failed',
+      params: { field: 'currency', currency: 'USD', expected: 'VND' },
+    });
+    expect(await t.db.product.count({ where: { vendorId } })).toBe(0);
+
+    const product = await createProduct();
+    const put = await call('PUT', `/v1/vendor/products/${product.id}`, {
+      ...usdBody,
+      variants: [{ ...variantOf(product, 0), price: { amount: 100, currency: 'USD' } }],
+    });
+    expect(put.statusCode).toBe(422);
+    expect(put.json<{ params: { field: string } }>().params.field).toBe('currency');
+    const row = await t.db.product.findUniqueOrThrow({ where: { id: product.id } });
+    expect(row.basePriceCurrency).toBe('VND');
+
+    // A USD vendor sells in USD only.
+    const usdVendor = await makeVendor(t.db, { currency: 'USD' });
+    const usdHeaders = await t.authHeader(usdVendor.owner);
+    expect((await call('POST', '/v1/vendor/products', usdBody, usdHeaders)).statusCode).toBe(201);
+    expect((await call('POST', '/v1/vendor/products', body(), usdHeaders)).statusCode).toBe(422);
+  });
+
   it('stores own image keys as public URLs; the first image is primary', async () => {
     const k1 = `media/vendors/${vendorId}/${ulid()}.jpg`;
     const k2 = `media/vendors/${vendorId}/${ulid()}.png`;
@@ -633,6 +666,27 @@ describe('vendor catalog API (Testcontainers)', () => {
 
       const list = (await call('GET', '/v1/vendor/shipping-methods')).json<{ id: string }[]>();
       expect(list.map((m) => m.id)).toEqual([method.id]);
+    });
+
+    it('refuses a method priced in a currency other than the vendor wallet currency', async () => {
+      const usd = { name: 'Intl', price: { amount: 500, currency: 'USD' }, estDays: 5 };
+      const created = await call('POST', '/v1/vendor/shipping-methods', usd);
+      expect(created.statusCode).toBe(422);
+      expect(created.json<unknown>()).toEqual({
+        errorCode: 'common.error.validation-failed',
+        params: { field: 'currency', currency: 'USD', expected: 'VND' },
+      });
+      expect(await t.db.shippingMethod.count({ where: { vendorId } })).toBe(0);
+
+      const method = await makeShippingMethod(t.db, { vendorId });
+      const put = await call('PUT', `/v1/vendor/shipping-methods/${method.id}`, {
+        ...usd,
+        isActive: true,
+      });
+      expect(put.statusCode).toBe(422);
+      expect(put.json<{ params: { field: string } }>().params.field).toBe('currency');
+      const row = await t.db.shippingMethod.findUniqueOrThrow({ where: { id: method.id } });
+      expect(row.priceCurrency).toBe('VND');
     });
   });
 });

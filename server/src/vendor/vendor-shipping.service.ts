@@ -8,7 +8,12 @@ import {
 import { type Prisma, toDbAmount, toMoney } from '@repo/db';
 import { ulid } from 'ulid';
 import { PrismaService } from '../prisma/prisma.service';
-import { assertCurrencySupported, assertVendorActive, supportedCurrencies } from './vendor-scope';
+import {
+  assertCurrencySupported,
+  assertVendorActive,
+  assertWalletCurrency,
+  supportedCurrencies,
+} from './vendor-scope';
 
 type MethodRow = Prisma.ShippingMethodGetPayload<Record<string, never>>;
 
@@ -40,6 +45,7 @@ export class VendorShippingService {
     return this.prisma.client.$transaction(async (tx) => {
       await assertVendorActive(tx, vendorId);
       assertCurrencySupported(await supportedCurrencies(tx), body.price.currency, 'price');
+      await assertWalletCurrency(tx, vendorId, body.price.currency);
       const row = await tx.shippingMethod.create({
         data: { id: ulid(), vendorId, ...this.data(body) },
       });
@@ -51,6 +57,7 @@ export class VendorShippingService {
     return this.prisma.client.$transaction(async (tx) => {
       await assertVendorActive(tx, vendorId);
       assertCurrencySupported(await supportedCurrencies(tx), body.price.currency, 'price');
+      await assertWalletCurrency(tx, vendorId, body.price.currency);
       const { count } = await tx.shippingMethod.updateMany({
         where: { id, vendorId },
         data: this.data(body),

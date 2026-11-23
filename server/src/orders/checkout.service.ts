@@ -206,6 +206,7 @@ export class CheckoutService {
 
     // 5. Group by vendor (first-appearance order) and pick exactly one shipping method each.
     const groups = groupByVendor(lines);
+    await assertVendorWalletCurrency(tx, groups, currency);
     const methodByVendor = await this.resolveShippingMethods(tx, input, groups, currency);
 
     // 6. Coupons, locked so usage counts cannot race (maxRedemptions / perUserLimit).
@@ -533,6 +534,30 @@ function groupByVendor(lines: readonly Line[]): VendorGroup[] {
     groups.set(vendorId, group);
   }
   return [...groups.values()];
+}
+
+/**
+ * Defence in depth for "one currency per vendor = wallet currency": the vendor catalog already
+ * refuses other currencies, but a sub-order in a currency its vendor's single wallet does not hold
+ * could never be paid out (`release-payouts` skips it), so legacy / hand-edited rows are refused
+ * here too. A vendor without a wallet cannot be paid either.
+ */
+async function assertVendorWalletCurrency(
+  tx: Tx,
+  groups: readonly VendorGroup[],
+  currency: Currency,
+): Promise<void> {
+  const vendorIds = groups.map((g) => g.vendorId);
+  const wallets = await tx.wallet.findMany({
+    where: { vendorId: { in: vendorIds } },
+    select: { vendorId: true, balanceCurrency: true },
+  });
+  const walletCurrency = new Map(wallets.map((w) => [w.vendorId, w.balanceCurrency]));
+  for (const vendorId of vendorIds) {
+    if (walletCurrency.get(vendorId) !== currency) {
+      throw new DomainError('checkout.error.currency-mismatch', { vendorId, currency });
+    }
+  }
 }
 
 function compareIds(a: string, b: string): number {

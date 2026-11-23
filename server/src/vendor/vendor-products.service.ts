@@ -20,6 +20,7 @@ import { StorageService } from '../storage/storage.service';
 import {
   assertCurrencySupported,
   assertVendorActive,
+  assertWalletCurrency,
   isUniqueViolation,
   supportedCurrencies,
 } from './vendor-scope';
@@ -275,6 +276,7 @@ export class VendorProductsService {
   ): Promise<void> {
     const currency: Currency = body.basePrice.currency;
     assertCurrencySupported(await supportedCurrencies(tx), currency, 'basePrice');
+    await assertWalletCurrency(tx, vendorId, currency);
 
     // Translations: both locales, slug unique per locale.
     const viName = body.translations.find((t) => t.locale === 'VI');

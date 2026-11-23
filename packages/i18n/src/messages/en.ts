@@ -961,6 +961,7 @@ export const en = {
         description: 'Description',
         variants: 'Variants',
         currency: 'Currency',
+        currencyMustMatch: 'This shop sells in {currency} only. Use {currency} for every price.',
         variantN: 'Variant {n}',
         sku: 'SKU',
         attributes: 'Attributes',

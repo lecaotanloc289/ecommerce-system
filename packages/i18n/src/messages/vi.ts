@@ -958,6 +958,7 @@ export const vi: Messages = {
         description: 'Mô tả',
         variants: 'Phân loại',
         currency: 'Tiền tệ',
+        currencyMustMatch: 'Cửa hàng chỉ bán bằng {currency}. Hãy đặt mọi giá bằng {currency}.',
         variantN: 'Phân loại {n}',
         sku: 'SKU',
         attributes: 'Thuộc tính',

@@ -22,18 +22,20 @@ export interface CategoryOption {
 }
 
 const MAX_IMAGES = 20;
-const CURRENCIES: readonly Currency[] = ['VND', 'USD'];
+const ALL_CURRENCIES: readonly Currency[] = ['VND', 'USD'];
 
 /**
  * Product editor. Validation lives in `validateProduct` (vi + en required, stock ≥ reserved,
  * exact price parse); `readOnly` is used for BLOCKED products. `onQuickStock` updates one existing
- * variant's stock on its own (`PATCH /v1/vendor/variants/:id/stock`).
+ * variant's stock on its own (`PATCH /v1/vendor/variants/:id/stock`). `currencies` = what a new product
+ * may be priced in (only the shop's wallet currency when known, see `useVendorCurrency`).
  */
 export function ProductForm({
   initial,
   categories,
   isNew,
   readOnly,
+  currencies = ALL_CURRENCIES,
   submitting,
   onSubmit,
   uploadImage,
@@ -44,6 +46,7 @@ export function ProductForm({
   categories: readonly CategoryOption[];
   isNew: boolean;
   readOnly: boolean;
+  currencies?: readonly Currency[];
   submitting: boolean;
   onSubmit: (value: ProductUpsert) => void;
   uploadImage: (file: File) => Promise<string>;
@@ -144,7 +147,7 @@ export function ProductForm({
           <h2 className="font-heading text-body-l font-semibold text-text-primary">
             {t('admin.vendor.form.variants')}
           </h2>
-          {isNew && !readOnly ? (
+          {isNew && !readOnly && currencies.length > 1 ? (
             <div className="flex items-center gap-2">
               <Label htmlFor="currency">{t('admin.vendor.form.currency')}</Label>
               <select
@@ -152,11 +155,11 @@ export function ProductForm({
                 value={state.currency}
                 className="h-10 rounded-md border border-border-input bg-bg-elevated px-3 text-body-m"
                 onChange={(event) => {
-                  const next = CURRENCIES.find((currency) => currency === event.target.value);
+                  const next = currencies.find((currency) => currency === event.target.value);
                   if (next) patch({ currency: next });
                 }}
               >
-                {CURRENCIES.map((currency) => (
+                {currencies.map((currency) => (
                   <option key={currency} value={currency}>
                     {currency}
                   </option>

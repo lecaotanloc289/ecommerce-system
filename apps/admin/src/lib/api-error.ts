@@ -87,6 +87,17 @@ const ROLE_REASON_KEYS: Readonly<Record<string, MessageKey>> = {
 export function errorMessage(locale: AppLocale, error: unknown): string {
   if (error instanceof ApiError) {
     const base = translateError(locale, error.errorCode, error.params);
+    // Vendor portal: a price in a currency other than the shop (wallet) currency.
+    const expected = error.params['expected'];
+    if (
+      error.errorCode === 'common.error.validation-failed' &&
+      error.params['field'] === 'currency' &&
+      typeof expected === 'string'
+    ) {
+      return createTranslator(locale)('admin.vendor.form.currencyMustMatch', {
+        currency: expected,
+      });
+    }
     const reason = error.params['reason'];
     if (typeof reason !== 'string') return base;
     const t = createTranslator(locale);

@@ -612,6 +612,31 @@ describe('orders API (Testcontainers)', () => {
     expect(retry.json<ErrorBody>().errorCode).toBe('payment.error.provider-currency-unsupported');
   });
 
+  it('rejects a vendor group priced in a currency its wallet does not hold', async () => {
+    const { address, headers } = await customer();
+    // Legacy rows: a VND-wallet vendor with a USD product + USD method (the catalog refuses these now).
+    const { vendor } = await makeVendor(t.db);
+    const product = await makeProduct(t.db, { vendorId: vendor.id, currency: 'USD', price: 2_500 });
+    const method = await makeShippingMethod(t.db, {
+      vendorId: vendor.id,
+      currency: 'USD',
+      price: 500,
+    });
+    const res = await checkout(headers, {
+      items: [{ variantId: product.variants[0]?.id, quantity: 1 }],
+      addressId: address.id,
+      shippingMethodIds: [method.id],
+      provider: 'STRIPE',
+    });
+    expect(res.statusCode).toBe(422);
+    expect(res.json<ErrorBody>()).toEqual({
+      errorCode: 'checkout.error.currency-mismatch',
+      params: { vendorId: vendor.id, currency: 'USD' },
+    });
+    expect(await t.db.order.count()).toBe(0);
+    expect(await reserved(product.variants[0]?.id ?? '')).toBe(0);
+  });
+
   it('lets a payment stuck without a session be retried after the session-creation timeout', async () => {
     const { address, headers } = await customer();
     const { variant, method } = await shop();

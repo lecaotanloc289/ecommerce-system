@@ -173,6 +173,20 @@ describe('errorMessage with params.reason', () => {
     expect(message).toContain('payout was already released');
   });
 
+  it('names the shop currency for a price in another currency (vendor portal)', () => {
+    const error = new ApiError(422, 'common.error.validation-failed', {
+      field: 'currency',
+      currency: 'USD',
+      expected: 'VND',
+    });
+    expect(errorMessage('en', error)).toBe('This shop sells in VND only. Use VND for every price.');
+    expect(errorMessage('vi', error)).toContain('VND');
+    // Any other validation failure keeps the generic text.
+    expect(
+      errorMessage('en', new ApiError(422, 'common.error.validation-failed', { field: 'name' })),
+    ).toBe(errorMessage('en', new ApiError(422, 'common.error.validation-failed')));
+  });
+
   it('keeps the base message for an unknown reason', () => {
     const base = errorMessage('en', new ApiError(409, 'common.error.conflict'));
     expect(

@@ -46,6 +46,31 @@ export function assertCurrencySupported(
   }
 }
 
+/**
+ * One currency per vendor = its `Wallet.balanceCurrency` (set to `PlatformSettings.defaultCurrency`
+ * at approval). Payouts credit that single wallet, so a product or shipping method priced in any
+ * other currency could sell but never be paid out (`release-payouts` skips the sub-order) — refuse
+ * it up front with 422 `common.error.validation-failed {field: 'currency'}`.
+ */
+export async function assertWalletCurrency(
+  tx: Prisma.TransactionClient,
+  vendorId: string,
+  currency: Currency,
+): Promise<void> {
+  const wallet = await tx.wallet.findUnique({
+    where: { vendorId },
+    select: { balanceCurrency: true },
+  });
+  if (!wallet) throw new DomainError('common.error.internal', { reason: 'vendor wallet missing' });
+  if (wallet.balanceCurrency !== currency) {
+    throw new DomainError('common.error.validation-failed', {
+      field: 'currency',
+      currency,
+      expected: wallet.balanceCurrency,
+    });
+  }
+}
+
 /** True for a Prisma unique-constraint violation (`P2002`), without importing the runtime class. */
 export function isUniqueViolation(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
