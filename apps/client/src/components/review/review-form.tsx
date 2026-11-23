@@ -48,6 +48,7 @@ export function ReviewForm({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (busy) return;
     setServerError(null);
     const checked = validateReview({ subOrderId, rating, body });
     if (!checked.ok) return setProblem(checked.problem);

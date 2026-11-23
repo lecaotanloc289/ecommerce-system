@@ -25,7 +25,7 @@ import { TextField } from '../common/text-field';
 /** Name + preferred language (`PATCH /v1/me`). The email comes from the OAuth provider and is read-only. */
 export function ProfileForm() {
   const { locale, t } = useLocale();
-  const { user, reload } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [name, setName] = React.useState(user?.name ?? '');
   const [language, setLanguage] = React.useState<AppLocale>(
     user ? fromCoreLocale(user.primaryLocale) : locale,
@@ -62,7 +62,7 @@ export function ProfileForm() {
     try {
       await updateProfile(parsed.data, keyRef.current);
       keyRef.current = null;
-      await reload();
+      await refreshUser();
       setMessage({ tone: 'success', text: t('account.saved') });
     } catch (error) {
       setMessage({

@@ -17,6 +17,8 @@ interface AuthContextValue {
   restore: () => Promise<AuthState>;
   /** Force a token refresh + profile re-read (e.g. to pick up a newly granted vendor role). */
   reload: () => Promise<AuthState>;
+  /** Re-read the profile without rotating the token. */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null);
@@ -34,6 +36,7 @@ const signIn: AuthContextValue['signIn'] = (provider, returnTo) => {
 const signOut = () => getAuthStore().signOut();
 const restore = () => getAuthStore().restore();
 const reload = () => getAuthStore().reload();
+const refreshUser = () => getAuthStore().refreshUser();
 
 /**
  * Mounted once in `StorefrontShell`. On mount it tries one silent refresh so a reload keeps
@@ -47,7 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = React.useMemo<AuthContextValue>(
-    () => ({ status: state.status, user: state.user, signIn, signOut, restore, reload }),
+    () => ({
+      status: state.status,
+      user: state.user,
+      signIn,
+      signOut,
+      restore,
+      reload,
+      refreshUser,
+    }),
     [state],
   );
 

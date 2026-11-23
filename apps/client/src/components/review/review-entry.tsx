@@ -76,6 +76,7 @@ function ReviewEntryInner({
         setDone(true);
         onCreated(review);
       }}
+      onAlreadyReviewed={() => setDone(true)}
     />
   );
 }

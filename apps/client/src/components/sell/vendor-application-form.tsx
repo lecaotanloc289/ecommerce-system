@@ -53,6 +53,7 @@ export function VendorApplicationForm({ onSubmitted }: { onSubmitted: () => void
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (busy) return;
     setServerError(null);
     const checked = validateApplication(values);
     if (!checked.ok) {

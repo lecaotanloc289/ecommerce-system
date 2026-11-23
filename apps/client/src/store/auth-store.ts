@@ -42,6 +42,8 @@ export interface AuthStore {
    * session. Shares the in-flight restore, if any.
    */
   reload(): Promise<AuthState>;
+  /** Re-read `GET /v1/auth/me` only (no token rotation), e.g. after a profile edit. */
+  refreshUser(): Promise<void>;
   /**
    * Revoke the session server-side (`POST /v1/auth/logout`), then forget the token + user.
    * Resolves false — and keeps the session — when the API did not confirm (network/5xx/429):
@@ -161,6 +163,15 @@ export function createAuthStore(options: AuthStoreOptions): AuthStore {
     return restoring;
   }
 
+  async function refreshUser(): Promise<void> {
+    if (state.status !== 'authenticated') return;
+    const { data } = await api.GET('/v1/auth/me').catch(() => ({ data: undefined }));
+    const me = MeResponseSchema.safeParse(data);
+    if (me.success && state.status === 'authenticated') {
+      setState({ status: 'authenticated', user: me.data });
+    }
+  }
+
   async function signOut(): Promise<boolean> {
     epoch++;
     let confirmed = false;
@@ -184,6 +195,7 @@ export function createAuthStore(options: AuthStoreOptions): AuthStore {
     getAccessToken,
     restore,
     reload,
+    refreshUser,
     signOut,
     oauthStartUrl: (provider) => `${baseUrl}/v1/auth/${provider}?app=web`,
   };

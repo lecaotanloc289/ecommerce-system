@@ -79,7 +79,11 @@ export function KycFileField({
   };
 
   const shownError =
-    state.status === 'error' ? state.message : error ? t('sell.fileRequired') : null;
+    state.status === 'error'
+      ? state.message
+      : error
+        ? t(error === 'form.invalid' ? 'sell.sameFile' : 'sell.fileRequired')
+        : null;
   const uploading = state.status === 'uploading';
 
   return (
