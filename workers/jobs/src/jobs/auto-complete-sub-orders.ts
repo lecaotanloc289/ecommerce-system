@@ -4,7 +4,7 @@ import {
   ORDER_AGGREGATE_TYPE,
   SubOrderCompletedEventSchema,
 } from '@repo/core';
-import { prisma } from '@repo/db';
+import { prisma, queueZaloStatusMessages } from '@repo/db';
 import { ulid } from 'ulid';
 import { loadTunables, lockOrder, subOrderStatuses } from '../domain/orders';
 import type { Tx } from '../outbox/handler';
@@ -64,6 +64,7 @@ export async function completeSubOrder(
     data: { status: 'COMPLETED', completedAt: order.dbNow },
   });
   if (count === 0) return 'skipped';
+  await queueZaloStatusMessages(tx, [ref.id], 'COMPLETED', order.dbNow);
 
   await tx.order.update({
     where: { id: ref.orderId },

@@ -1,5 +1,5 @@
 import { deriveOrderStatus, ORDER_AGGREGATE_TYPE, OrderCancelledEventSchema } from '@repo/core';
-import { prisma } from '@repo/db';
+import { prisma, queueZaloStatusMessages } from '@repo/db';
 import { ulid } from 'ulid';
 import { lockOrder, quantitiesByVariant, subOrderStatuses } from '../domain/orders';
 import type { Tx } from '../outbox/handler';
@@ -49,7 +49,7 @@ export async function expireOrder(tx: Tx, orderId: string): Promise<ItemOutcome>
 
   const subOrders = await tx.subOrder.findMany({
     where: { orderId },
-    select: { status: true, items: { select: { variantId: true, quantity: true } } },
+    select: { id: true, status: true, items: { select: { variantId: true, quantity: true } } },
   });
   if (subOrders.length === 0 || subOrders.some((so) => so.status !== 'AWAITING_PAYMENT')) {
     return 'skipped';
@@ -62,6 +62,12 @@ export async function expireOrder(tx: Tx, orderId: string): Promise<ItemOutcome>
   if (updated.count !== subOrders.length) {
     throw new Error(`expire: sub-orders of ${orderId} changed under the order lock`);
   }
+  await queueZaloStatusMessages(
+    tx,
+    subOrders.map((so) => so.id),
+    'CANCELLED',
+    order.dbNow,
+  );
 
   for (const [variantId, qty] of quantitiesByVariant(subOrders.flatMap((so) => so.items))) {
     await tx.$executeRaw`

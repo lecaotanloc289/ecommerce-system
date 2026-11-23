@@ -6,7 +6,7 @@ import {
   OrderPaidEventSchema,
   subOrderPaid,
 } from '@repo/core';
-import { toMoney } from '@repo/db';
+import { queueZaloStatusMessages, toMoney } from '@repo/db';
 import { ulid } from 'ulid';
 import type { Logger } from '../logger';
 import type { Tx } from '../outbox/handler';
@@ -82,6 +82,12 @@ export async function confirmZeroAmountPayment(
   if (paid.count !== subOrders.length) {
     throw new Error(`zero-amount confirmation: sub-orders of ${order.id} changed under the lock`);
   }
+  await queueZaloStatusMessages(
+    tx,
+    subOrders.map((so) => so.id),
+    'PAID',
+    order.dbNow,
+  );
 
   await commitStock(
     tx,

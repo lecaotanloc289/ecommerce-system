@@ -197,6 +197,84 @@ describe('auto-complete-sub-orders', () => {
   });
 });
 
+describe('Zalo messages (roadmap D16)', () => {
+  /** Opted-in order whose vendors all have an ACTIVE Zalo account. */
+  async function optIn(orderId: string, vendorIds: string[]) {
+    await prisma.order.update({ where: { id: orderId }, data: { zaloOptIn: true } });
+    for (const vendorId of vendorIds) {
+      await prisma.zaloAccount.create({
+        data: {
+          id: ulid(),
+          vendorId,
+          status: 'ACTIVE',
+          zaloUid: `uid-${vendorId}`,
+          credentials: 'v1.x.y.z',
+        },
+      });
+    }
+  }
+  const zaloEvents = async (subOrderId: string) =>
+    (await prisma.zaloMessage.findMany({ where: { subOrderId }, orderBy: { id: 'asc' } })).map(
+      (m) => m.event,
+    );
+
+  it('payment expiry queues ORDER_CANCELLED for every sub-order', async () => {
+    const { order, subOrders } = await makeMarketOrder({
+      status: 'AWAITING_PAYMENT',
+      deadlineInSeconds: -60,
+      subOrders: [{ status: 'AWAITING_PAYMENT' }, { status: 'AWAITING_PAYMENT' }],
+      payment: { status: 'PENDING' },
+    });
+    await optIn(
+      order.id,
+      subOrders.map((s) => s.vendor.id),
+    );
+
+    await expireUnpaidOrders(ctx);
+
+    for (const s of subOrders) expect(await zaloEvents(s.subOrder.id)).toEqual(['ORDER_CANCELLED']);
+  });
+
+  it('auto-complete queues ORDER_COMPLETED (+ the care message when enabled); no opt-in → nothing', async () => {
+    const { order, subOrders } = await makeMarketOrder({
+      status: 'PAID',
+      subOrders: [{ status: 'DELIVERED' }],
+      payment: { status: 'CONFIRMED', providerTxnId: 'txn-z' },
+    });
+    const [only] = subOrders;
+    if (!only) throw new Error('fixture');
+    await optIn(order.id, [only.vendor.id]);
+    await prisma.zaloMessageTemplate.create({
+      data: {
+        id: ulid(),
+        vendorId: only.vendor.id,
+        event: 'AFTER_DELIVERY',
+        body: 'Cảm ơn!',
+        delayMinutes: 60,
+      },
+    });
+    await setSubOrderTime(only.subOrder.id, 'delivered_at', -8 * DAY);
+
+    await autoCompleteSubOrders(ctx);
+
+    expect((await zaloEvents(only.subOrder.id)).sort()).toEqual([
+      'AFTER_DELIVERY',
+      'ORDER_COMPLETED',
+    ]);
+
+    const other = await makeMarketOrder({
+      status: 'PAID',
+      subOrders: [{ status: 'DELIVERED' }],
+      payment: { status: 'CONFIRMED', providerTxnId: 'txn-z2' },
+    });
+    const [plain] = other.subOrders;
+    if (!plain) throw new Error('fixture');
+    await setSubOrderTime(plain.subOrder.id, 'delivered_at', -8 * DAY);
+    await autoCompleteSubOrders(ctx);
+    expect(await zaloEvents(plain.subOrder.id)).toEqual([]);
+  });
+});
+
 describe('release-payouts', () => {
   async function completedOrder(
     specs: Parameters<typeof makeMarketOrder>[0]['subOrders'],
