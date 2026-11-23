@@ -788,6 +788,7 @@ export const vi: Messages = {
         stockSaved: 'Đã cập nhật tồn kho.',
         error: {
           required: 'Vui lòng nhập thông tin này.',
+          tooLong: 'Quá dài (tối đa {max} ký tự).',
           categories: 'Chọn ít nhất một danh mục.',
           variants: 'Thêm ít nhất một phân loại.',
           duplicateSku: 'SKU không được trùng nhau.',
@@ -856,6 +857,7 @@ export const vi: Messages = {
         price: 'Giá',
         estDays: 'Số ngày dự kiến',
         daysInvalid: 'Nhập số ngày nguyên (1-60).',
+        fieldsInvalid: 'Một số thông tin chưa hợp lệ. Kiểm tra độ dài tên rồi thử lại.',
         days: '{count} ngày',
         state: 'Trạng thái',
         active: 'Đang bật',

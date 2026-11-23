@@ -303,6 +303,9 @@ export function ProductForm({
         <ImageListEditor
           images={state.images}
           onChange={(images) => patch({ images })}
+          onAppend={(added) =>
+            setState((prev) => ({ ...prev, images: [...prev.images, ...added] }))
+          }
           upload={uploadImage}
           maxImages={MAX_IMAGES}
           disabled={readOnly}

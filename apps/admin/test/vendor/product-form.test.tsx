@@ -86,6 +86,12 @@ describe('<ProductForm>', () => {
     expect(onQuickStock).toHaveBeenCalledWith(id('V1'), 9);
   });
 
+  it('image controls never submit the product form', async () => {
+    const onSubmit = renderForm();
+    await userEvent.click(screen.getByRole('button', { name: 'Add images' }));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('read-only (BLOCKED) has no save button and disabled fields', () => {
     renderForm({ readOnly: true });
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull();

@@ -24,12 +24,15 @@ export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export function ImageListEditor({
   images,
   onChange,
+  onAppend,
   upload,
   maxImages,
   disabled = false,
 }: {
   images: readonly ImageItem[];
   onChange: (images: ImageItem[]) => void;
+  /** Append uploaded images to the *current* list (uploads finish after the user may have edited it). */
+  onAppend: (added: ImageItem[]) => void;
   upload: (file: File) => Promise<string>;
   maxImages: number;
   disabled?: boolean;
@@ -73,7 +76,7 @@ export function ImageListEditor({
       setError(errorMessage(locale, caught));
     } finally {
       setBusy(false);
-      if (added.length > 0) onChange([...images, ...added]);
+      if (added.length > 0) onAppend(added);
     }
   };
 
@@ -104,6 +107,7 @@ export function ImageListEditor({
               }
             />
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               aria-label={t('admin.vendor.images.moveUp')}
@@ -113,6 +117,7 @@ export function ImageListEditor({
               <ArrowUp aria-hidden />
             </Button>
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               aria-label={t('admin.vendor.images.moveDown')}
@@ -122,6 +127,7 @@ export function ImageListEditor({
               <ArrowDown aria-hidden />
             </Button>
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               aria-label={t('admin.vendor.images.remove')}
@@ -152,6 +158,7 @@ export function ImageListEditor({
         }}
       />
       <Button
+        type="button"
         variant="secondary"
         className="self-start"
         loading={busy}

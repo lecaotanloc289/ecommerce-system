@@ -19,6 +19,9 @@ import { useT } from '@/i18n/use-locale';
 import { ApiError, unwrap } from '@/lib/api-error';
 import { useApiMutation } from '@/lib/use-api-mutation';
 
+/** Max length of carrier / tracking number (`SubOrderShipSchema`). */
+const MAX_SHIP_FIELD = 80;
+
 /** Which vendor action a sub-order status offers: PAID → accept, PROCESSING → ship, SHIPPED → deliver. */
 export type OrderAction = 'accept' | 'ship' | 'deliver';
 
@@ -102,7 +105,8 @@ export function OrderActions({ orderId, status }: { orderId: string; status: Sub
   );
 
   if (!action) return null;
-  const error = accept.error ?? deliver.error ?? (shipOpen ? null : ship.error);
+  // Only the current action's error: a stale one would linger after a refetch moves the order on.
+  const error = action === 'accept' ? accept.error : action === 'deliver' ? deliver.error : null;
 
   return (
     <div className="flex flex-col items-end gap-2">
@@ -153,6 +157,12 @@ function ShipDialog({
   const [carrier, setCarrier] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [invalid, setInvalid] = useState(false);
+  const lengthError = (value: string) =>
+    value.trim() === ''
+      ? t('admin.vendor.form.error.required')
+      : value.trim().length > MAX_SHIP_FIELD
+        ? t('admin.vendor.form.error.tooLong', { max: MAX_SHIP_FIELD })
+        : undefined;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -172,9 +182,7 @@ function ShipDialog({
           <FormField
             id="ship-carrier"
             label={t('admin.vendor.orders.carrier')}
-            error={
-              invalid && carrier.trim() === '' ? t('admin.vendor.form.error.required') : undefined
-            }
+            error={invalid ? lengthError(carrier) : undefined}
           >
             <Input id="ship-carrier" value={carrier} onChange={(e) => setCarrier(e.target.value)} />
           </FormField>

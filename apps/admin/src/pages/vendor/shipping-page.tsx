@@ -224,7 +224,8 @@ function MethodDialog({ method, onClose }: { method: ShippingMethod | null; onCl
     if (body) save.mutate(body);
   };
   const priceInvalid = invalid && moneyFromInput(form.price, form.currency) === null;
-  const daysInvalid = invalid && !/^\d+$/.test(form.estDays.trim());
+  const days = /^\d+$/.test(form.estDays.trim()) ? Number(form.estDays) : 0;
+  const daysInvalid = invalid && (days < 1 || days > 60);
   const required = t('admin.vendor.form.error.required');
 
   return (
@@ -299,6 +300,11 @@ function MethodDialog({ method, onClose }: { method: ShippingMethod | null; onCl
               {t('admin.vendor.shipping.active')}
             </label>
           </div>
+          {invalid && !priceInvalid && !daysInvalid && form.name.trim() !== '' ? (
+            <p role="alert" className="text-caption text-danger-fg">
+              {t('admin.vendor.shipping.fieldsInvalid')}
+            </p>
+          ) : null}
           {save.error ? <ErrorAlert error={save.error} /> : null}
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={onClose}>

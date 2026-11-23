@@ -791,6 +791,7 @@ export const en = {
         stockSaved: 'Stock updated.',
         error: {
           required: 'This field is required.',
+          tooLong: 'Too long (max {max} characters).',
           categories: 'Choose at least one category.',
           variants: 'Add at least one variant.',
           duplicateSku: 'SKUs must be unique.',
@@ -859,6 +860,7 @@ export const en = {
         price: 'Price',
         estDays: 'Estimated days',
         daysInvalid: 'Enter a whole number of days (1-60).',
+        fieldsInvalid: 'Some fields are invalid. Check the name length and try again.',
         days: '{count} day(s)',
         state: 'State',
         active: 'Active',
