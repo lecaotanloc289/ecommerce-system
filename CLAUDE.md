@@ -14,18 +14,22 @@ A single order may contain products from multiple vendors → the backend automa
 
 This file is the **constitution**. Every PR must respect the Golden Rules and NEVER DO list. Any deviation must be justified in the PR description and the file updated accordingly.
 
-### Implementation status (as of 2026-11-23)
+### Implementation status (as of 2026-11-24)
 
-- `packages/db` — done: full Prisma schema, migrations, seed, tests (see `packages/db/CLAUDE.md`).
-- `apps/client` — storefront UI for all `SCREENS.md` screens; catalog (home, categories, search, product, vendor pages) read from the API in RSC, OAuth sign-in + in-memory session, guest + server cart (merge once on sign-in), checkout (address, per-vendor shipping, VNPay/Stripe, coupons, place order + payment-session polling), order success / payment-failed / account orders on the API (T5.1; see `apps/client/CLAUDE.md`).
-- `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), `@Idempotent()` interceptor, Redis-backed rate limit (`@RateLimit('strict')`), cursor pagination helper, Zod-validated env, ESLint, Jest with a Testcontainers integration harness + factories; me/addresses, cart, public catalog, checkout + customer orders (see `server/CLAUDE.md`).
-- `apps/admin` — scaffold (T4.2): React Router 7 routes (`/login`, `/auth/callback`, `/invite`, `/vendor/*`, `/platform/*`), sidebar layout, in-memory auth session (boot silent refresh, single-flight) + role guards, TanStack Query + `@repo/sdk` with `useApiMutation` (stable Idempotency-Key), `admin.*` i18n, ESLint + Vitest; portal pages are placeholders (see `apps/admin/CLAUDE.md`).
+- `packages/db` — done: Prisma schema (32 models, 19 enums) incl. ops fields (payment redirect/expiry, sub-order fulfilment and platform discount, `OutboxEvent.nextAttemptAt`), `Refund`, `VendorInvitation` and the Zalo tables; migrations, idempotent seed, ledger/money tests (see `packages/db/CLAUDE.md`).
+- `apps/client` (`@apps/web`) — storefront on the API: catalog, search and vendor pages in RSC, SSR on Cloudflare Workers via OpenNext (D1), OAuth sign-in with in-memory session, guest + server cart (merged on sign-in), checkout (per-vendor shipping, VNPay/Stripe, coupons, payment-session polling), order pages, account, seller application and product reviews; `/design-system` showcase (see `apps/client/CLAUDE.md`).
+- `apps/admin` (`@apps/admin`) — Vite 6 + React Router 7: in-memory auth session + role guards, `@repo/sdk` with `useApiMutation` (stable Idempotency-Key), `admin.*` i18n; vendor portal (`/vendor/*`: dashboard, products, orders with fulfilment actions, shipping, wallet, staff + invitations) and platform console (`/platform/*`: applications, vendors, products, orders, refunds, settings, users); ESLint + Vitest (see `apps/admin/CLAUDE.md`).
+- `server` (`@server/api`) — NestJS 11 + Fastify API: OAuth + JWT + rotating refresh, `@Idempotent()`, Redis rate limit, cursor pagination, Zod env, OpenAPI export; modules for me/addresses, cart, public catalog, vendor catalog + shipping methods, vendor applications (KYC), checkout + customer orders, vendor fulfilment + wallet, presigned uploads, payment webhooks + confirmation, refunds, reviews, vendor staff, platform admin and Zalo; ESLint, Jest with a Testcontainers harness (see `server/CLAUDE.md`).
 - `workers/jobs` (`@workers/jobs`) — outbox dispatcher (claims only event types it has a handler for, `FOR UPDATE SKIP LOCKED`, exponential backoff, dead-letter after 10 attempts) with handlers for `payment.requested` (provider session via `@repo/payments`, or the zero-amount confirmation), `refund.requested` (provider refund → Refund SUCCEEDED / FAILED / PENDING, Payment REFUNDED when fully refunded) and transactional emails (nodemailer, vi/en via `@repo/i18n`); BullMQ repeatable jobs `expire-unpaid-orders`, `auto-complete-sub-orders`, `release-payouts` (D7 payout ledger + wallet credit), `outbox-retention`, plus `run-job` for one-off runs; Vitest + Testcontainers; own Dockerfile / Fly app `elma-worker-{env}` (see `workers/jobs/CLAUDE.md`).
-- `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), Vitest (see `packages/core/CLAUDE.md`).
-- `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront and admin (see `packages/i18n/CLAUDE.md`).
-- `packages/sdk` — OpenAPI pipeline + `createApiClient` (openapi-fetch; Bearer, auto Idempotency-Key, single-flight 401 refresh); `pnpm sdk:generate` (see `packages/sdk/CLAUDE.md`).
+- `packages/core` — Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, Zod schemas for every MVP shape, pricing engine (D5–D8), escrow/refund ledger postings (D3/D7/D12), sub-order state machine (D11), Vitest (see `packages/core/CLAUDE.md`).
+- `packages/i18n` — vi/en catalogs (storefront, admin, transactional emails), typed translator, error-code translations for every core code, money/date formatters; consumed by the storefront, admin and `workers/jobs` (see `packages/i18n/CLAUDE.md`).
+- `packages/ui` — shadcn/ui base components on design tokens (Tailwind v4).
+- `packages/sdk` — done: OpenAPI pipeline + `createApiClient` (openapi-fetch; Bearer, auto Idempotency-Key, single-flight 401 refresh); `pnpm sdk:generate`, CI drift check (see `packages/sdk/CLAUDE.md`).
 - `workers/zalo` — Zalo session keeper + automated order messages per shop (zca-js QR login, encrypted sessions, Redis leases, keep-alive, paced sending with retries); the API side is `server/src/zalo/` (see `workers/zalo/CLAUDE.md`).
+- `e2e` (`@repo/e2e`) — Playwright smoke flows (`00`–`05`) over the whole stack on a throwaway database: guest cart → two-vendor checkout (fake gateway, signed VNPay IPN) → fulfilment → auto-complete + payout → vendor application approval; run by `pnpm e2e` and CI `e2e.yml` (see `e2e/CLAUDE.md`).
 - `packages/payments` — `PaymentProvider` interface + VNPay (v2.1.0 HMAC-SHA512 pay URL, IPN/return verify, merchant-webapi refund) and Stripe (Checkout Session, `constructEvent` webhook verify, refunds) adapters; config via factory params, injectable `fetch` / Stripe client; ESLint + Vitest (see `packages/payments/CLAUDE.md`).
+
+Known gap: on the current deploy targets the admin and API are cross-site, so the SameSite=Lax refresh cookie is not sent and admin sign-in does not persist until a shared domain or same-origin `/v1` proxy exists (see `apps/admin/CLAUDE.md`).
 
 Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
 
@@ -45,7 +49,7 @@ Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables
 
 **Database**
 
-- PostgreSQL 18, Prisma 6
+- PostgreSQL 16, Prisma 6
 - `pg_trgm` + `tsvector` for product search; JSONB for variant attributes
 - Prisma Client is a **singleton** inside `packages/db` and never exposed outside it
 - Migrations: `prisma migrate dev` (local), `prisma migrate deploy` (prod). **Forward-only**
@@ -163,8 +167,8 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
    ▼
 [Hold period elapses (cron / scheduler)]
    │  16. Job scans SubOrders that are COMPLETED past the hold window
-   │      → computes payout = subtotal − commission.
-   │  17. Writes LedgerEntry (escrow OUT → vendor wallet); outbox payout.requested.
+   │      → computes net = subtotal + shipping − vendor discount − commission (roadmap D7).
+   │  17. Writes LedgerEntry (escrow OUT → vendor wallet, PAYOUT_OUT) + wallet credit; outbox payout.released.
 ```
 
 **Principles enforced by this flow:**
@@ -400,6 +404,9 @@ Vendor ─── Product[]
        ─── Wallet                   (balance from released escrow)
        ─── SubOrder[]
        ─── VendorApplication        (PENDING → APPROVED / REJECTED)
+       ─── VendorInvitation[]       (staff invite: email lowercased, tokenHash, expiresAt; accepted / revoked)
+       ─── ZaloAccount?             (one per shop, ACTIVE / EXPIRED / DISCONNECTED; credentials encrypted)
+       ─── ZaloMessageTemplate[]    (one per (vendor, event); no row = disabled)
 
 Product ─── ProductVariant[] ─── Inventory   (per warehouse if needed)
         ─── ProductImage[]
@@ -414,17 +421,22 @@ Order (parent, customer-facing)
   │     ├── ShippingMethod (chosen)
   │     ├── ShippingAddress          (snapshot of Address at checkout)
   │     ├── CouponRedemption[]       (vendor-scoped coupons)
+  │     ├── Refund[]                 (admin refund of the whole sub-order: amount, status
+  │     │                             PENDING / SUCCEEDED / FAILED; at most one non-FAILED)
+  │     ├── ZaloMessage[]            (one per sub-order + event: PENDING / SENDING / SENT /
+  │     │                             SKIPPED / FAILED; opt-in orders only)
   │     └── status: AWAITING_PAYMENT → PAID → PROCESSING → SHIPPED
   │                  → DELIVERED → COMPLETED / REFUNDED / CANCELLED
   ├── CouponRedemption[]             (platform-scoped coupons)
-  ├── Payment[]                      (one row per attempt; latest = current)
+  ├── Payment[]                      (one row per attempt; latest = current; refunds reference it)
   └── LedgerEntry[]                  (escrow IN, payout OUT, refund, fees)
 
 PlatformSettings (singleton row)
   commission_bps, hold_period_days, refund_window_days, supported_currencies, ...
 
 OutboxEvent
-  aggregate_id, event_type, payload (JSONB), created_at, processed_at?
+  aggregate_id, event_type, payload (JSONB), created_at, processed_at?,
+  attempts, next_attempt_at (earliest retry; the dispatcher claims rows due now)
 ```
 
 **Snapshot rule:** product price/title and shipping address are **copied into `OrderItem` / `SubOrder`** at checkout. Later edits to the underlying `Product` or `Address` must never alter historical orders.
@@ -473,6 +485,8 @@ pnpm --filter @apps/web dev         # storefront only       → http://localhost
 pnpm --filter @apps/admin dev       # admin only            → http://localhost:5173
 pnpm --filter @server/api dev       # API only              → http://localhost:3001
 pnpm --filter @workers/jobs dev     # outbox worker + scheduled jobs (no HTTP; needs DATABASE_URL + REDIS_URL, SMTP → Mailhog)
+pnpm --filter @workers/jobs run-job release-payouts   # one scheduled job, once, no Redis (job names: workers/jobs/CLAUDE.md)
+pnpm --filter @workers/zalo dev     # Zalo session keeper + message sender (no HTTP; needs ZALO_CREDENTIALS_KEY, DATABASE_URL, REDIS_URL)
 ```
 
 ### Build / lint / typecheck / test
@@ -484,8 +498,10 @@ pnpm typecheck                      # all
 pnpm test                           # all (unit + integration)
 
 pnpm --filter @repo/core test                                # one workspace
-pnpm --filter @server/api test -- order.service.spec.ts      # one test file
+pnpm --filter @server/api test -- reviews.spec.ts            # one test file
 pnpm --filter @server/api test -- --watch                    # watch mode
+pnpm format                                                  # Prettier --write over the repo
+pnpm format:check                                            # Prettier --check (no writes)
 pnpm e2e                                                     # Playwright smoke flows on the full stack (e2e/CLAUDE.md)
 pnpm e2e:headed                                              # same, visible browser
 ```
@@ -495,6 +511,7 @@ pnpm e2e:headed                                              # same, visible bro
 ```bash
 pnpm db:generate                    # regenerate Prisma Client
 pnpm db:migrate                     # migrate dev — creates a new migration
+pnpm --filter @repo/db migrate:deploy   # apply committed migrations only (CI / prod); never generates
 pnpm db:reset                       # drop + reapply + seed   — LOCAL ONLY
 pnpm db:seed                        # idempotent seed (PlatformSettings, demo data)
 ```
@@ -515,23 +532,25 @@ pnpm services:logs
 
 ### Ports
 
-| Service       | Port        | Notes                                                                                 |
-| ------------- | ----------- | ------------------------------------------------------------------------------------- |
-| `@apps/web`   | 3000        | Next.js storefront                                                                    |
-| `@server/api` | 3001        | NestJS + Fastify, prefix `/v1`                                                        |
-| `@apps/admin` | 5173        | Vite dev server                                                                       |
-| Postgres      | 5432        | DBs: `ecommerce`, `ecommerce_shadow`                                                  |
-| Redis         | 6379        | Cache + BullMQ                                                                        |
-| RustFS (S3)   | 9000 / 9001 | S3 API / web console (`rustfsadmin`/`...`); buckets `kyc` (private), `media` (public) |
-| Mailhog       | 1025 / 8025 | SMTP / web UI                                                                         |
+| Service       | Port        | Notes                                                                                                      |
+| ------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
+| `@apps/web`   | 3000        | Next.js storefront                                                                                         |
+| `@server/api` | 3001        | NestJS + Fastify, prefix `/v1`                                                                             |
+| `@apps/admin` | 5173        | Vite dev server                                                                                            |
+| `workers/*`   | —           | No HTTP port: `@workers/jobs` and `@workers/zalo` talk to Postgres + Redis only                            |
+| `e2e`         | 4100–4104   | Test-only ports (web / API / admin / fake gateway / SMTP sink); see `e2e/CLAUDE.md`                        |
+| Postgres      | 5432        | DBs: `ecommerce`, `ecommerce_shadow` (created by `docker/postgres-init.sql`)                               |
+| Redis         | 6379        | Cache + BullMQ                                                                                             |
+| RustFS (S3)   | 9000 / 9001 | S3 API / web console (local `rustfsadmin` / `rustfsadmin`); buckets `kyc` (private), `media` (public read) |
+| Mailhog       | 1025 / 8025 | SMTP / web UI                                                                                              |
 
 ### First-time setup
 
 ```bash
 pnpm install
-cp .env.example .env                # fill in OAuth client IDs, JWT secrets, etc.
-pnpm services:up                    # spin up local infra
-pnpm db:migrate                     # apply schema (once db package has it)
-pnpm db:seed
+cp .env.example .env                # Vite (admin) reads it; API and workers read the shell or Doppler (doppler.yaml)
+pnpm services:up                    # postgres + redis + rustfs + mailhog
+pnpm db:migrate                     # create/apply migrations on the local DB
+pnpm db:seed                        # idempotent demo data
 pnpm dev                            # or filter to one workspace as above
 ```
