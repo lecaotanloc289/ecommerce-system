@@ -9,7 +9,8 @@ import { ButtonLink } from '@/components/common/button-link';
 import { StepTabs } from '@/components/checkout/step-tabs';
 import { OrderSummary } from '@/components/checkout/order-summary';
 import { useLocale } from '@/i18n/use-locale';
-import { lineTotal } from '@/lib/cart';
+import { attributesLabel, lineTotal } from '@/lib/cart';
+import { ProductImage } from '@/components/product/product-image';
 import { formatMoney } from '@repo/i18n';
 import { useCart } from '@/store/cart-store';
 import { useCheckout, useOrderTotals } from '@/store/checkout-store';
@@ -103,25 +104,23 @@ export default function CheckoutReviewPage() {
             </h2>
             <Card className="divide-y divide-border-faint p-0">
               {lines.map((line) => (
-                <div key={line.key} className="flex items-center gap-4 p-4">
-                  <img
-                    src={line.product.image}
-                    alt={line.product.title}
-                    width={64}
-                    height={64}
-                    className="size-16 shrink-0 rounded-md object-cover"
-                    loading="lazy"
+                <div key={line.variantId} className="flex items-center gap-4 p-4">
+                  <ProductImage
+                    src={line.imageUrl}
+                    alt={line.productName}
+                    className="size-16 shrink-0 rounded-md"
                   />
                   <div className="min-w-0 flex-1">
                     <p className="line-clamp-1 text-body-m font-medium text-text-primary">
-                      {line.product.title}
+                      {line.productName}
                     </p>
                     <p className="text-body-s text-text-muted">
-                      {line.variantLabel ? `${line.variantLabel} · ` : ''}
-                      {line.product.vendorName}
+                      {[attributesLabel(line.attributes), line.vendorName]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </p>
                   </div>
-                  <span className="text-body-s text-text-muted">×{line.qty}</span>
+                  <span className="text-body-s text-text-muted">×{line.quantity}</span>
                   <span className="text-body-m font-semibold text-text-price">
                     {formatMoney(lineTotal(line), locale)}
                   </span>

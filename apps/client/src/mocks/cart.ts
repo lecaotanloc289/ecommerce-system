@@ -1,50 +1,11 @@
-import type { CartLine, GuestCartLine, ShippingMethod, TrackingStep, Voucher } from '../types';
-import { cartLineKey, MAX_LINE_QTY } from '../lib/cart';
-import { products } from './products';
-
-/** Seed for a first-visit guest cart (multi-vendor, storefront CLAUDE.md §6). */
-export const seedCartLines: GuestCartLine[] = [
-  { productId: 'p3', qty: 1 },
-  { productId: 'p4', qty: 2 },
-  { productId: 'p7', qty: 1 },
-];
-
-/** True when the line's product (and variant, if any) exist in the mock catalogue. */
-export function canResolveCartLine(line: GuestCartLine): boolean {
-  const product = products.find((p) => p.id === line.productId);
-  if (!product) return false;
-  return line.variantId === undefined || !!product.variants?.some((v) => v.id === line.variantId);
-}
+import type { ShippingMethod, TrackingStep, Voucher } from '../types';
+import { CartItemSnapshotSchema, maxQtyFor, type CartLineView } from '../lib/cart';
 
 /**
- * Resolve a persisted line against the mock catalogue. The unit price is the
- * variant price when a variant is chosen. Replaced by the server cart once
- * `@repo/sdk` exists. Throws on unknown ids — callers sanitize stored data first.
+ * Checkout / order-tracking mocks — the last mock data in the storefront. Shipping methods,
+ * vouchers and the placed order are replaced by the cart / checkout / orders API in T5.1.
+ * The catalog and the guest cart already read the API.
  */
-export function resolveCartLine(line: GuestCartLine): CartLine {
-  const product = products.find((p) => p.id === line.productId);
-  if (!product) {
-    throw new Error(`Cart line references unknown product id "${line.productId}"`);
-  }
-  const variant =
-    line.variantId === undefined
-      ? undefined
-      : product.variants?.find((v) => v.id === line.variantId);
-  if (line.variantId !== undefined && !variant) {
-    throw new Error(
-      `Cart line references unknown variant id "${line.variantId}" of product "${product.id}"`,
-    );
-  }
-  return {
-    key: cartLineKey(product.id, variant?.id),
-    product,
-    variantId: variant?.id,
-    variantLabel: variant?.label,
-    unitPrice: variant?.price ?? product.price,
-    qty: line.qty,
-    maxQty: variant ? Math.min(variant.stock, MAX_LINE_QTY) : MAX_LINE_QTY,
-  };
-}
 
 export const shippingMethods: ShippingMethod[] = [
   {
@@ -103,17 +64,45 @@ export function findVoucher(code: string | null): Voucher | undefined {
   return vouchers.find((v) => v.code === normalized);
 }
 
+/** Line snapshot of the mock placed order (ids are well-formed ULIDs, not real rows). */
+function orderLine(
+  n: number,
+  name: string,
+  slug: string,
+  amount: number,
+  quantity: number,
+): CartLineView {
+  const id = (prefix: string) => `01JD${prefix}${String(n).padStart(20, '0')}`;
+  const snapshot = CartItemSnapshotSchema.parse({
+    variantId: id('VV'),
+    productId: id('PP'),
+    vendorId: id('SS'),
+    productName: name,
+    productSlug: slug,
+    attributes: {},
+    imageUrl: null,
+    unitPrice: { amount, currency: 'VND' },
+    stockAvailable: 99,
+    vendorName: 'Elma',
+    vendorSlug: 'elma',
+  });
+  return { ...snapshot, quantity, maxQty: maxQtyFor(snapshot.stockAvailable) };
+}
+
 /** A previously placed order, shown on the tracking page. */
 export const placedOrder: {
   number: string;
   trackingNumber: string;
-  lines: GuestCartLine[];
+  lines: CartLineView[];
   shippingMethodId: string;
   voucherCode: string;
 } = {
   number: 'ELM-2026-08431',
   trackingNumber: 'FDX-991-2261-VN',
-  lines: seedCartLines,
+  lines: [
+    orderLine(1, 'Basic Tee', 'basic-tee', 199_000, 2),
+    orderLine(2, 'White Ceramic Mug', 'white-ceramic-mug', 89_000, 1),
+  ],
   shippingMethodId: 's-fedex',
   voucherCode: 'ELMA150K',
 };

@@ -6,7 +6,11 @@ import { PaymentRetrySchema } from '../src/schemas/order';
 import {
   OrderCancelledEventSchema,
   OrderCreatedEventSchema,
+  OrderPaidEventSchema,
+  OUTBOX_EVENT_SCHEMAS,
   PaymentRequestedEventSchema,
+  PayoutReleasedEventSchema,
+  SubOrderShippedEventSchema,
 } from '../src/schemas/outbox';
 
 describe('deriveOrderStatus (D11)', () => {
@@ -78,6 +82,37 @@ describe('outbox payload schemas', () => {
     expect(
       OrderCancelledEventSchema.safeParse({ orderId, customerId: userId, reason: 'BORED' }).success,
     ).toBe(false);
+  });
+
+  it('cover the notification events (ids only)', () => {
+    expect(OrderPaidEventSchema.parse({ orderId, customerId: userId })).toBeTruthy();
+    expect(
+      SubOrderShippedEventSchema.parse({ orderId, subOrderId: orderId, customerId: userId }),
+    ).toBeTruthy();
+    expect(PayoutReleasedEventSchema.parse({ subOrderId: orderId, vendorId: userId })).toBeTruthy();
+    expect(SubOrderShippedEventSchema.safeParse({ orderId, customerId: userId }).success).toBe(
+      false,
+    );
+    expect(PayoutReleasedEventSchema.safeParse({ subOrderId: 'x', vendorId: userId }).success).toBe(
+      false,
+    );
+  });
+
+  it('maps every event type to its schema', () => {
+    expect(Object.keys(OUTBOX_EVENT_SCHEMAS).sort()).toEqual([
+      'order.cancelled',
+      'order.created',
+      'order.paid',
+      'payment.requested',
+      'payout.released',
+      'refund.requested',
+      'sub-order.completed',
+      'sub-order.delivered',
+      'sub-order.shipped',
+      'vendor.application.approved',
+      'vendor.application.rejected',
+      'vendor.invitation.created',
+    ]);
   });
 });
 

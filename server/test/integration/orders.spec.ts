@@ -532,8 +532,8 @@ describe('orders API (Testcontainers)', () => {
     const key = ulid();
     // The loser fails on the last unit (or on the unique key) and must answer with the winner.
     const ids = await Promise.all([
-      service.checkout(user.id, input, key),
-      service.checkout(user.id, input, key),
+      service.checkout(user.id, input, key, '127.0.0.1'),
+      service.checkout(user.id, input, key, '127.0.0.1'),
     ]);
     expect(ids[0]).toBe(ids[1]);
     expect(await t.db.order.count()).toBe(1);
@@ -945,5 +945,45 @@ describe('orders API (Testcontainers)', () => {
     const afterCancel = await post(headers, retryUrl, {});
     expect(afterCancel.statusCode).toBe(409);
     expect(afterCancel.json<ErrorBody>().errorCode).toBe('order.error.invalid-status-transition');
+  });
+
+  it('stores the client IP (socket peer, never a spoofed X-Forwarded-For) on each payment attempt', async () => {
+    const { address, headers } = await customer();
+    const { variant, method } = await shop();
+    // TRUSTED_PROXY_HOPS = 0 in tests: the socket peer is the client, XFF is client-supplied.
+    const spoofed = { ...headers, 'x-forwarded-for': '198.51.100.9' };
+    const created = await t.app.inject({
+      method: 'POST',
+      url: '/v1/orders/checkout',
+      headers: { ...spoofed, 'idempotency-key': ulid() },
+      remoteAddress: '203.0.113.7',
+      payload: {
+        items: [{ variantId: variant.id, quantity: 1 }],
+        addressId: address.id,
+        shippingMethodIds: [method.id],
+        provider: 'VNPAY',
+      },
+    });
+    expect(created.statusCode).toBe(201);
+    const order = created.json<OrderBody>();
+
+    await t.db.payment.updateMany({ where: { orderId: order.id }, data: { status: 'FAILED' } });
+    const retried = await t.app.inject({
+      method: 'POST',
+      url: `/v1/orders/${order.id}/payments`,
+      headers: { ...spoofed, 'idempotency-key': ulid() },
+      remoteAddress: '203.0.113.8',
+      payload: {},
+    });
+    expect(retried.statusCode).toBe(201);
+
+    const attempts = await t.db.payment.findMany({
+      where: { orderId: order.id },
+      orderBy: { attemptNo: 'asc' },
+    });
+    expect(attempts.map((p) => [p.attemptNo, p.clientIp])).toEqual([
+      [1, '203.0.113.7'],
+      [2, '203.0.113.8'],
+    ]);
   });
 });

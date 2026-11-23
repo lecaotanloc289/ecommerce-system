@@ -1,8 +1,10 @@
 'use client';
 
+import { Suspense } from 'react';
 import { Link } from '@/i18n/navigation';
 import { Card } from '@repo/ui';
 import { Container } from '@/components/layout/container';
+import { AuthErrorNotice } from '@/components/auth/auth-error-notice';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { PromoAside } from '@/components/auth/promo-aside';
 import { useT } from '@/i18n/use-locale';
@@ -26,6 +28,9 @@ export default function RegisterPage() {
           </div>
 
           {/* OAuth only — first sign-in auto-creates the CUSTOMER account (Golden Rule #5) */}
+          <Suspense fallback={null}>
+            <AuthErrorNotice />
+          </Suspense>
           <OAuthButtons />
           <p className="text-body-s text-text-muted">{t('auth.oauthNote')}</p>
         </Card>

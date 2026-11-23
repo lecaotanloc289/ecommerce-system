@@ -97,6 +97,16 @@ export const SubOrderCompletedEventSchema = z.object({
 });
 export type SubOrderCompletedEvent = z.infer<typeof SubOrderCompletedEventSchema>;
 
+/**
+ * `payout.released` — a sub-order's net went to the vendor wallet (T3.2); vendor owner email.
+ * Order aggregate (aggregateId = the sub-order's orderId, which the worker reads from the DB).
+ */
+export const PayoutReleasedEventSchema = z.object({
+  subOrderId: SubOrderIdSchema,
+  vendorId: VendorIdSchema,
+});
+export type PayoutReleasedEvent = z.infer<typeof PayoutReleasedEventSchema>;
+
 export const VENDOR_APPLICATION_AGGREGATE_TYPE = 'vendor-application';
 
 /** `vendor.application.approved` — vendor + wallet + VENDOR_OWNER role created (aggregateId = applicationId). */
@@ -141,6 +151,7 @@ export const OUTBOX_EVENT_SCHEMAS = {
   'sub-order.shipped': SubOrderShippedEventSchema,
   'sub-order.delivered': SubOrderDeliveredEventSchema,
   'sub-order.completed': SubOrderCompletedEventSchema,
+  'payout.released': PayoutReleasedEventSchema,
   'vendor.application.approved': VendorApplicationApprovedEventSchema,
   'vendor.application.rejected': VendorApplicationRejectedEventSchema,
   'vendor.invitation.created': VendorInvitationCreatedEventSchema,

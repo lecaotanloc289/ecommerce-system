@@ -1,3 +1,7 @@
+'use client';
+
+// Client component: `buttonVariants` lives in @repo/ui's 'use client' button module, so it
+// can't be called while rendering a Server Component (home page is an RSC).
 import { Link } from '@/i18n/navigation';
 import type { ComponentProps } from 'react';
 import { buttonVariants } from '@repo/ui';

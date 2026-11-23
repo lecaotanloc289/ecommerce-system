@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { CartLine, ShippingMethod, Voucher } from '../types';
-import { computeTotals, type OrderTotals } from '../lib/cart';
+import type { ShippingMethod, Voucher } from '../types';
+import { computeTotals, type CartLineView, type OrderTotals } from '../lib/cart';
 import { findShippingMethod, findVoucher, shippingMethods } from '../mocks/cart';
 import { platformSettings } from '../mocks/platform-settings';
 import { useCart } from './cart-store';
@@ -99,7 +99,7 @@ export function useCheckout(): CheckoutContextValue {
 /** Cart lines + checkout choices → totals. Every summary on cart/checkout reads this. */
 export function useOrderTotals(): {
   hydrated: boolean;
-  lines: CartLine[];
+  lines: CartLineView[];
   totals: OrderTotals;
   shippingMethod: ShippingMethod | undefined;
   voucher: Voucher | undefined;

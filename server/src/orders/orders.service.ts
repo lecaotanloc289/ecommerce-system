@@ -133,11 +133,13 @@ export class OrdersService {
    * most one attempt is ever PENDING). The provider must support the order currency. The order
    * row is locked, so concurrent retries and
    * a concurrent cancel serialise; `(order_id, attempt_no)` is unique as a backstop.
+   * `clientIp` (`clientIp()`) is stored on the new attempt for VNPay `vnp_IpAddr`.
    */
   async retryPayment(
     userId: string,
     orderId: string,
     input: PaymentRetry,
+    clientIp: string,
   ): Promise<PaymentSession> {
     return this.prisma.client.$transaction(async (tx) => {
       const locked = await tx.$queryRaw<{ id: string }[]>`
@@ -197,6 +199,7 @@ export class OrdersService {
           attemptNo,
           amount: order.grandTotalAmount,
           currency: order.currency,
+          clientIp,
         },
       });
       await tx.outboxEvent.create({

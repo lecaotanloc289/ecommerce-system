@@ -1,0 +1,37 @@
+name: Deploy worker → Fly.io
+
+on:
+  push:
+    branches: [dev, prod]
+    paths:
+      - 'workers/jobs/**'
+      - 'packages/core/**'
+      - 'packages/db/**'
+      - 'packages/payments/**'
+      - 'packages/i18n/**'
+      - 'pnpm-lock.yaml'
+      - 'turbo.json'
+      - '.github/workflows/deploy-worker.yml'
+
+concurrency:
+  group: deploy-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: flyctl deploy
+    runs-on: ubuntu-latest
+    env:
+      FLY_APP: elma-worker-${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        # Build context = repo root so the Dockerfile can copy pnpm workspace files.
+        # No HTTP service → no smoke check; `flyctl deploy` waits for the machine to start.
+        run: flyctl deploy --remote-only --app "$FLY_APP" --config workers/jobs/fly.toml --dockerfile workers/jobs/Dockerfile .

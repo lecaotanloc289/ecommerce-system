@@ -8,13 +8,7 @@ import { OrderSummary } from '@/components/checkout/order-summary';
 import { useLocale, type MessageKey } from '@/i18n/use-locale';
 import { computeTotals } from '@/lib/cart';
 import { formatDate } from '@repo/i18n';
-import {
-  findShippingMethod,
-  findVoucher,
-  placedOrder,
-  resolveCartLine,
-  trackingSteps,
-} from '@/mocks/cart';
+import { findShippingMethod, findVoucher, placedOrder, trackingSteps } from '@/mocks/cart';
 import { platformSettings } from '@/mocks/platform-settings';
 import { cn } from '@/lib/utils';
 import type { OrderStatus } from '@/types';
@@ -40,7 +34,7 @@ const EVENT_LABEL: Record<OrderStatus, MessageKey> = {
 const currentStage = trackingSteps.filter((s) => s.done).length - 1;
 
 // A placed order is a snapshot — totals come from the order, not the live cart.
-const orderLines = placedOrder.lines.map(resolveCartLine);
+const orderLines = placedOrder.lines;
 const orderTotals = computeTotals(
   orderLines,
   findShippingMethod(placedOrder.shippingMethodId),
