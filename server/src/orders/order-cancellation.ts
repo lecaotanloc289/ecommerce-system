@@ -7,6 +7,7 @@ import {
 } from '@repo/core';
 import type { Prisma } from '@repo/db';
 import { ulid } from 'ulid';
+import { queueZaloStatusMessages } from '../zalo/zalo-message-queue';
 
 export type CancelOrderResult = 'cancelled' | 'not-found' | 'not-cancellable';
 
@@ -25,7 +26,8 @@ export type CancelOrderResult = 'cancelled' | 'not-found' | 'not-cancellable';
  * 6. PENDING payments → FAILED (a session the customer still opens can no longer be confirmed
  *    into a cancelled order without the T3.1 refund path).
  * 7. `orders.status` = `deriveOrderStatus(...)` (→ CANCELLED).
- * 8. Outbox `order.cancelled` `{ orderId, customerId, reason }`.
+ * 8. Outbox `order.cancelled` `{ orderId, customerId, reason }` + Zalo ORDER_CANCELLED messages
+ *    (`queueZaloStatusMessages`; only opted-in orders of vendors with a Zalo account).
  *
  * Ownership is the caller's job (the customer endpoint checks `customerId` first).
  */
@@ -93,5 +95,11 @@ export async function cancelOrder(
       payload,
     },
   });
+  await queueZaloStatusMessages(
+    tx,
+    subOrders.map((so) => so.id),
+    'CANCELLED',
+    now,
+  );
   return 'cancelled';
 }

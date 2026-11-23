@@ -20,6 +20,7 @@ import {
 import { type Prisma, toDbAmount, toMoney } from '@repo/db';
 import { monotonicFactory } from 'ulid';
 import { PrismaService } from '../prisma/prisma.service';
+import { queueZaloMessages } from '../zalo/zalo-message-queue';
 import { parseAttributes } from './order-view';
 
 type Tx = Prisma.TransactionClient;
@@ -268,6 +269,7 @@ export class CheckoutService {
         grandTotalAmount: toDbAmount(priced.grandTotal),
         idempotencyKey,
         paymentDeadlineAt: new Date(now.getTime() + settings.paymentTimeoutMinutes * 60_000),
+        zaloOptIn: input.zaloOptIn,
       },
     });
 
@@ -373,6 +375,12 @@ export class CheckoutService {
           }),
         },
       ],
+    });
+
+    await queueZaloMessages(tx, {
+      subOrderIds: subOrderRows.map((row) => row.id),
+      event: 'ORDER_PLACED',
+      now,
     });
 
     // The purchased variants leave the server cart.

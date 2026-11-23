@@ -23,5 +23,8 @@ export {
   LedgerEntryType,
   CouponScope,
   DiscountType,
+  ZaloAccountStatus,
+  ZaloMessageEvent,
+  ZaloMessageStatus,
 } from '@prisma/client';
 export type { Prisma } from '@prisma/client';

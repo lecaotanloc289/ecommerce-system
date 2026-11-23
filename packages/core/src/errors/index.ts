@@ -88,6 +88,10 @@ export const ERROR_CODES = [
   'product.error.not-publishable',
   'product.error.variant-in-use',
   'product.error.stock-below-reserved',
+  // zalo notifications
+  'zalo.error.account-not-connected',
+  'zalo.error.login-not-found',
+  'zalo.error.unknown-placeholder',
 ] as const;
 
 export const ErrorCodeSchema = z.enum(ERROR_CODES);
@@ -160,6 +164,9 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'product.error.not-publishable': 422,
   'product.error.variant-in-use': 409,
   'product.error.stock-below-reserved': 409,
+  'zalo.error.account-not-connected': 404,
+  'zalo.error.login-not-found': 404,
+  'zalo.error.unknown-placeholder': 422,
 };
 
 /** Interpolation values for the translated message (e.g. `{ sku, available }`). */

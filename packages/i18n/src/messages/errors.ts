@@ -81,6 +81,10 @@ export const errorsEn: ErrorMessages = {
     'This variant already appears in orders or carts and can’t be removed. Set its stock to 0 instead.',
   'product.error.stock-below-reserved':
     'Stock can’t be lower than the quantity already reserved by pending orders.',
+  'zalo.error.account-not-connected': 'No Zalo account is connected to this shop.',
+  'zalo.error.login-not-found': 'This Zalo login request has expired. Please start a new one.',
+  'zalo.error.unknown-placeholder':
+    'The message uses a {{…}} field that doesn’t exist. Please check it.',
 };
 
 export const errorsVi: ErrorMessages = {
@@ -158,4 +162,8 @@ export const errorsVi: ErrorMessages = {
     'Biến thể này đã có trong đơn hàng hoặc giỏ hàng nên không thể xóa. Hãy đặt tồn kho về 0.',
   'product.error.stock-below-reserved':
     'Tồn kho không thể thấp hơn số lượng đang được giữ cho các đơn chờ xử lý.',
+  'zalo.error.account-not-connected': 'Cửa hàng chưa kết nối tài khoản Zalo.',
+  'zalo.error.login-not-found': 'Yêu cầu đăng nhập Zalo đã hết hạn. Vui lòng thử lại.',
+  'zalo.error.unknown-placeholder':
+    'Tin nhắn dùng trường {{…}} không tồn tại. Vui lòng kiểm tra lại.',
 };

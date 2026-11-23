@@ -4,7 +4,7 @@ import * as React from 'react';
 import type { ReactNode } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { ArrowLeft, CreditCard, MapPin, Pencil } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle, Button, Card } from '@repo/ui';
+import { Alert, AlertDescription, AlertTitle, Button, Card, Checkbox } from '@repo/ui';
 import type { Address } from '@repo/core';
 import { Container } from '@/components/layout/container';
 import { ButtonLink } from '@/components/common/button-link';
@@ -70,7 +70,7 @@ export default function CheckoutReviewPage() {
   const { locale, t } = useLocale();
   const router = useRouter();
   const { refresh } = useCart();
-  const { choices, reset, setNotice } = useCheckout();
+  const { choices, reset, setNotice, setZaloOptIn } = useCheckout();
   const [placedOrderId, setPlacedOrderId] = React.useState<string | null>(null);
   // The guard stops once the order exists: the cart and the choices are consumed by then.
   const { ready, shippingOptions } = useCheckoutGuard('review', {
@@ -299,6 +299,24 @@ export default function CheckoutReviewPage() {
             </div>
 
             <CouponInput />
+
+            <label
+              htmlFor="zaloOptIn"
+              className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-default bg-bg-elevated p-4"
+            >
+              <Checkbox
+                id="zaloOptIn"
+                className="mt-0.5"
+                checked={choices.zaloOptIn}
+                onCheckedChange={(checked) => setZaloOptIn(checked === true)}
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-body-m font-medium text-text-primary">
+                  {t('checkout.zaloOptIn')}
+                </span>
+                <span className="text-body-s text-text-muted">{t('checkout.zaloOptInHint')}</span>
+              </span>
+            </label>
 
             <ButtonLink href="/checkout/shipping" variant="outline" size="lg" className="w-fit">
               <ArrowLeft className="size-4" />

@@ -1312,6 +1312,131 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/vendor/zalo/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop’s connected Zalo account (null when never connected) */
+        get: operations["VendorZaloController_account"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/zalo/account/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disconnect the shop’s Zalo account (wipes the saved session) */
+        post: operations["VendorZaloController_disconnect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/zalo/login-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a QR login for the shop’s Zalo account
+         * @description Queues the login for the Zalo worker. Poll `GET /v1/vendor/zalo/login-requests/{loginId}` (~1s) to get the QR image, then the scan / success state. A successful login replaces the shop’s current account.
+         */
+        post: operations["VendorZaloController_startLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/zalo/login-requests/{loginId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** State of a QR login request (QR image, scanned, success, …) */
+        get: operations["VendorZaloController_loginState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/zalo/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Automated message log, newest first (cursor pagination) */
+        get: operations["VendorZaloController_listMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/zalo/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Message template of every event (unconfigured = disabled) */
+        get: operations["VendorZaloController_listTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vendor/zalo/templates/{event}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Create or replace the template of one event
+         * @description Body placeholders `{{name}}` must be one of the listed placeholders. `delayMinutes` is only used by AFTER_DELIVERY (stored as 0 for every other event).
+         */
+        put: operations["VendorZaloController_upsertTemplate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/vendors/{slug}": {
         parameters: {
             query?: never;
@@ -1536,6 +1661,8 @@ export interface components {
             /** @enum {string} */
             provider: "VNPAY" | "STRIPE";
             shippingMethodIds: string[];
+            /** @default false */
+            zaloOptIn: boolean;
         };
         HealthReadyResponseDto_Output: {
             /** @constant */
@@ -2756,6 +2883,93 @@ export interface components {
                 currency: "VND" | "USD";
             }[];
             vendorId: string;
+        };
+        ZaloAccountResponseDto_Output: {
+            account: {
+                avatarUrl: string | null;
+                displayName: string | null;
+                lastLoginAt: string | null;
+                lastSeenAt: string | null;
+                /** @enum {string} */
+                status: "ACTIVE" | "EXPIRED" | "DISCONNECTED";
+            } | null;
+        };
+        ZaloLoginStartDto_Output: {
+            loginId: string;
+        };
+        ZaloLoginStateDto_Output: {
+            /** @constant */
+            state: "PENDING";
+        } | {
+            /** Format: starts_with */
+            qrImage: string;
+            /** @constant */
+            state: "QR_READY";
+        } | {
+            avatarUrl: string | null;
+            displayName: string;
+            /** @constant */
+            state: "SCANNED";
+        } | {
+            displayName: string;
+            /** @constant */
+            state: "SUCCESS";
+        } | {
+            /** @constant */
+            state: "EXPIRED";
+        } | {
+            /** @constant */
+            state: "DECLINED";
+        } | {
+            /** @enum {string} */
+            reason: "already-linked" | "login-failed";
+            /** @constant */
+            state: "FAILED";
+        };
+        ZaloMessagePageDto_Output: {
+            items: {
+                attempts: number;
+                /** Format: date-time */
+                createdAt: string;
+                /** @enum {string} */
+                event: "ORDER_PLACED" | "ORDER_PAID" | "ORDER_PROCESSING" | "ORDER_SHIPPED" | "ORDER_DELIVERED" | "ORDER_COMPLETED" | "ORDER_CANCELLED" | "ORDER_REFUNDED" | "AFTER_DELIVERY";
+                id: string;
+                orderId: string;
+                renderedBody: string | null;
+                /** Format: date-time */
+                scheduledAt: string;
+                sentAt: string | null;
+                skipReason: ("template-disabled" | "vendor-inactive" | "invalid-phone" | "recipient-not-found" | "account-unavailable" | "order-status-changed") | null;
+                /** @enum {string} */
+                status: "PENDING" | "SENDING" | "SENT" | "SKIPPED" | "FAILED";
+                subOrderId: string;
+            }[];
+            nextCursor: string | null;
+        };
+        ZaloTemplateDto_Output: {
+            body: string | null;
+            delayMinutes: number;
+            /** @enum {string} */
+            event: "ORDER_PLACED" | "ORDER_PAID" | "ORDER_PROCESSING" | "ORDER_SHIPPED" | "ORDER_DELIVERED" | "ORDER_COMPLETED" | "ORDER_CANCELLED" | "ORDER_REFUNDED" | "AFTER_DELIVERY";
+            isEnabled: boolean;
+            updatedAt: string | null;
+        };
+        ZaloTemplateListDto_Output: {
+            items: {
+                body: string | null;
+                delayMinutes: number;
+                /** @enum {string} */
+                event: "ORDER_PLACED" | "ORDER_PAID" | "ORDER_PROCESSING" | "ORDER_SHIPPED" | "ORDER_DELIVERED" | "ORDER_COMPLETED" | "ORDER_CANCELLED" | "ORDER_REFUNDED" | "AFTER_DELIVERY";
+                isEnabled: boolean;
+                updatedAt: string | null;
+            }[];
+            placeholders: ("customerName" | "orderCode" | "shopName" | "total" | "itemList" | "carrier" | "trackingNumber")[];
+        };
+        ZaloTemplateUpsertDto: {
+            body: string;
+            /** @default 0 */
+            delayMinutes: number;
+            isEnabled: boolean;
         };
     };
     responses: never;
@@ -4733,6 +4947,167 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VendorWalletDto_Output"];
+                };
+            };
+        };
+    };
+    VendorZaloController_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZaloAccountResponseDto_Output"];
+                };
+            };
+        };
+    };
+    VendorZaloController_disconnect: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Account after disconnect */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZaloAccountResponseDto_Output"];
+                };
+            };
+        };
+    };
+    VendorZaloController_startLogin: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Login queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZaloLoginStartDto_Output"];
+                };
+            };
+        };
+    };
+    VendorZaloController_loginState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loginId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Login state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZaloLoginStateDto_Output"];
+                };
+            };
+        };
+    };
+    VendorZaloController_listMessages: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                status?: "PENDING" | "SENDING" | "SENT" | "SKIPPED" | "FAILED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of messages */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZaloMessagePageDto_Output"];
+                };
+            };
+        };
+    };
+    VendorZaloController_listTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZaloTemplateListDto_Output"];
+                };
+            };
+        };
+    };
+    VendorZaloController_upsertTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated ULID; a retry with the same key replays the first response. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                event: "ORDER_PLACED" | "ORDER_PAID" | "ORDER_PROCESSING" | "ORDER_SHIPPED" | "ORDER_DELIVERED" | "ORDER_COMPLETED" | "ORDER_CANCELLED" | "ORDER_REFUNDED" | "AFTER_DELIVERY";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ZaloTemplateUpsertDto"];
+            };
+        };
+        responses: {
+            /** @description The template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZaloTemplateDto_Output"];
                 };
             };
         };

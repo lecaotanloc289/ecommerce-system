@@ -89,13 +89,13 @@ describe('outbox payload schemas', () => {
     expect(
       SubOrderShippedEventSchema.parse({ orderId, subOrderId: orderId, customerId: userId }),
     ).toBeTruthy();
-    expect(
-      PayoutReleasedEventSchema.parse({ subOrderId: orderId, vendorId: userId }),
-    ).toBeTruthy();
+    expect(PayoutReleasedEventSchema.parse({ subOrderId: orderId, vendorId: userId })).toBeTruthy();
     expect(SubOrderShippedEventSchema.safeParse({ orderId, customerId: userId }).success).toBe(
       false,
     );
-    expect(PayoutReleasedEventSchema.safeParse({ subOrderId: 'x', vendorId: userId }).success).toBe(false);
+    expect(PayoutReleasedEventSchema.safeParse({ subOrderId: 'x', vendorId: userId }).success).toBe(
+      false,
+    );
   });
 
   it('maps every event type to its schema', () => {

@@ -23,6 +23,8 @@ export interface CheckoutChoices {
   shipping: Record<string, string>;
   provider: PaymentProvider | null;
   couponCodes: string[];
+  /** "Get order updates on Zalo" (roadmap D16): shops only message opted-in orders. */
+  zaloOptIn: boolean;
 }
 
 export const EMPTY_CHOICES: CheckoutChoices = {
@@ -30,6 +32,7 @@ export const EMPTY_CHOICES: CheckoutChoices = {
   shipping: {},
   provider: null,
   couponCodes: [],
+  zaloOptIn: false,
 };
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
@@ -50,6 +53,7 @@ export function sanitizeChoices(stored: unknown): CheckoutChoices {
     shipping,
     provider: provider.success ? provider.data : null,
     couponCodes: [...new Set(codes.filter((c): c is string => typeof c === 'string'))],
+    zaloOptIn: stored.zaloOptIn === true,
   };
 }
 
@@ -194,6 +198,7 @@ export function buildCheckoutBody(
     shippingMethodIds,
     couponCodes: choices.couponCodes,
     provider: choices.provider,
+    zaloOptIn: choices.zaloOptIn,
   });
   return parsed.success ? parsed.data : null;
 }
@@ -210,5 +215,6 @@ export function checkoutFingerprint(body: Checkout): string {
     shippingMethodIds: [...body.shippingMethodIds].sort(),
     couponCodes: [...body.couponCodes].sort(),
     provider: body.provider,
+    zaloOptIn: body.zaloOptIn,
   });
 }

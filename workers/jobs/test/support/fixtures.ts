@@ -10,7 +10,7 @@ export const silentLog = pino({ level: 'silent' });
 
 /** Empties every table the worker tests write (CASCADE follows users → orders → payments, …). */
 export async function resetDb(): Promise<void> {
-  await prisma.$executeRawUnsafe('TRUNCATE outbox_events, users CASCADE');
+  await prisma.$executeRawUnsafe('TRUNCATE outbox_events, platform_settings, users CASCADE');
 }
 
 /** Collects sent emails instead of talking SMTP. `failWith` makes `send` throw. */

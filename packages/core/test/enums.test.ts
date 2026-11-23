@@ -40,6 +40,9 @@ const coreEnums: Record<string, z.ZodEnum> = {
   CouponScope: enums.CouponScopeSchema,
   DiscountType: enums.DiscountTypeSchema,
   RefundStatus: enums.RefundStatusSchema,
+  ZaloAccountStatus: enums.ZaloAccountStatusSchema,
+  ZaloMessageEvent: enums.ZaloMessageEventSchema,
+  ZaloMessageStatus: enums.ZaloMessageStatusSchema,
 };
 
 describe('enums mirror Prisma', () => {

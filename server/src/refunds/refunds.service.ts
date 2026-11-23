@@ -21,6 +21,7 @@ import { assertZeroSum, type Prisma, type SubOrderStatus, toDbAmount, toMoney } 
 import { ulid } from 'ulid';
 import { cursorPageArgs, toPage } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
+import { queueZaloStatusMessages } from '../zalo/zalo-message-queue';
 
 type Tx = Parameters<Parameters<PrismaService['client']['$transaction']>[0]>[0];
 
@@ -169,6 +170,7 @@ export class RefundsService {
       data: { status: 'REFUNDED' },
     });
     if (moved.count !== 1) throw notRefundable(subOrderId, 'status');
+    await queueZaloStatusMessages(tx, [subOrderId], 'REFUNDED', new Date());
 
     if (STOCK_RETURNED.includes(subOrder.status)) {
       const qtyByVariant = new Map<string, number>();

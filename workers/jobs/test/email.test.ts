@@ -152,7 +152,7 @@ describe('email handlers', () => {
     expect(row.lastError).toBe('Error: 550 <[email]>: Recipient address rejected');
   });
 
-  it('sub-order.shipped and payout.released carry the vendor data', async () => {
+  it('sub-order.shipped / .delivered and payout.released carry the vendor data', async () => {
     const customer = await makeUser({ primaryLocale: 'EN', email: 'lan@example.com' });
     const order = await makeOrder({ customerId: customer.id, status: 'PAID' });
     const { vendor, subOrder } = await makeSubOrder({
@@ -165,6 +165,35 @@ describe('email handlers', () => {
       subOrderId: subOrder.id,
       customerId: customer.id,
     });
+    await insertEvent('sub-order.delivered', {
+      orderId: order.id,
+      subOrderId: subOrder.id,
+      customerId: customer.id,
+    });
+    // The amount comes from the payout's VENDOR_WALLET ledger entry (here deliberately ≠ the
+    // D7 recomputation 115 500, as after an adjustment).
+    const txnGroupId = ulid();
+    const line = (
+      account: 'PLATFORM_ESCROW' | 'VENDOR_WALLET' | 'PLATFORM_REVENUE',
+      amount: bigint,
+    ) => ({
+      id: ulid(),
+      txnGroupId,
+      account,
+      entryType: 'PAYOUT_OUT' as const,
+      amount,
+      currency: 'VND' as const,
+      orderId: order.id,
+      subOrderId: subOrder.id,
+      vendorId: account === 'VENDOR_WALLET' ? vendor.id : null,
+    });
+    await prisma.ledgerEntry.createMany({
+      data: [
+        line('PLATFORM_ESCROW', -125_000n),
+        line('VENDOR_WALLET', 115_000n),
+        line('PLATFORM_REVENUE', 10_000n),
+      ],
+    });
     await insertEvent('payout.released', {
       subOrderId: subOrder.id,
       vendorId: vendor.id,
@@ -172,13 +201,17 @@ describe('email handlers', () => {
 
     await dispatcher.pollOnce();
 
-    const shipped = mailer.sent.find((m) => m.to === 'lan@example.com');
+    const toCustomer = mailer.sent.filter((m) => m.to === 'lan@example.com');
+    const shipped = toCustomer.find((m) => m.text.includes('has shipped'));
     expect(shipped?.text).toContain('Lotus Shop has shipped your items.');
     expect(shipped?.text).toContain('Carrier: GHN, tracking number: GHN123456');
+    const delivered = toCustomer.find((m) => m.subject.includes('delivered'));
+    expect(delivered?.subject).toBe(`Part of your order ${order.id} was delivered`);
+    expect(delivered?.text).toContain('Lotus Shop marked your items as delivered.');
+    expect(delivered?.text).toContain(`http://web.test/en/order/track?orderId=${order.id}`);
     const payout = mailer.sent.find((m) => m.to === 'owner@example.com');
-    // net = 100 000 + 30 000 − 5 000 − 9 500
     expect(plain(payout?.text ?? '')).toContain(
-      `115.500 ₫ của đơn hàng ${order.id} đã được cộng vào ví của Lotus Shop.`,
+      `115.000 ₫ của đơn hàng ${order.id} đã được cộng vào ví của Lotus Shop.`,
     );
     expect(payout?.text).toContain('http://admin.test/');
   });

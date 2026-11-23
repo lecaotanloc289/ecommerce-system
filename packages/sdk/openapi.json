@@ -1053,6 +1053,10 @@
             },
             "minItems": 1,
             "type": "array"
+          },
+          "zaloOptIn": {
+            "default": false,
+            "type": "boolean"
           }
         },
         "required": [
@@ -7321,6 +7325,503 @@
           "pending"
         ],
         "type": "object"
+      },
+      "ZaloAccountResponseDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "avatarUrl": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "displayName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "lastLoginAt": {
+                    "anyOf": [
+                      {
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "lastSeenAt": {
+                    "anyOf": [
+                      {
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "enum": [
+                      "ACTIVE",
+                      "EXPIRED",
+                      "DISCONNECTED"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "status",
+                  "displayName",
+                  "avatarUrl",
+                  "lastLoginAt",
+                  "lastSeenAt"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "account"
+        ],
+        "type": "object"
+      },
+      "ZaloLoginStartDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "loginId": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loginId"
+        ],
+        "type": "object"
+      },
+      "ZaloLoginStateDto_Output": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "state": {
+                "const": "PENDING",
+                "type": "string"
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "qrImage": {
+                "format": "starts_with",
+                "pattern": "^data:image\\/.*",
+                "type": "string"
+              },
+              "state": {
+                "const": "QR_READY",
+                "type": "string"
+              }
+            },
+            "required": [
+              "state",
+              "qrImage"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "avatarUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "state": {
+                "const": "SCANNED",
+                "type": "string"
+              }
+            },
+            "required": [
+              "state",
+              "displayName",
+              "avatarUrl"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "displayName": {
+                "type": "string"
+              },
+              "state": {
+                "const": "SUCCESS",
+                "type": "string"
+              }
+            },
+            "required": [
+              "state",
+              "displayName"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "state": {
+                "const": "EXPIRED",
+                "type": "string"
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "state": {
+                "const": "DECLINED",
+                "type": "string"
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "reason": {
+                "enum": [
+                  "already-linked",
+                  "login-failed"
+                ],
+                "type": "string"
+              },
+              "state": {
+                "const": "FAILED",
+                "type": "string"
+              }
+            },
+            "required": [
+              "state",
+              "reason"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "ZaloMessagePageDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "attempts": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "createdAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "event": {
+                  "enum": [
+                    "ORDER_PLACED",
+                    "ORDER_PAID",
+                    "ORDER_PROCESSING",
+                    "ORDER_SHIPPED",
+                    "ORDER_DELIVERED",
+                    "ORDER_COMPLETED",
+                    "ORDER_CANCELLED",
+                    "ORDER_REFUNDED",
+                    "AFTER_DELIVERY"
+                  ],
+                  "type": "string"
+                },
+                "id": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "orderId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                },
+                "renderedBody": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "scheduledAt": {
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string"
+                },
+                "sentAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "skipReason": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "template-disabled",
+                        "vendor-inactive",
+                        "invalid-phone",
+                        "recipient-not-found",
+                        "account-unavailable",
+                        "order-status-changed"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "PENDING",
+                    "SENDING",
+                    "SENT",
+                    "SKIPPED",
+                    "FAILED"
+                  ],
+                  "type": "string"
+                },
+                "subOrderId": {
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "orderId",
+                "subOrderId",
+                "event",
+                "status",
+                "scheduledAt",
+                "sentAt",
+                "attempts",
+                "skipReason",
+                "renderedBody",
+                "createdAt"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "ZaloTemplateDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "delayMinutes": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "event": {
+            "enum": [
+              "ORDER_PLACED",
+              "ORDER_PAID",
+              "ORDER_PROCESSING",
+              "ORDER_SHIPPED",
+              "ORDER_DELIVERED",
+              "ORDER_COMPLETED",
+              "ORDER_CANCELLED",
+              "ORDER_REFUNDED",
+              "AFTER_DELIVERY"
+            ],
+            "type": "string"
+          },
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "isEnabled",
+          "body",
+          "delayMinutes",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ZaloTemplateListDto_Output": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "body": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "delayMinutes": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "event": {
+                  "enum": [
+                    "ORDER_PLACED",
+                    "ORDER_PAID",
+                    "ORDER_PROCESSING",
+                    "ORDER_SHIPPED",
+                    "ORDER_DELIVERED",
+                    "ORDER_COMPLETED",
+                    "ORDER_CANCELLED",
+                    "ORDER_REFUNDED",
+                    "AFTER_DELIVERY"
+                  ],
+                  "type": "string"
+                },
+                "isEnabled": {
+                  "type": "boolean"
+                },
+                "updatedAt": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "event",
+                "isEnabled",
+                "body",
+                "delayMinutes",
+                "updatedAt"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "placeholders": {
+            "items": {
+              "enum": [
+                "customerName",
+                "orderCode",
+                "shopName",
+                "total",
+                "itemList",
+                "carrier",
+                "trackingNumber"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "placeholders"
+        ],
+        "type": "object"
+      },
+      "ZaloTemplateUpsertDto": {
+        "properties": {
+          "body": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "delayMinutes": {
+            "default": 0,
+            "maximum": 86400,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "isEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "isEnabled",
+          "body"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -11061,6 +11562,302 @@
         "summary": "Released balance + pending net (paid, not yet paid out) per currency",
         "tags": [
           "vendor-wallet"
+        ]
+      }
+    },
+    "/v1/vendor/zalo/account": {
+      "get": {
+        "operationId": "VendorZaloController_account",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZaloAccountResponseDto_Output"
+                }
+              }
+            },
+            "description": "Account"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The shop’s connected Zalo account (null when never connected)",
+        "tags": [
+          "vendor-zalo"
+        ]
+      }
+    },
+    "/v1/vendor/zalo/account/disconnect": {
+      "post": {
+        "operationId": "VendorZaloController_disconnect",
+        "parameters": [
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZaloAccountResponseDto_Output"
+                }
+              }
+            },
+            "description": "Account after disconnect"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Disconnect the shop’s Zalo account (wipes the saved session)",
+        "tags": [
+          "vendor-zalo"
+        ]
+      }
+    },
+    "/v1/vendor/zalo/login-requests": {
+      "post": {
+        "description": "Queues the login for the Zalo worker. Poll `GET /v1/vendor/zalo/login-requests/{loginId}` (~1s) to get the QR image, then the scan / success state. A successful login replaces the shop’s current account.",
+        "operationId": "VendorZaloController_startLogin",
+        "parameters": [
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZaloLoginStartDto_Output"
+                }
+              }
+            },
+            "description": "Login queued"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a QR login for the shop’s Zalo account",
+        "tags": [
+          "vendor-zalo"
+        ]
+      }
+    },
+    "/v1/vendor/zalo/login-requests/{loginId}": {
+      "get": {
+        "operationId": "VendorZaloController_loginState",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "loginId",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZaloLoginStateDto_Output"
+                }
+              }
+            },
+            "description": "Login state"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "State of a QR login request (QR image, scanned, success, …)",
+        "tags": [
+          "vendor-zalo"
+        ]
+      }
+    },
+    "/v1/vendor/zalo/messages": {
+      "get": {
+        "operationId": "VendorZaloController_listMessages",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PENDING",
+                "SENDING",
+                "SENT",
+                "SKIPPED",
+                "FAILED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZaloMessagePageDto_Output"
+                }
+              }
+            },
+            "description": "One page of messages"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Automated message log, newest first (cursor pagination)",
+        "tags": [
+          "vendor-zalo"
+        ]
+      }
+    },
+    "/v1/vendor/zalo/templates": {
+      "get": {
+        "operationId": "VendorZaloController_listTemplates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZaloTemplateListDto_Output"
+                }
+              }
+            },
+            "description": "Templates"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Message template of every event (unconfigured = disabled)",
+        "tags": [
+          "vendor-zalo"
+        ]
+      }
+    },
+    "/v1/vendor/zalo/templates/{event}": {
+      "put": {
+        "description": "Body placeholders `{{name}}` must be one of the listed placeholders. `delayMinutes` is only used by AFTER_DELIVERY (stored as 0 for every other event).",
+        "operationId": "VendorZaloController_upsertTemplate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event",
+            "required": true,
+            "schema": {
+              "enum": [
+                "ORDER_PLACED",
+                "ORDER_PAID",
+                "ORDER_PROCESSING",
+                "ORDER_SHIPPED",
+                "ORDER_DELIVERED",
+                "ORDER_COMPLETED",
+                "ORDER_CANCELLED",
+                "ORDER_REFUNDED",
+                "AFTER_DELIVERY"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Client-generated ULID; a retry with the same key replays the first response.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZaloTemplateUpsertDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZaloTemplateDto_Output"
+                }
+              }
+            },
+            "description": "The template"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create or replace the template of one event",
+        "tags": [
+          "vendor-zalo"
         ]
       }
     },
