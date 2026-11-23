@@ -6,11 +6,17 @@ import {
   type CustomerSegment,
   CustomerSegmentSchema,
   type CustomerSegmentThresholds,
-  DomainError,
   type Money,
   type SubOrderStatus,
 } from '@repo/core';
-import { type Prisma, toMoney } from '@repo/db';
+import {
+  crmAudienceIds,
+  crmAudienceParams,
+  crmSegmentCutoffs,
+  crmSegmentThresholds,
+  type Prisma,
+  toMoney,
+} from '@repo/db';
 
 /**
  * "Valid orders" (C1): the sub-order statuses that make a user a customer of the vendor and count
@@ -24,8 +30,6 @@ export const CRM_VALID_SUB_ORDER_STATUSES: readonly SubOrderStatus[] = [
   'DELIVERED',
   'COMPLETED',
 ];
-
-const MS_PER_DAY = 86_400_000;
 
 export type CrmCustomerSort = 'last_order' | 'order_count';
 
@@ -99,33 +103,16 @@ interface RawCustomerRow {
   service_opt_out: boolean;
 }
 
-/** Segment cut-offs as instants: elapsed > N days ⟺ lastOrderAt < now − N days (strict, like `classifyCustomer`). */
-function cutoffs(now: Date, thresholds: CustomerSegmentThresholds) {
-  return {
-    lapsed: new Date(now.getTime() - thresholds.lapsedAfterDays * MS_PER_DAY).toISOString(),
-    atRisk: new Date(now.getTime() - thresholds.atRiskAfterDays * MS_PER_DAY).toISOString(),
-    vipMinOrders: thresholds.vipMinOrders,
-  };
-}
+// Segment cut-offs (`crmSegmentCutoffs`) and audience filter parameters (`crmAudienceParams`) come
+// from `@repo/db`, which also holds the audience query shared with the CRM worker.
+const cutoffs = crmSegmentCutoffs;
+const audienceParams = crmAudienceParams;
 
 const nonEmpty = <T>(xs: readonly T[] | undefined): T[] | null =>
   xs !== undefined && xs.length > 0 ? [...xs] : null;
 
 /** `%q%` for ILIKE with the LIKE wildcards of the user input escaped. */
 const likePattern = (q: string): string => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-
-/** Bound parameters of the campaign audience filter (C10); empty criteria → null (no filter). */
-function audienceParams(filter: CrmAudienceFilter, now: Date) {
-  return {
-    segments: nonEmpty(filter.segments),
-    tags: nonEmpty(filter.tags),
-    productIds: nonEmpty(filter.boughtProductIds),
-    since:
-      filter.lastOrderWithinDays === null
-        ? null
-        : new Date(now.getTime() - filter.lastOrderWithinDays * MS_PER_DAY).toISOString(),
-  };
-}
 
 /**
  * Compute-on-read CRM statistics (decision C1) over `sub_orders ⋈ orders`, scoped to one vendor.
@@ -147,17 +134,8 @@ function audienceParams(filter: CrmAudienceFilter, now: Date) {
 @Injectable()
 export class CrmCustomersRepository {
   /** `PlatformSettings` segment thresholds (C3). */
-  async thresholds(db: Prisma.TransactionClient): Promise<CustomerSegmentThresholds> {
-    const settings = await db.platformSettings.findFirst({
-      orderBy: { id: 'asc' },
-      select: { crmAtRiskAfterDays: true, crmLapsedAfterDays: true, crmVipMinOrders: true },
-    });
-    if (!settings) throw new DomainError('common.error.internal', { reason: 'settings-missing' });
-    return {
-      atRiskAfterDays: settings.crmAtRiskAfterDays,
-      lapsedAfterDays: settings.crmLapsedAfterDays,
-      vipMinOrders: settings.crmVipMinOrders,
-    };
+  thresholds(db: Prisma.TransactionClient): Promise<CustomerSegmentThresholds> {
+    return crmSegmentThresholds(db);
   }
 
   /** True iff the user has at least one valid sub-order of the vendor (C1). */
@@ -367,9 +345,10 @@ export class CrmCustomersRepository {
 
   /**
    * Ids of eligible recipients (vendor customer ∩ filter ∩ marketing consent), lean: no names,
-   * tags, province or spend. `limit` null = all (K5 batches them), 1 = existence check.
+   * tags, province or spend. `limit` null = all, 1 = existence check. The SQL is
+   * `@repo/db` `crmAudienceIds`, which the CRM worker calls directly at send time.
    */
-  async audienceIds(
+  audienceIds(
     db: Prisma.TransactionClient,
     vendorId: string,
     filter: CrmAudienceFilter,
@@ -377,49 +356,7 @@ export class CrmCustomersRepository {
     thresholds: CustomerSegmentThresholds,
     limit: number | null,
   ): Promise<string[]> {
-    const cut = cutoffs(now, thresholds);
-    const f = audienceParams(filter, now);
-    const rows = await db.$queryRaw<{ customer_id: string }[]>`
-      WITH stats AS (
-        SELECT o.customer_id, COUNT(*)::int AS order_count, MAX(so.created_at) AS last_order_at
-        FROM sub_orders so JOIN orders o ON o.id = so.order_id
-        WHERE so.vendor_id = ${vendorId}
-          AND so.status IN ('PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'COMPLETED')
-        GROUP BY o.customer_id
-      ),
-      classified AS (
-        SELECT s.*,
-          CASE
-            WHEN s.last_order_at < (${cut.lapsed}::timestamptz AT TIME ZONE 'UTC') THEN 'LAPSED'
-            WHEN s.last_order_at < (${cut.atRisk}::timestamptz AT TIME ZONE 'UTC') THEN 'AT_RISK'
-            WHEN s.order_count >= ${cut.vipMinOrders}::int THEN 'VIP'
-            WHEN s.order_count >= 2 THEN 'RETURNING'
-            ELSE 'NEW'
-          END AS segment
-        FROM stats s
-      )
-      SELECT c.customer_id
-      FROM classified c
-      JOIN customer_vendor_preferences p
-        ON p.vendor_id = ${vendorId} AND p.user_id = c.customer_id
-       AND p.marketing_opt_in_at IS NOT NULL
-       AND (p.marketing_opt_out_at IS NULL OR p.marketing_opt_in_at > p.marketing_opt_out_at)
-      LEFT JOIN vendor_customers vc ON vc.vendor_id = ${vendorId} AND vc.user_id = c.customer_id
-      WHERE (${f.segments}::text[] IS NULL OR c.segment = ANY(${f.segments}::text[]))
-        AND (${f.tags}::text[] IS NULL OR vc.tags && ${f.tags}::text[])
-        AND (${f.productIds}::text[] IS NULL OR EXISTS (
-          SELECT 1 FROM sub_orders so2
-          JOIN orders o2 ON o2.id = so2.order_id
-          JOIN order_items oi ON oi.sub_order_id = so2.id
-          JOIN product_variants pv ON pv.id = oi.variant_id
-          WHERE so2.vendor_id = ${vendorId} AND o2.customer_id = c.customer_id
-            AND so2.status IN ('PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'COMPLETED')
-            AND pv.product_id = ANY(${f.productIds}::text[])))
-        AND (${f.since}::timestamptz IS NULL
-          OR c.last_order_at >= (${f.since}::timestamptz AT TIME ZONE 'UTC'))
-      ORDER BY c.customer_id
-      LIMIT ${limit}::int`;
-    return rows.map((r) => r.customer_id);
+    return crmAudienceIds(db, vendorId, filter, now, thresholds, limit);
   }
 
   /** Audience size for the preview: one aggregate row, nothing materialised per customer. */
@@ -475,8 +412,8 @@ export class CrmCustomersRepository {
 
   /**
    * Eligible recipients of a campaign audience at `now` (C10): customers of the vendor (C1) that
-   * match the filter AND have marketing consent (C5). Works inside a transaction — used by the CRM
-   * worker (K5) at send time. Vendor ACTIVE is the caller's check.
+   * match the filter AND have marketing consent (C5). Works inside a transaction (the worker uses the
+   * same `crmAudienceIds` query). Vendor ACTIVE is the caller's check.
    */
   async resolveAudience(
     tx: Prisma.TransactionClient,
