@@ -224,6 +224,9 @@ export const en = {
     estimateNote:
       'This is an estimate from your cart and the chosen shipping. Vouchers and the final amounts are calculated when you place the order.',
     placing: 'Placing your order…',
+    zaloOptIn: 'Get order updates on Zalo',
+    zaloOptInHint:
+      'Each shop in this order may message the delivery phone number on Zalo about this order and its delivery.',
     waitingPayment: 'Preparing your payment…',
     redirecting: 'Redirecting you to the payment page…',
     paymentTimeout: 'The payment page is taking longer than expected.',
@@ -456,6 +459,12 @@ export const en = {
       subject: 'Part of your order {orderId} has shipped',
       intro: '{vendor} has shipped your items.',
       tracking: 'Carrier: {carrier}, tracking number: {trackingNumber}',
+    },
+    subOrderDelivered: {
+      subject: 'Part of your order {orderId} was delivered',
+      intro: '{vendor} marked your items as delivered.',
+      confirm:
+        'Received everything in good condition? Confirm receipt on the order page. If something is wrong, contact us before the order is completed automatically.',
     },
     vendorApplicationApproved: {
       subject: 'Your seller application was approved',

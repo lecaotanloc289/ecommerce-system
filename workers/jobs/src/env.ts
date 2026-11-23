@@ -41,6 +41,16 @@ const EnvSchema = z.object({
   OUTBOX_BATCH_SIZE: z.coerce.number().int().min(1).max(500).default(50),
   /** Events handled in parallel; each holds one DB connection (keep below `connection_limit`). */
   OUTBOX_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(2),
+
+  // Scheduled jobs (BullMQ repeatable, see CLAUDE.md "Scheduled jobs"): repeat intervals.
+  JOB_EXPIRE_UNPAID_ORDERS_EVERY_MS: z.coerce.number().int().min(1000).default(60_000),
+  JOB_AUTO_COMPLETE_SUB_ORDERS_EVERY_MS: z.coerce.number().int().min(1000).default(3_600_000),
+  JOB_RELEASE_PAYOUTS_EVERY_MS: z.coerce.number().int().min(1000).default(3_600_000),
+  JOB_OUTBOX_RETENTION_EVERY_MS: z.coerce.number().int().min(1000).default(86_400_000),
+  /** Rows read per keyset page by a job (each row still gets its own transaction). */
+  JOB_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100),
+  /** Processed outbox rows older than this many days are deleted (dead letters never are). */
+  OUTBOX_RETENTION_DAYS: z.coerce.number().int().min(1).default(30),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -227,6 +227,9 @@ export const vi: Messages = {
     estimateNote:
       'Đây là số tạm tính từ giỏ hàng và phương thức vận chuyển đã chọn. Mã giảm giá và số tiền cuối cùng được tính khi bạn đặt hàng.',
     placing: 'Đang đặt hàng…',
+    zaloOptIn: 'Nhận thông báo đơn hàng qua Zalo',
+    zaloOptInHint:
+      'Mỗi shop trong đơn có thể nhắn Zalo tới số điện thoại nhận hàng về đơn và việc giao hàng.',
     waitingPayment: 'Đang chuẩn bị thanh toán…',
     redirecting: 'Đang chuyển bạn đến trang thanh toán…',
     paymentTimeout: 'Trang thanh toán đang mất nhiều thời gian hơn dự kiến.',
@@ -456,6 +459,12 @@ export const vi: Messages = {
       subject: 'Một phần đơn hàng {orderId} đã được gửi đi',
       intro: '{vendor} đã gửi hàng cho bạn.',
       tracking: 'Đơn vị vận chuyển: {carrier}, mã vận đơn: {trackingNumber}',
+    },
+    subOrderDelivered: {
+      subject: 'Một phần đơn hàng {orderId} đã được giao',
+      intro: '{vendor} đã xác nhận giao hàng cho bạn.',
+      confirm:
+        'Bạn đã nhận đủ hàng và hàng còn nguyên vẹn? Hãy xác nhận đã nhận hàng trên trang đơn hàng. Nếu có vấn đề, vui lòng liên hệ chúng tôi trước khi đơn hàng tự động hoàn tất.',
     },
     vendorApplicationApproved: {
       subject: 'Đơn đăng ký bán hàng của bạn đã được duyệt',

@@ -44,5 +44,7 @@ export const CheckoutSchema = z.object({
     .refine(isUnique, 'Duplicate coupon code')
     .default([]),
   provider: PaymentProviderSchema,
+  /** Customer agrees to receive order updates from each shop on Zalo (sent to the address phone). */
+  zaloOptIn: z.boolean().default(false),
 });
 export type Checkout = z.infer<typeof CheckoutSchema>;

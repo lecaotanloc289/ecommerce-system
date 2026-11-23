@@ -39,6 +39,7 @@ interface CheckoutContextValue {
   /** Adds a coupon code; 'invalid' = malformed, 'duplicate' = already in the list. */
   addCouponCode: (code: string) => 'added' | 'invalid' | 'duplicate';
   removeCouponCode: (code: string) => void;
+  setZaloOptIn: (optIn: boolean) => void;
   /** Back to defaults — called once an order is placed. */
   reset: () => void;
   notice: CheckoutNotice | null;
@@ -92,6 +93,10 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       setChoices((c) => ({ ...c, couponCodes: c.couponCodes.filter((x) => x !== code) })),
     [],
   );
+  const setZaloOptIn = React.useCallback(
+    (zaloOptIn: boolean) => setChoices((c) => ({ ...c, zaloOptIn })),
+    [],
+  );
   const reset = React.useCallback(() => setChoices(EMPTY_CHOICES), []);
 
   const value = React.useMemo<CheckoutContextValue>(
@@ -104,6 +109,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       setProvider,
       addCouponCode,
       removeCouponCode,
+      setZaloOptIn,
       reset,
       notice,
       setNotice,
@@ -117,6 +123,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       setProvider,
       addCouponCode,
       removeCouponCode,
+      setZaloOptIn,
       reset,
       notice,
     ],
