@@ -619,6 +619,9 @@ async function seedCrmDemo() {
         cancelledAt: o.cancelled ? at : null,
         deliveredAt: o.cancelled ? null : at,
         completedAt: o.cancelled ? null : at,
+        // Historical demo orders have no Payment / escrow ledger rows, so they count as already
+        // settled: without this the `release-payouts` job would credit vendor A's wallet for them.
+        payoutReleasedAt: o.cancelled ? null : at,
         createdAt: at,
       },
     });

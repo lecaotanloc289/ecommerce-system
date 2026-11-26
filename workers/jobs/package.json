@@ -5,7 +5,7 @@
   "description": "Background worker: outbox dispatcher (payment sessions, refunds, transactional email) + scheduled jobs. See CLAUDE.md.",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "build": "tsup",

@@ -29,6 +29,7 @@ export const ORIGINS = {
 export const SECRETS = {
   jwtAccess: 'e2e-access-secret-0123456789abcdef-0123456789',
   jwtRefresh: 'e2e-refresh-secret-0123456789abcdef-012345678',
+  crmUnsubscribe: 'e2e-crm-unsubscribe-secret-0123456789abcdef',
   vnpayTmnCode: 'E2ETMN01',
   vnpayHashSecret: 'e2e-vnpay-hash-secret-0123456789',
   stripeSecretKey: 'sk_test_e2e_dummy',

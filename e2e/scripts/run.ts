@@ -168,6 +168,8 @@ function apiEnv(): NodeJS.ProcessEnv {
     REDIS_URL: redisUrl,
     JWT_ACCESS_SECRET: SECRETS.jwtAccess,
     JWT_REFRESH_SECRET: SECRETS.jwtRefresh,
+    // Shared by the API (unsubscribe links) and the worker (CRM emails); both refuse to boot without it.
+    CRM_UNSUBSCRIBE_SECRET: SECRETS.crmUnsubscribe,
     // OAuth is never exercised (sessions are minted); the API only needs the keys to boot.
     GOOGLE_OAUTH_CLIENT_ID: 'e2e',
     GOOGLE_OAUTH_CLIENT_SECRET: 'e2e',
@@ -201,6 +203,7 @@ function workerEnv(): NodeJS.ProcessEnv {
     WEB_ORIGIN: ORIGINS.web,
     ADMIN_ORIGIN: ORIGINS.admin,
     API_PUBLIC_URL: ORIGINS.api,
+    CRM_UNSUBSCRIBE_SECRET: api.CRM_UNSUBSCRIBE_SECRET,
     SMTP_HOST: '127.0.0.1',
     SMTP_PORT: String(PORTS.smtp),
     VNPAY_TMN_CODE: api.VNPAY_TMN_CODE,
@@ -256,7 +259,17 @@ async function main(): Promise<number> {
     run(
       'build deps',
       'pnpm',
-      ['turbo', 'run', 'build', '--filter=@server/api', '--filter=@workers/jobs'],
+      [
+        'turbo',
+        'run',
+        'build',
+        '--filter=@server/api',
+        '--filter=@workers/jobs',
+        // The frontends are built below with the e2e origins; their workspace deps
+        // (`@repo/sdk`, `@repo/i18n`, …) must exist in `dist/` first (a clean CI checkout has none).
+        '--filter=@apps/web^...',
+        '--filter=@apps/admin^...',
+      ],
       process.env,
     );
     // `--no-lint`: lint/typecheck are separate CI steps (and next's lint cannot resolve the root

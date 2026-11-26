@@ -52,10 +52,10 @@ Steps:
 
 | Path                              | Purpose                                                                                       |
 | --------------------------------- | --------------------------------------------------------------------------------------------- |
-| `server/Dockerfile`               | Multi-stage Node 20 build → small runtime image                                               |
+| `server/Dockerfile`               | Multi-stage Node 24 build → small runtime image                                               |
 | `server/.dockerignore`            | Exclude `node_modules`, `.next`, `dist`, tests, env files                                     |
 | `server/fly.toml`                 | Fly app config (region `sin`, internal port `3001`, health check `/v1/health`)                |
-| `workers/jobs/Dockerfile`         | Node 22 worker image (build context = repo root; `Dockerfile.dockerignore` beside it)         |
+| `workers/jobs/Dockerfile`         | Node 24 worker image (build context = repo root; `Dockerfile.dockerignore` beside it)         |
 | `workers/jobs/fly.toml`           | Worker Fly app config (region `sin`, no `[http_service]`, `kill_timeout` 90s)                 |
 | `apps/client/wrangler.jsonc`      | Worker config: `.open-next/worker.js`, `nodejs_compat`, `ASSETS` binding, envs `dev` / `prod` |
 | `apps/client/open-next.config.ts` | OpenNext config (read-only static-assets incremental cache — no R2/KV yet)                    |
@@ -165,7 +165,7 @@ primary_region = "sin"
 `server/Dockerfile` outline:
 
 ```dockerfile
-FROM node:20-slim AS base
+FROM node:24-slim AS base
 RUN corepack enable
 WORKDIR /app
 
@@ -359,8 +359,8 @@ Rollback drill: revert the last commit on `prod` and push — workflow redeploys
   `@repo/db#test` by `turbo.json` (`passThroughEnv`, uncached; `DOCKER_HOST` / `TESTCONTAINERS_*` are passed to every task).
   The API and worker integration suites start their own Testcontainers (Docker is preinstalled on `ubuntu-latest`).
   The SDK drift check (`pnpm sdk:generate`, fails on any change to `packages/sdk/openapi.json` / `src/schema.d.ts`) is unchanged.
-- **Node version:** every workflow reads `.nvmrc` (`node-version-file`), now `22` (worker `engines`, Dockerfiles and the
-  deploy workflows were already on 22; only `ci.yml` was on 20).
+- **Node version:** Node 24 LTS everywhere (decided 2026-11-26): every workflow reads `.nvmrc` (`node-version-file`) = `24`, root
+  and worker `engines` require >= 24, and the server and worker Dockerfiles build from `node:24-slim`.
 - **`e2e.yml`**: PRs into `prod` + manual dispatch. Postgres + Redis services, installs Chromium, runs `pnpm e2e`
   (builds the API, worker and both frontends for the e2e ports, boots them, runs the Playwright flows), uploads the
   Playwright report on failure. See `e2e/CLAUDE.md`.

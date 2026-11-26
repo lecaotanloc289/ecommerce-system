@@ -288,7 +288,7 @@ configured`. The worker does not read `.env`: use Doppler or export.
 ## Deploy
 
 Separate Fly app `elma-worker-{dev,prod}` (`fly.toml`: no `[http_service]`, `kill_timeout 90s`),
-image from `Dockerfile` (Node 22, build context = repo root, `Dockerfile.dockerignore` beside it;
+image from `Dockerfile` (Node 24, build context = repo root, `Dockerfile.dockerignore` beside it;
 keeps the pnpm layout so workspace symlinks + the generated Prisma client resolve).
 `.github/workflows/deploy-worker.yml` deploys on push to `dev` / `prod`. One machine is enough;
 more are safe (claims skip locked rows). Migrations are not run by the worker.

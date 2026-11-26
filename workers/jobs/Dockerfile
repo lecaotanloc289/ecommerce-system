@@ -3,7 +3,7 @@
 # (BuildKit reads workers/jobs/Dockerfile.dockerignore for this Dockerfile.)
 
 # ---------- base ----------
-FROM node:22-slim AS base
+FROM node:24-slim AS base
 # Prisma's query engine needs OpenSSL.
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends openssl ca-certificates \

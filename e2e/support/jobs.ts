@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { RUN_ENV, requireRunEnv } from './config';
+import { RUN_ENV, SECRETS, requireRunEnv } from './config';
 
 /**
  * Runs one scheduled job once against the e2e database (`workers/jobs` `run-job`, no Redis queue,
@@ -17,6 +17,7 @@ export function runJob(name: 'auto-complete-sub-orders' | 'release-payouts'): vo
       NODE_ENV: 'test',
       DATABASE_URL: requireRunEnv(RUN_ENV.databaseUrl),
       REDIS_URL: requireRunEnv(RUN_ENV.redisUrl),
+      CRM_UNSUBSCRIBE_SECRET: SECRETS.crmUnsubscribe,
     },
   });
   if (result.status !== 0) {

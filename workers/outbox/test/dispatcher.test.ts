@@ -62,11 +62,11 @@ describe('OutboxDispatcher', () => {
       { createdAt: new Date(Date.now() - 60_000) },
     );
     const newer = await insertOutboxRow(
-      'payment.captured',
-      { paymentId: 'p1' },
+      'live_session.ended',
+      { liveSessionId: 's1' },
       {
-        aggregateType: 'Payment',
-        aggregateId: 'p1',
+        aggregateType: 'LiveSession',
+        aggregateId: 's1',
       },
     );
     const done = await insertOutboxRow('live_session.started', { liveSessionId: ulid() });
@@ -76,13 +76,13 @@ describe('OutboxDispatcher', () => {
 
     expect(ids).toEqual([older, newer]);
     const job = await queue.getJob(newer);
-    expect(job?.name).toBe('payment.captured');
+    expect(job?.name).toBe('live_session.ended');
     expect(job?.data).toEqual({
       id: newer,
-      aggregateType: 'Payment',
-      aggregateId: 'p1',
-      eventType: 'payment.captured',
-      payload: { paymentId: 'p1' },
+      aggregateType: 'LiveSession',
+      aggregateId: 's1',
+      eventType: 'live_session.ended',
+      payload: { liveSessionId: 's1' },
     });
     const rows = await db.outboxEvent.findMany({ where: { id: { in: [older, newer] } } });
     expect(rows.every((row) => row.processedAt !== null)).toBe(true);
