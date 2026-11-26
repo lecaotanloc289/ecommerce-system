@@ -7,10 +7,18 @@
     "./eslint": "./eslint.config.mjs",
     "./tsconfig/base.json": "./tsconfig/base.json",
     "./tsconfig/node.json": "./tsconfig/node.json",
-    "./tsconfig/react.json": "./tsconfig/react.json"
+    "./tsconfig/react.json": "./tsconfig/react.json",
+    "./tsup": "./tsup.base.mjs"
   },
   "files": [
     "eslint.config.mjs",
-    "tsconfig"
-  ]
+    "tsconfig",
+    "tsup.base.mjs"
+  ],
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "typescript-eslint": "^8.73.0"
+  }
 }

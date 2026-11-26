@@ -1,0 +1,15 @@
+# Doppler repo config — links this repo to the Doppler project/config.
+# Contains NO secrets; safe to commit. Doppler injects every key at runtime
+# via `doppler run`, so there is no local .env to maintain.
+#
+# Local link (one-time, picks the `dev` config):
+#   doppler setup --no-interactive --project ecommerce --config dev
+# or non-interactively with a service token:
+#   export DOPPLER_TOKEN=dp.st.dev.xxxxx
+#
+# Branch → Doppler config mapping (also enforced in .github/workflows/*):
+#   dev  branch → config `dev`
+#   prod branch → config `prd`
+setup:
+  project: ecommerce
+  config: dev

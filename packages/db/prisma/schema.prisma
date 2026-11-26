@@ -1,0 +1,1144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum Role {
+  GUEST
+  CUSTOMER
+  VENDOR_OWNER
+  VENDOR_STAFF
+  PLATFORM_STAFF
+  PLATFORM_ADMIN
+}
+
+enum OAuthProvider {
+  GOOGLE
+  FACEBOOK
+}
+
+enum Locale {
+  VI
+  EN
+}
+
+enum Currency {
+  VND
+  USD
+}
+
+enum VendorStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  BLOCKED
+}
+
+enum OrderStatus {
+  AWAITING_PAYMENT
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  CANCELLED
+  COMPLETED
+}
+
+enum SubOrderStatus {
+  AWAITING_PAYMENT
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentProvider {
+  VNPAY
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  REFUNDED
+}
+
+enum LedgerAccount {
+  CUSTOMER
+  PLATFORM_ESCROW
+  VENDOR_WALLET
+  PLATFORM_REVENUE
+}
+
+enum LedgerEntryType {
+  ESCROW_IN
+  PAYOUT_OUT
+  COMMISSION
+  REFUND
+  ADJUSTMENT
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum CouponScope {
+  PLATFORM
+  VENDOR
+}
+
+enum CrmMessageKind {
+  SERVICE
+  MARKETING
+}
+
+enum CrmChannel {
+  IN_APP
+  EMAIL
+}
+
+enum CrmAutomationKind {
+  THANK_YOU
+  REVIEW_REQUEST
+  REORDER_REMINDER
+}
+
+enum CrmCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  CANCELLED
+}
+
+enum CrmMessageStatus {
+  SCHEDULED
+  SENT
+  SKIPPED
+  FAILED
+}
+
+enum ConsentAction {
+  MARKETING_OPT_IN
+  MARKETING_OPT_OUT
+  SERVICE_OPT_OUT
+  SERVICE_OPT_IN
+}
+
+enum ConsentSource {
+  STOREFRONT
+  CHECKOUT
+  UNSUBSCRIBE_LINK
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+enum ZaloAccountStatus {
+  ACTIVE
+  EXPIRED
+  DISCONNECTED
+}
+
+/// What a vendor's automated Zalo message reacts to: one per sub-order status the customer
+/// cares about, plus the post-delivery customer-care message (sent delayMinutes after delivery).
+enum ZaloMessageEvent {
+  ORDER_PLACED
+  ORDER_PAID
+  ORDER_PROCESSING
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_COMPLETED
+  ORDER_CANCELLED
+  ORDER_REFUNDED
+  AFTER_DELIVERY
+}
+
+enum ZaloMessageStatus {
+  PENDING
+  SENDING
+  SENT
+  SKIPPED
+  FAILED
+}
+
+model User {
+  id            String   @id
+  email         String?  @unique
+  name          String
+  avatarUrl     String?  @map("avatar_url")
+  primaryLocale Locale   @default(VI) @map("primary_locale")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  oauthIdentities     OAuthIdentity[]
+  roles               UserRole[]
+  addresses           Address[]
+  cart                Cart?
+  orders              Order[]
+  ownedVendors        Vendor[]                   @relation("VendorOwner")
+  vendorApplications  VendorApplication[]        @relation("Applicant")
+  reviewedApps        VendorApplication[]        @relation("Reviewer")
+  reviews             Review[]
+  couponRedemptions   CouponRedemption[]
+  requestedRefunds    Refund[]                   @relation("RefundRequester")
+  sentInvitations     VendorInvitation[]         @relation("InvitationInviter")
+  crmConsentEvents    CrmConsentEvent[]
+  acceptedInvites     VendorInvitation[]         @relation("InvitationAcceptor")
+  vendorCustomers     VendorCustomer[]
+  crmNotesAbout       VendorCustomerNote[]       @relation("CrmNoteCustomer")
+  crmNotesWritten     VendorCustomerNote[]       @relation("CrmNoteAuthor")
+  vendorPreferences   CustomerVendorPreference[]
+  crmCampaigns        CrmCampaign[]
+  crmMessages         CrmMessage[]
+  notifications       Notification[]
+  createdLiveSessions LiveSession[]              @relation("LiveSessionCreator")
+
+  @@map("users")
+}
+
+model OAuthIdentity {
+  id             String        @id
+  userId         String        @map("user_id")
+  provider       OAuthProvider
+  providerUserId String        @map("provider_user_id")
+  emailVerified  Boolean       @default(false) @map("email_verified")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("oauth_identities")
+}
+
+model UserRole {
+  id        String   @id
+  userId    String   @map("user_id")
+  role      Role
+  vendorId  String?  @map("vendor_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor Vendor? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role, vendorId])
+  @@index([vendorId])
+  @@map("user_roles")
+}
+
+model Address {
+  id            String   @id
+  userId        String   @map("user_id")
+  recipientName String   @map("recipient_name")
+  phone         String
+  line1         String
+  line2         String?
+  ward          String
+  district      String
+  city          String
+  country       String   @default("VN")
+  isDefault     Boolean  @default(false) @map("is_default")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+model Vendor {
+  id                    String       @id
+  ownerId               String       @map("owner_id")
+  slug                  String       @unique
+  displayName           String       @map("display_name")
+  status                VendorStatus @default(PENDING)
+  logoUrl               String?      @map("logo_url")
+  description           String?
+  commissionBpsOverride Int?         @map("commission_bps_override")
+  suspendedReason       String?      @map("suspended_reason")
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+
+  owner            User                  @relation("VendorOwner", fields: [ownerId], references: [id])
+  staffRoles       UserRole[]
+  wallet           Wallet?
+  products         Product[]
+  shippingMethods  ShippingMethod[]
+  subOrders        SubOrder[]
+  coupons          Coupon[]
+  ledgerEntries    LedgerEntry[]
+  invitations      VendorInvitation[]
+  crmConsentEvents CrmConsentEvent[]
+  zaloAccount      ZaloAccount?
+  zaloTemplates    ZaloMessageTemplate[]
+  zaloMessages     ZaloMessage[]
+
+  customers           VendorCustomer[]
+  customerNotes       VendorCustomerNote[]
+  customerPreferences CustomerVendorPreference[]
+  crmAutomations      CrmAutomation[]
+  crmCampaigns        CrmCampaign[]
+  crmMessages         CrmMessage[]
+  notifications       Notification[]
+  liveSessions        LiveSession[]
+
+  @@index([ownerId])
+  @@map("vendors")
+}
+
+model VendorApplication {
+  id                 String            @id
+  applicantId        String            @map("applicant_id")
+  status             ApplicationStatus @default(PENDING)
+  businessLicenseUrl String            @map("business_license_url")
+  taxId              String            @map("tax_id")
+  nationalIdNumber   String            @map("national_id_number")
+  nationalIdUrl      String            @map("national_id_url")
+  bankName           String            @map("bank_name")
+  bankAccountNumber  String            @map("bank_account_number")
+  accountHolder      String            @map("account_holder")
+  bankVerified       Boolean           @default(false) @map("bank_verified")
+  reviewedById       String?           @map("reviewed_by_id")
+  reviewedAt         DateTime?         @map("reviewed_at")
+  rejectReason       String?           @map("reject_reason")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  applicant  User  @relation("Applicant", fields: [applicantId], references: [id])
+  reviewedBy User? @relation("Reviewer", fields: [reviewedById], references: [id])
+
+  @@index([applicantId])
+  @@index([status])
+  @@index([reviewedById])
+  @@map("vendor_applications")
+}
+
+model Wallet {
+  id              String   @id
+  vendorId        String   @unique @map("vendor_id")
+  balanceAmount   BigInt   @default(0) @map("balance_amount")
+  balanceCurrency Currency @default(VND) @map("balance_currency")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+model Category {
+  id                    String   @id
+  parentId              String?  @map("parent_id")
+  commissionBpsOverride Int?     @map("commission_bps_override")
+  sortOrder             Int      @default(0) @map("sort_order")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  parent       Category?             @relation("CategoryTree", fields: [parentId], references: [id])
+  children     Category[]            @relation("CategoryTree")
+  translations CategoryTranslation[]
+  products     ProductCategory[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+model CategoryTranslation {
+  id         String   @id
+  categoryId String   @map("category_id")
+  locale     Locale
+  name       String
+  slug       String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, locale])
+  @@unique([locale, slug])
+  @@map("category_translations")
+}
+
+model Product {
+  id                String        @id
+  vendorId          String        @map("vendor_id")
+  status            ProductStatus @default(DRAFT)
+  basePriceAmount   BigInt        @map("base_price_amount")
+  basePriceCurrency Currency      @default(VND) @map("base_price_currency")
+  primaryImageUrl   String?       @map("primary_image_url")
+  blockedReason     String?       @map("blocked_reason")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  vendor              Vendor               @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  translations        ProductTranslation[]
+  categories          ProductCategory[]
+  variants            ProductVariant[]
+  images              ProductImage[]
+  reviews             Review[]
+  liveSessionProducts LiveSessionProduct[]
+
+  @@index([vendorId])
+  @@index([status])
+  @@map("products")
+}
+
+model ProductTranslation {
+  id           String                   @id
+  productId    String                   @map("product_id")
+  locale       Locale
+  name         String
+  slug         String
+  description  String?
+  searchVector Unsupported("tsvector")? @map("search_vector")
+  createdAt    DateTime                 @default(now()) @map("created_at")
+  updatedAt    DateTime                 @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locale])
+  @@unique([locale, slug])
+  @@map("product_translations")
+}
+
+model ProductCategory {
+  productId  String @map("product_id")
+  categoryId String @map("category_id")
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+  @@map("product_categories")
+}
+
+model ProductVariant {
+  id            String   @id
+  productId     String   @map("product_id")
+  sku           String   @unique
+  attributes    Json     @default("{}")
+  priceAmount   BigInt   @map("price_amount")
+  priceCurrency Currency @default(VND) @map("price_currency")
+  stockOnHand   Int      @default(0) @map("stock_on_hand")
+  stockReserved Int      @default(0) @map("stock_reserved")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id        String   @id
+  productId String   @map("product_id")
+  url       String
+  alt       String?
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model Cart {
+  id        String   @id
+  userId    String?  @unique @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id
+  cartId    String   @map("cart_id")
+  variantId String   @map("variant_id")
+  quantity  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([cartId, variantId])
+  @@index([variantId])
+  @@map("cart_items")
+}
+
+model Order {
+  id                  String      @id
+  customerId          String      @map("customer_id")
+  status              OrderStatus @default(AWAITING_PAYMENT)
+  currency            Currency
+  itemsTotalAmount    BigInt      @map("items_total_amount")
+  shippingTotalAmount BigInt      @map("shipping_total_amount")
+  discountTotalAmount BigInt      @default(0) @map("discount_total_amount")
+  grandTotalAmount    BigInt      @map("grand_total_amount")
+  idempotencyKey      String      @unique @map("idempotency_key")
+  paymentDeadlineAt   DateTime?   @map("payment_deadline_at")
+  /// Customer ticked "notify me on Zalo" at checkout; vendors message only opted-in orders.
+  zaloOptIn           Boolean     @default(false) @map("zalo_opt_in")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  customer          User               @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  subOrders         SubOrder[]
+  payments          Payment[]
+  ledgerEntries     LedgerEntry[]
+  couponRedemptions CouponRedemption[]
+
+  @@index([customerId])
+  @@index([status])
+  @@map("orders")
+}
+
+model SubOrder {
+  id                     String         @id
+  orderId                String         @map("order_id")
+  vendorId               String         @map("vendor_id")
+  status                 SubOrderStatus @default(AWAITING_PAYMENT)
+  subtotalAmount         BigInt         @map("subtotal_amount")
+  shippingAmount         BigInt         @map("shipping_amount")
+  /// Vendor-funded discount (VENDOR coupons). Reduces the commission base (roadmap D5).
+  discountAmount         BigInt         @default(0) @map("discount_amount")
+  /// This sub-order's share of PLATFORM coupons (roadmap D8, split with Money.allocate). Platform-funded:
+  /// lowers what the customer pays, not the vendor net or the commission base (roadmap D7).
+  platformDiscountAmount BigInt         @default(0) @map("platform_discount_amount")
+  commissionAmount       BigInt         @default(0) @map("commission_amount")
+  currency               Currency
+  shippingMethodId       String?        @map("shipping_method_id")
+  shippingAddress        Json           @map("shipping_address")
+  carrier                String?
+  trackingNumber         String?        @map("tracking_number")
+  shippedAt              DateTime?      @map("shipped_at")
+  deliveredAt            DateTime?      @map("delivered_at")
+  cancelledAt            DateTime?      @map("cancelled_at")
+  completedAt            DateTime?      @map("completed_at")
+  payoutReleasedAt       DateTime?      @map("payout_released_at")
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
+
+  order             Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendor            Vendor             @relation(fields: [vendorId], references: [id])
+  shippingMethod    ShippingMethod?    @relation(fields: [shippingMethodId], references: [id])
+  items             OrderItem[]
+  ledgerEntries     LedgerEntry[]
+  couponRedemptions CouponRedemption[]
+  reviews           Review[]
+  refunds           Refund[]
+  crmMessages       CrmMessage[]
+  zaloMessages      ZaloMessage[]
+
+  @@index([orderId])
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@index([status])
+  @@index([shippingMethodId])
+  @@map("sub_orders")
+}
+
+model OrderItem {
+  id                        String   @id
+  subOrderId                String   @map("sub_order_id")
+  variantId                 String   @map("variant_id")
+  productTitleSnapshot      String   @map("product_title_snapshot")
+  variantAttributesSnapshot Json     @map("variant_attributes_snapshot")
+  unitPriceAmount           BigInt   @map("unit_price_amount")
+  quantity                  Int
+  lineTotalAmount           BigInt   @map("line_total_amount")
+  currency                  Currency
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  subOrder SubOrder       @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  variant  ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@index([subOrderId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
+model ShippingMethod {
+  id            String   @id
+  vendorId      String   @map("vendor_id")
+  name          String
+  priceAmount   BigInt   @map("price_amount")
+  priceCurrency Currency @default(VND) @map("price_currency")
+  estDays       Int      @map("est_days")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  vendor    Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  subOrders SubOrder[]
+
+  @@index([vendorId])
+  @@map("shipping_methods")
+}
+
+model Payment {
+  id            String          @id
+  orderId       String          @map("order_id")
+  provider      PaymentProvider
+  status        PaymentStatus   @default(PENDING)
+  amount        BigInt
+  currency      Currency
+  providerTxnId String?         @map("provider_txn_id")
+  rawPayload    Json?           @map("raw_payload")
+  attemptNo     Int             @default(1) @map("attempt_no")
+  /// Provider checkout URL, written by the worker after createSession (roadmap D2). Null until then.
+  redirectUrl   String?         @map("redirect_url")
+  expiresAt     DateTime?       @map("expires_at")
+  /// Provider session reference from createSession (VNPay `vnp_CreateDate`, Stripe session id),
+  /// written by the worker with `redirectUrl`. VNPay refund needs it.
+  providerRef   String?         @map("provider_ref")
+  /// Customer IP captured by the API at checkout / payment retry (VNPay `vnp_IpAddr`).
+  clientIp      String?         @map("client_ip")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  refunds Refund[]
+
+  @@unique([orderId, attemptNo])
+  @@index([orderId])
+  @@index([status])
+  @@map("payments")
+}
+
+model LedgerEntry {
+  id         String          @id
+  txnGroupId String          @map("txn_group_id")
+  account    LedgerAccount
+  entryType  LedgerEntryType @map("entry_type")
+  amount     BigInt
+  currency   Currency
+  orderId    String?         @map("order_id")
+  subOrderId String?         @map("sub_order_id")
+  vendorId   String?         @map("vendor_id")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  order    Order?    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  subOrder SubOrder? @relation(fields: [subOrderId], references: [id], onDelete: Restrict)
+  vendor   Vendor?   @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+
+  @@index([txnGroupId])
+  @@index([account, vendorId])
+  @@index([orderId])
+  @@index([subOrderId])
+  @@index([vendorId])
+  @@map("ledger_entries")
+}
+
+model Coupon {
+  id             String       @id
+  scope          CouponScope
+  vendorId       String?      @map("vendor_id")
+  code           String
+  discountType   DiscountType @map("discount_type")
+  /// FIXED → amount in minor units of `currency`. PERCENT → basis points (1000 = 10%, max 10000),
+  /// same unit as `commission_bps`; apply with `@repo/core` `applyBps`.
+  discountValue  BigInt       @map("discount_value")
+  minSpendAmount BigInt?      @map("min_spend_amount")
+  currency       Currency?
+  maxRedemptions Int?         @map("max_redemptions")
+  perUserLimit   Int?         @map("per_user_limit")
+  startsAt       DateTime     @map("starts_at")
+  endsAt         DateTime     @map("ends_at")
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  vendor         Vendor?            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  redemptions    CouponRedemption[]
+  crmAutomations CrmAutomation[]
+  crmCampaigns   CrmCampaign[]
+
+  @@unique([vendorId, code])
+  @@index([scope])
+  @@map("coupons")
+}
+
+model CouponRedemption {
+  id             String   @id
+  couponId       String   @map("coupon_id")
+  userId         String   @map("user_id")
+  orderId        String?  @map("order_id")
+  subOrderId     String?  @map("sub_order_id")
+  discountAmount BigInt   @map("discount_amount")
+  currency       Currency
+  redeemedAt     DateTime @default(now()) @map("redeemed_at")
+
+  coupon   Coupon    @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  user     User      @relation(fields: [userId], references: [id])
+  order    Order?    @relation(fields: [orderId], references: [id])
+  subOrder SubOrder? @relation(fields: [subOrderId], references: [id])
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([orderId])
+  @@index([subOrderId])
+  @@map("coupon_redemptions")
+}
+
+model Review {
+  id         String   @id
+  productId  String   @map("product_id")
+  authorId   String   @map("author_id")
+  subOrderId String   @map("sub_order_id")
+  rating     Int
+  body       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  subOrder SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Restrict)
+
+  @@unique([authorId, subOrderId, productId])
+  @@index([productId])
+  @@map("reviews")
+}
+
+model PlatformSettings {
+  id                                String     @id
+  commissionBps                     Int        @default(1000) @map("commission_bps")
+  holdPeriodDays                    Int        @default(7) @map("hold_period_days")
+  refundWindowDays                  Int        @default(7) @map("refund_window_days")
+  maxCouponStack                    Int        @default(1) @map("max_coupon_stack")
+  paymentTimeoutMinutes             Int        @default(30) @map("payment_timeout_minutes")
+  supportedCurrencies               Currency[] @map("supported_currencies")
+  defaultCurrency                   Currency   @default(VND) @map("default_currency")
+  crmAtRiskAfterDays                Int        @default(60) @map("crm_at_risk_after_days")
+  crmLapsedAfterDays                Int        @default(180) @map("crm_lapsed_after_days")
+  crmVipMinOrders                   Int        @default(3) @map("crm_vip_min_orders")
+  crmMaxCampaignsPerWeek            Int        @default(2) @map("crm_max_campaigns_per_week")
+  crmMaxMarketingPerCustomerPerWeek Int        @default(2) @map("crm_max_marketing_per_customer_per_week")
+  liveDisconnectGraceSeconds        Int        @default(120) @map("live_disconnect_grace_seconds")
+  liveChatCooldownSeconds           Int        @default(2) @map("live_chat_cooldown_seconds")
+  createdAt                         DateTime   @default(now()) @map("created_at")
+  updatedAt                         DateTime   @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
+
+model OutboxEvent {
+  id            String    @id
+  aggregateId   String    @map("aggregate_id")
+  aggregateType String    @map("aggregate_type")
+  eventType     String    @map("event_type")
+  payload       Json      @default("{}")
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  processedAt   DateTime? @map("processed_at")
+  /// Earliest time the dispatcher may (re)try this event; pushed forward on failure for backoff.
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at")
+
+  @@index([processedAt, nextAttemptAt])
+  @@map("outbox_events")
+}
+
+/// Full refund of one sub-order (roadmap D12, admin-initiated); a worker calls the provider and
+/// flips `status`. At most one non-FAILED refund per sub-order: partial unique index
+/// `refunds_sub_order_id_active_key` (hand-written SQL in `add_marketplace_ops_fields`; Prisma
+/// cannot model a WHERE clause).
+model Refund {
+  id               String       @id
+  subOrderId       String       @map("sub_order_id")
+  paymentId        String       @map("payment_id")
+  amount           BigInt
+  currency         Currency
+  status           RefundStatus @default(PENDING)
+  reason           String
+  providerRefundId String?      @map("provider_refund_id")
+  requestedById    String       @map("requested_by_id")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  subOrder    SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Restrict)
+  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  requestedBy User     @relation("RefundRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+
+  @@index([subOrderId])
+  @@index([paymentId])
+  @@index([requestedById])
+  @@index([status])
+  @@map("refunds")
+}
+
+/// Vendor staff invitation (roadmap D14). `email` is stored lowercase; only a hash of the token is kept.
+model VendorInvitation {
+  id           String    @id
+  vendorId     String    @map("vendor_id")
+  email        String
+  tokenHash    String    @unique @map("token_hash")
+  invitedById  String    @map("invited_by_id")
+  expiresAt    DateTime  @map("expires_at")
+  acceptedAt   DateTime? @map("accepted_at")
+  acceptedById String?   @map("accepted_by_id")
+  revokedAt    DateTime? @map("revoked_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  vendor     Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  invitedBy  User   @relation("InvitationInviter", fields: [invitedById], references: [id], onDelete: Restrict)
+  acceptedBy User?  @relation("InvitationAcceptor", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@index([vendorId])
+  @@index([invitedById])
+  @@index([acceptedById])
+  @@map("vendor_invitations")
+}
+
+// ---- Vendor CRM (docs/superpowers/plans/2026-11-23-vendor-crm.md) ----
+
+model VendorCustomer {
+  vendorId  String   @map("vendor_id")
+  userId    String   @map("user_id")
+  tags      String[] @default([])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([vendorId, userId])
+  @@index([userId])
+  @@index([tags], type: Gin)
+  @@map("vendor_customers")
+}
+
+model VendorCustomerNote {
+  id        String    @id
+  vendorId  String    @map("vendor_id")
+  userId    String    @map("user_id")
+  authorId  String?   @map("author_id")
+  body      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User   @relation("CrmNoteCustomer", fields: [userId], references: [id], onDelete: Cascade)
+  author User?  @relation("CrmNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([vendorId, userId, createdAt])
+  @@index([userId])
+  @@index([authorId])
+  @@map("vendor_customer_notes")
+}
+
+model CustomerVendorPreference {
+  userId               String         @map("user_id")
+  vendorId             String         @map("vendor_id")
+  marketingOptInAt     DateTime?      @map("marketing_opt_in_at")
+  marketingOptInSource ConsentSource? @map("marketing_opt_in_source")
+  marketingOptOutAt    DateTime?      @map("marketing_opt_out_at")
+  serviceOptOutAt      DateTime?      @map("service_opt_out_at")
+  /// sha256 of the 32-byte random unsubscribe token (the raw token only appears in emails).
+  unsubscribeTokenHash String         @unique @map("unsubscribe_token_hash")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@id([userId, vendorId])
+  @@index([vendorId])
+  @@map("customer_vendor_preferences")
+}
+
+model CrmAutomation {
+  id         String            @id
+  vendorId   String            @map("vendor_id")
+  kind       CrmAutomationKind
+  isEnabled  Boolean           @default(false) @map("is_enabled")
+  delayDays  Int               @map("delay_days")
+  templateVi String?           @map("template_vi")
+  templateEn String?           @map("template_en")
+  couponId   String?           @map("coupon_id")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  vendor Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  @@unique([vendorId, kind])
+  @@index([couponId])
+  @@map("crm_automations")
+}
+
+model CrmCampaign {
+  id             String            @id
+  vendorId       String            @map("vendor_id")
+  name           String
+  status         CrmCampaignStatus @default(DRAFT)
+  audience       Json
+  templateVi     String            @map("template_vi")
+  templateEn     String?           @map("template_en")
+  couponId       String?           @map("coupon_id")
+  scheduledAt    DateTime?         @map("scheduled_at")
+  startedAt      DateTime?         @map("started_at")
+  completedAt    DateTime?         @map("completed_at")
+  cancelledAt    DateTime?         @map("cancelled_at")
+  cancelReason   String?           @map("cancel_reason")
+  recipientCount Int               @default(0) @map("recipient_count")
+  createdById    String?           @map("created_by_id")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  vendor    Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  coupon    Coupon?      @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  createdBy User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  messages  CrmMessage[]
+
+  @@index([vendorId, status])
+  @@index([status, scheduledAt])
+  @@index([createdById])
+  @@index([couponId])
+  @@map("crm_campaigns")
+}
+
+model CrmMessage {
+  id             String             @id
+  vendorId       String             @map("vendor_id")
+  userId         String             @map("user_id")
+  kind           CrmMessageKind
+  automationKind CrmAutomationKind? @map("automation_kind")
+  campaignId     String?            @map("campaign_id")
+  subOrderId     String?            @map("sub_order_id")
+  channels       CrmChannel[]
+  status         CrmMessageStatus   @default(SCHEDULED)
+  skipReason     String?            @map("skip_reason")
+  scheduledFor   DateTime           @map("scheduled_for")
+  sentAt         DateTime?          @map("sent_at")
+  notificationId String?            @map("notification_id")
+  attempts       Int                @default(0)
+  lastError      String?            @map("last_error")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  vendor       Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign     CrmCampaign?  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subOrder     SubOrder?     @relation(fields: [subOrderId], references: [id], onDelete: Restrict)
+  notification Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, userId])
+  @@unique([automationKind, subOrderId])
+  @@index([userId])
+  @@index([subOrderId])
+  @@index([notificationId])
+  @@index([vendorId, userId, sentAt])
+  @@map("crm_messages")
+}
+
+model Notification {
+  id        String    @id
+  userId    String    @map("user_id")
+  vendorId  String?   @map("vendor_id")
+  title     String
+  body      String
+  linkPath  String?   @map("link_path")
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor      Vendor?      @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  crmMessages CrmMessage[]
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([vendorId])
+  @@map("notifications")
+}
+
+/// Append-only consent evidence (NĐ 13/2023): one row per consent change; never updated. Deleted only
+/// by customer/vendor erasure (cascade).
+model CrmConsentEvent {
+  id        String        @id
+  userId    String        @map("user_id")
+  vendorId  String        @map("vendor_id")
+  action    ConsentAction
+  source    ConsentSource
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([userId, vendorId, createdAt])
+  @@index([vendorId])
+  @@map("crm_consent_events")
+}
+
+/// A vendor's personal Zalo account, logged in by QR through workers/zalo (zca-js). One per vendor.
+/// `credentials` is AES-256-GCM ciphertext of the zca-js session ({ imei, cookie, userAgent }),
+/// readable only by workers/zalo (ZALO_CREDENTIALS_KEY); null once DISCONNECTED.
+model ZaloAccount {
+  id          String            @id
+  vendorId    String            @unique @map("vendor_id")
+  status      ZaloAccountStatus
+  /// Zalo user id of the logged-in account; unique so one Zalo number serves one shop. Cleared on disconnect.
+  zaloUid     String?           @unique @map("zalo_uid")
+  displayName String?           @map("display_name")
+  avatarUrl   String?           @map("avatar_url")
+  credentials String?
+  lastLoginAt DateTime?         @map("last_login_at")
+  /// Last successful keep-alive.
+  lastSeenAt  DateTime?         @map("last_seen_at")
+  lastError   String?           @map("last_error")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("zalo_accounts")
+}
+
+/// Vendor-authored text for one ZaloMessageEvent (placeholders: @repo/core ZALO_TEMPLATE_PLACEHOLDERS).
+/// No row = disabled. `delayMinutes` is only used by AFTER_DELIVERY (0 for every other event).
+model ZaloMessageTemplate {
+  id           String           @id
+  vendorId     String           @map("vendor_id")
+  event        ZaloMessageEvent
+  isEnabled    Boolean          @default(true) @map("is_enabled")
+  body         String
+  delayMinutes Int              @default(0) @map("delay_minutes")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, event])
+  @@map("zalo_message_templates")
+}
+
+/// One automated message for one sub-order + event. Written by the API in the same transaction as
+/// the order change (a Zalo-specific outbox); delivered by workers/zalo at or after `scheduledAt`.
+/// The text is rendered at send time and kept in `renderedBody`.
+model ZaloMessage {
+  id            String            @id
+  vendorId      String            @map("vendor_id")
+  subOrderId    String            @map("sub_order_id")
+  event         ZaloMessageEvent
+  status        ZaloMessageStatus @default(PENDING)
+  scheduledAt   DateTime          @map("scheduled_at")
+  /// Retry backoff: the worker skips the row until then.
+  nextAttemptAt DateTime          @default(now()) @map("next_attempt_at")
+  /// SENDING claim lease; an expired lease (crashed worker) is put back to PENDING.
+  lockedUntil   DateTime?         @map("locked_until")
+  attempts      Int               @default(0)
+  lastError     String?           @map("last_error")
+  skipReason    String?           @map("skip_reason")
+  renderedBody  String?           @map("rendered_body")
+  zaloMessageId String?           @map("zalo_message_id")
+  sentAt        DateTime?         @map("sent_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  vendor   Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  subOrder SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([subOrderId, event])
+  @@index([vendorId, status, scheduledAt])
+  @@index([status, scheduledAt])
+  @@map("zalo_messages")
+}
+
+enum LiveSessionStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum LiveEndReason {
+  VENDOR
+  DISCONNECT_TIMEOUT
+  TERMINATED
+}
+
+model LiveSession {
+  id                    String            @id
+  vendorId              String            @map("vendor_id")
+  createdById           String            @map("created_by_id")
+  idempotencyKey        String            @map("idempotency_key")
+  title                 String
+  status                LiveSessionStatus @default(SCHEDULED)
+  scheduledAt           DateTime?         @map("scheduled_at")
+  liveInputId           String?           @unique @map("live_input_id")
+  encoderConnectedAt    DateTime?         @map("encoder_connected_at")
+  encoderDisconnectedAt DateTime?         @map("encoder_disconnected_at")
+  encoderStatusAt       DateTime?         @map("encoder_status_at")
+  startedAt             DateTime?         @map("started_at")
+  endedAt               DateTime?         @map("ended_at")
+  endReason             LiveEndReason?    @map("end_reason")
+  endNote               String?           @map("end_note")
+  recordingVideoId      String?           @map("recording_video_id")
+  peakViewers           Int               @default(0) @map("peak_viewers")
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+
+  vendor    Vendor               @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  createdBy User                 @relation("LiveSessionCreator", fields: [createdById], references: [id])
+  products  LiveSessionProduct[]
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, status])
+  @@index([status, startedAt])
+  @@map("live_sessions")
+}
+
+model LiveSessionProduct {
+  liveSessionId String    @map("live_session_id")
+  productId     String    @map("product_id")
+  position      Int
+  pinnedAt      DateTime? @map("pinned_at")
+
+  liveSession LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@id([liveSessionId, productId])
+  @@index([productId])
+  @@map("live_session_products")
+}

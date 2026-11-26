@@ -1,0 +1,2570 @@
+[
+  {
+    "name": "Base Shape/Shape/Fill/8 R",
+    "w": 100,
+    "h": 40,
+    "used": 225
+  },
+  {
+    "name": "Icon/Glyph/25/Star",
+    "w": 25,
+    "h": 25,
+    "used": 171
+  },
+  {
+    "name": "Navbar/Link/16/normal",
+    "w": 45,
+    "h": 20,
+    "used": 139
+  },
+  {
+    "name": "Base Shape/Shape/Fill/0 R",
+    "w": 100,
+    "h": 40,
+    "used": 114
+  },
+  {
+    "name": "Base Shape/Shape/Fill/4 R",
+    "w": 100,
+    "h": 40,
+    "used": 75
+  },
+  {
+    "name": "Base Shape/Shape/Fill/99 R",
+    "w": 100,
+    "h": 40,
+    "used": 72
+  },
+  {
+    "name": "Icon/Glyph/25/Chevron/Right",
+    "w": 25,
+    "h": 25,
+    "used": 70
+  },
+  {
+    "name": "Base Shape/Shape/Fill Light/4 R",
+    "w": 100,
+    "h": 40,
+    "used": 68
+  },
+  {
+    "name": "Icon/Glyph/25/User",
+    "w": 25,
+    "h": 25,
+    "used": 51
+  },
+  {
+    "name": "Base Shape/Shape/Outline/8 R",
+    "w": 100,
+    "h": 40,
+    "used": 47
+  },
+  {
+    "name": "Base Shape/Shape/Fill Outline/8 R",
+    "w": 100,
+    "h": 40,
+    "used": 43
+  },
+  {
+    "name": "Base Shape/Shape/Fill Outline/99 R",
+    "w": 100,
+    "h": 40,
+    "used": 35
+  },
+  {
+    "name": "Base Shape/Shape/Fill Light/8 R",
+    "w": 100,
+    "h": 40,
+    "used": 34
+  },
+  {
+    "name": "Label/Numbers",
+    "w": 32,
+    "h": 18,
+    "used": 34
+  },
+  {
+    "name": "Navbar/Link/16/dropdown",
+    "w": 92,
+    "h": 20,
+    "used": 34
+  },
+  {
+    "name": "Base Shape/Shape/Fill Light/0 R",
+    "w": 100,
+    "h": 40,
+    "used": 31
+  },
+  {
+    "name": "Icon/Glyph/25/Love",
+    "w": 25,
+    "h": 25,
+    "used": 31
+  },
+  {
+    "name": "Base Shape/Shape/Outline/99 R",
+    "w": 100,
+    "h": 40,
+    "used": 25
+  },
+  {
+    "name": "Forms/Input/Normal/Large/Filled",
+    "w": 300,
+    "h": 48,
+    "used": 25
+  },
+  {
+    "name": "Icon/Glyph/25/Checkbox/Uncheck",
+    "w": 25,
+    "h": 25,
+    "used": 23
+  },
+  {
+    "name": "Buttons/Primary/Large",
+    "w": 80,
+    "h": 48,
+    "used": 22
+  },
+  {
+    "name": "Buttons/Primary/Regular",
+    "w": 80,
+    "h": 40,
+    "used": 22
+  },
+  {
+    "name": "Icon/Glyph/25/Chevron/Down",
+    "w": 25,
+    "h": 25,
+    "used": 22
+  },
+  {
+    "name": "Base Shape/Shape/Fill Outline/0 R",
+    "w": 100,
+    "h": 40,
+    "used": 20
+  },
+  {
+    "name": "Logo/Social Media/Twitter",
+    "w": 25,
+    "h": 25,
+    "used": 16
+  },
+  {
+    "name": "Logo/Social Media/Facebook",
+    "w": 25,
+    "h": 25,
+    "used": 16
+  },
+  {
+    "name": "Icon/Glyph/25/Radio button/No Active",
+    "w": 25,
+    "h": 25,
+    "used": 16
+  },
+  {
+    "name": "Buttons/Outline/Large",
+    "w": 80,
+    "h": 48,
+    "used": 15
+  },
+  {
+    "name": "Icon/Glyph/25/Checkbox/Check",
+    "w": 25,
+    "h": 25,
+    "used": 15
+  },
+  {
+    "name": "Base Element/Footer/001",
+    "w": 1440,
+    "h": 500,
+    "used": 14
+  },
+  {
+    "name": "Base Element/Navbar/003",
+    "w": 1440,
+    "h": 140,
+    "used": 14
+  },
+  {
+    "name": "Buttons/Primary & Left Icon/Align Center/Large",
+    "w": 120,
+    "h": 48,
+    "used": 14
+  },
+  {
+    "name": "Logo/Social Media/Instagram",
+    "w": 25,
+    "h": 25,
+    "used": 14
+  },
+  {
+    "name": "Icon/Glyph/25/Stroller",
+    "w": 25,
+    "h": 25,
+    "used": 14
+  },
+  {
+    "name": "Icon/Glyph/25/Radio button/Active",
+    "w": 25,
+    "h": 25,
+    "used": 13
+  },
+  {
+    "name": "Base Shape/Form/Outline/8 R",
+    "w": 300,
+    "h": 48,
+    "used": 12
+  },
+  {
+    "name": "Base Shape/Form/Fill Outline/8 R",
+    "w": 300,
+    "h": 48,
+    "used": 12
+  },
+  {
+    "name": "Icon/Glyph/25/Search",
+    "w": 25,
+    "h": 25,
+    "used": 12
+  },
+  {
+    "name": "Color/001",
+    "w": 68,
+    "h": 28,
+    "used": 11
+  },
+  {
+    "name": "Base Shape/Shape/Fill/12 R",
+    "w": 100,
+    "h": 40,
+    "used": 10
+  },
+  {
+    "name": "Icon/Glyph/25/Up & Down",
+    "w": 25,
+    "h": 25,
+    "used": 10
+  },
+  {
+    "name": "Logo/Social Media/Linkedin",
+    "w": 25,
+    "h": 25,
+    "used": 9
+  },
+  {
+    "name": "Icon/Glyph/25/Shipping",
+    "w": 25,
+    "h": 25,
+    "used": 9
+  },
+  {
+    "name": "Icon/Glyph/25/Trash",
+    "w": 25,
+    "h": 25,
+    "used": 9
+  },
+  {
+    "name": "Icon/Glyph/25/Dollar",
+    "w": 25,
+    "h": 25,
+    "used": 9
+  },
+  {
+    "name": "Logo/Language/US",
+    "w": 28,
+    "h": 20,
+    "used": 9
+  },
+  {
+    "name": "Base Shape/Shape/Fill Light/16 R",
+    "w": 100,
+    "h": 40,
+    "used": 8
+  },
+  {
+    "name": "Base Shape/Shape/Outline/4 R",
+    "w": 100,
+    "h": 40,
+    "used": 8
+  },
+  {
+    "name": "Logo/Brand/Apple",
+    "w": 110,
+    "h": 110,
+    "used": 8
+  },
+  {
+    "name": "Buttons/Outline/Regular",
+    "w": 80,
+    "h": 40,
+    "used": 7
+  },
+  {
+    "name": "Icon/Glyph/25/Add",
+    "w": 25,
+    "h": 25,
+    "used": 7
+  },
+  {
+    "name": "Icon/Glyph/25/Phone",
+    "w": 25,
+    "h": 25,
+    "used": 7
+  },
+  {
+    "name": "Icon/Glyph/25/Phone",
+    "w": 25,
+    "h": 25,
+    "used": 7
+  },
+  {
+    "name": "Parts/Category Item/001",
+    "w": 160,
+    "h": 220,
+    "used": 6
+  },
+  {
+    "name": "Parts/Category Item/002",
+    "w": 160,
+    "h": 194,
+    "used": 6
+  },
+  {
+    "name": "Base Shape/Shape/Fill Outline/4 R",
+    "w": 100,
+    "h": 40,
+    "used": 6
+  },
+  {
+    "name": "Forms/Input/Normal/Large/Blank",
+    "w": 300,
+    "h": 48,
+    "used": 6
+  },
+  {
+    "name": "Icon/Glyph/25/Arrow/Right",
+    "w": 25,
+    "h": 25,
+    "used": 6
+  },
+  {
+    "name": "Icon/Glyph/25/Edit",
+    "w": 25,
+    "h": 25,
+    "used": 6
+  },
+  {
+    "name": "Icon/Glyph/25/Home",
+    "w": 25,
+    "h": 25,
+    "used": 6
+  },
+  {
+    "name": "Logo/Payment/Master Card",
+    "w": 80,
+    "h": 36,
+    "used": 6
+  },
+  {
+    "name": "Logo/Marketplace/Shopify",
+    "w": 168,
+    "h": 64,
+    "used": 6
+  },
+  {
+    "name": "Logo/Marketplace/CM",
+    "w": 146,
+    "h": 64,
+    "used": 6
+  },
+  {
+    "name": "Logo/Marketplace/Google",
+    "w": 145,
+    "h": 64,
+    "used": 6
+  },
+  {
+    "name": "Logo/Marketplace/Airbnb",
+    "w": 154,
+    "h": 64,
+    "used": 6
+  },
+  {
+    "name": "Label/Notif",
+    "w": 19,
+    "h": 19,
+    "used": 6
+  },
+  {
+    "name": "Buttons/Primary & Right Icon/Align Center/Large",
+    "w": 120,
+    "h": 48,
+    "used": 5
+  },
+  {
+    "name": "Buttons/Primary & Left Icon/Align Center/Regular",
+    "w": 120,
+    "h": 40,
+    "used": 5
+  },
+  {
+    "name": "Base Shape/Shape/Fill Light/99 R",
+    "w": 100,
+    "h": 40,
+    "used": 5
+  },
+  {
+    "name": "Logo/Social Media/Github",
+    "w": 25,
+    "h": 25,
+    "used": 5
+  },
+  {
+    "name": "Logo/Social Media/YT",
+    "w": 25,
+    "h": 25,
+    "used": 5
+  },
+  {
+    "name": "Icon/Glyph/25/Store",
+    "w": 25,
+    "h": 25,
+    "used": 5
+  },
+  {
+    "name": "Icon/Glyph/25/Minus",
+    "w": 25,
+    "h": 25,
+    "used": 5
+  },
+  {
+    "name": "Logo/Store/App Store",
+    "w": 81,
+    "h": 24,
+    "used": 5
+  },
+  {
+    "name": "Logo/Store/Play Store",
+    "w": 81,
+    "h": 24,
+    "used": 5
+  },
+  {
+    "name": "Logo/Payment/Visa",
+    "w": 80,
+    "h": 36,
+    "used": 5
+  },
+  {
+    "name": "Logo/Payment/Paypal",
+    "w": 80,
+    "h": 36,
+    "used": 5
+  },
+  {
+    "name": "Logo/Marketplace/Amazon",
+    "w": 158,
+    "h": 64,
+    "used": 5
+  },
+  {
+    "name": "Parts/Blog/2 items/002",
+    "w": 540,
+    "h": 240,
+    "used": 4
+  },
+  {
+    "name": "Parts/Shopping cart/Tab/01",
+    "w": 1110,
+    "h": 56,
+    "used": 4
+  },
+  {
+    "name": "Parts/Checkout/Checkout list/730px/001",
+    "w": 730,
+    "h": 720,
+    "used": 4
+  },
+  {
+    "name": "Parts/Additional/Order Summary/002",
+    "w": 350,
+    "h": 796,
+    "used": 4
+  },
+  {
+    "name": "Parts/Sign In & Register/Benefit Item/002",
+    "w": 235,
+    "h": 158,
+    "used": 4
+  },
+  {
+    "name": "Buttons/Primary & Right Icon/Align Left & Right/Large",
+    "w": 120,
+    "h": 48,
+    "used": 4
+  },
+  {
+    "name": "Forms/Input/Right Icon/Large/Blank",
+    "w": 300,
+    "h": 48,
+    "used": 4
+  },
+  {
+    "name": "Icon/Glyph/25/Chevron/Left",
+    "w": 25,
+    "h": 25,
+    "used": 4
+  },
+  {
+    "name": "Icon/Glyph/25/Money",
+    "w": 25,
+    "h": 25,
+    "used": 4
+  },
+  {
+    "name": "Icon/Glyph/25/Archive",
+    "w": 25,
+    "h": 25,
+    "used": 4
+  },
+  {
+    "name": "Icon/Glyph/25/Message",
+    "w": 25,
+    "h": 25,
+    "used": 4
+  },
+  {
+    "name": "Pagination/No Active",
+    "w": 38,
+    "h": 38,
+    "used": 4
+  },
+  {
+    "name": "Parts/Blog/3 items/001",
+    "w": 350,
+    "h": 386,
+    "used": 3
+  },
+  {
+    "name": "Parts/Blog/3 items/002",
+    "w": 350,
+    "h": 375,
+    "used": 3
+  },
+  {
+    "name": "Parts/Blog/3 items/003",
+    "w": 350,
+    "h": 306,
+    "used": 3
+  },
+  {
+    "name": "Parts/Product/3 item/Type 1/001",
+    "w": 350,
+    "h": 104,
+    "used": 3
+  },
+  {
+    "name": "Parts/Product/3 item/Type 1/002",
+    "w": 350,
+    "h": 104,
+    "used": 3
+  },
+  {
+    "name": "Parts/Product/3 item/Type 1/003",
+    "w": 350,
+    "h": 104,
+    "used": 3
+  },
+  {
+    "name": "Parts/Testi/3 item/001",
+    "w": 350,
+    "h": 208,
+    "used": 3
+  },
+  {
+    "name": "Parts/Testi/3 item/002",
+    "w": 350,
+    "h": 266,
+    "used": 3
+  },
+  {
+    "name": "Parts/Testi/3 item/003",
+    "w": 350,
+    "h": 264,
+    "used": 3
+  },
+  {
+    "name": "Parts/Product/4 item/Type 5/001",
+    "w": 255,
+    "h": 376,
+    "used": 3
+  },
+  {
+    "name": "Parts/Product/4 item/Type 5/002",
+    "w": 255,
+    "h": 376,
+    "used": 3
+  },
+  {
+    "name": "Parts/Product/4 item/Type 5/003",
+    "w": 255,
+    "h": 376,
+    "used": 3
+  },
+  {
+    "name": "Parts/Sign In & Register/Benefit Item/001",
+    "w": 540,
+    "h": 104,
+    "used": 3
+  },
+  {
+    "name": "Buttons/Outline & Left Icon/Align Center/Large",
+    "w": 120,
+    "h": 48,
+    "used": 3
+  },
+  {
+    "name": "Buttons/Outline & Right Icon/Align Left & Right/Large",
+    "w": 120,
+    "h": 48,
+    "used": 3
+  },
+  {
+    "name": "Icon/Glyph/25/Customer Service",
+    "w": 25,
+    "h": 25,
+    "used": 3
+  },
+  {
+    "name": "Icon/Glyph/25/Card",
+    "w": 25,
+    "h": 25,
+    "used": 3
+  },
+  {
+    "name": "Icon/Glyph/25/Mens fashion",
+    "w": 25,
+    "h": 25,
+    "used": 3
+  },
+  {
+    "name": "Icon/Glyph/25/Thumb/Like",
+    "w": 25,
+    "h": 25,
+    "used": 3
+  },
+  {
+    "name": "Icon/Glyph/25/Thumb/Dislike",
+    "w": 25,
+    "h": 25,
+    "used": 3
+  },
+  {
+    "name": "Icon/Glyph/25/Flash",
+    "w": 25,
+    "h": 25,
+    "used": 3
+  },
+  {
+    "name": "Icon/Glyph/25/Play",
+    "w": 25,
+    "h": 25,
+    "used": 3
+  },
+  {
+    "name": "Icon/Glyph/25/Camera",
+    "w": 25,
+    "h": 25,
+    "used": 3
+  },
+  {
+    "name": "Icon/Glyph/25/Computer",
+    "w": 25,
+    "h": 25,
+    "used": 3
+  },
+  {
+    "name": "Icon/Glyph/25/Headphones",
+    "w": 25,
+    "h": 25,
+    "used": 3
+  },
+  {
+    "name": "Logo/Brand/Samsung",
+    "w": 110,
+    "h": 110,
+    "used": 3
+  },
+  {
+    "name": "Logo/Brand/Asus",
+    "w": 110,
+    "h": 110,
+    "used": 3
+  },
+  {
+    "name": "Logo/Brand/Xiaomi",
+    "w": 110,
+    "h": 110,
+    "used": 3
+  },
+  {
+    "name": "Pagination/Next",
+    "w": 38,
+    "h": 38,
+    "used": 3
+  },
+  {
+    "name": "Buttons/Primary & Right Icon/Align Left & Right/Small",
+    "w": 100,
+    "h": 30,
+    "used": 3
+  },
+  {
+    "name": "Parts/Blog/2 items/001",
+    "w": 540,
+    "h": 260,
+    "used": 2
+  },
+  {
+    "name": "Elements/Tittle/Shopping cart/001",
+    "w": 1440,
+    "h": 168,
+    "used": 2
+  },
+  {
+    "name": "Elements/Tittle/Shopping cart/002",
+    "w": 1440,
+    "h": 132,
+    "used": 2
+  },
+  {
+    "name": "Parts/Testi/2 item/001",
+    "w": 540,
+    "h": 213,
+    "used": 2
+  },
+  {
+    "name": "Elements/Brand Logo/Full width/6 Brand with text",
+    "w": 1440,
+    "h": 274,
+    "used": 2
+  },
+  {
+    "name": "Parts/Product Featured/4 item/001",
+    "w": 255,
+    "h": 340,
+    "used": 2
+  },
+  {
+    "name": "Parts/Shopping cart/item/Non active",
+    "w": 98,
+    "h": 56,
+    "used": 2
+  },
+  {
+    "name": "Parts/Additional/Apply Voucher/001",
+    "w": 350,
+    "h": 126,
+    "used": 2
+  },
+  {
+    "name": "Parts/Additional/Order Summary/001",
+    "w": 350,
+    "h": 465,
+    "used": 2
+  },
+  {
+    "name": "Parts/Chekout/Form/Add Customer data",
+    "w": 730,
+    "h": 552,
+    "used": 2
+  },
+  {
+    "name": "Parts/Checkout/730px/Choose shipping",
+    "w": 730,
+    "h": 620,
+    "used": 2
+  },
+  {
+    "name": "Parts/Chekout/Form/Payment with/001",
+    "w": 730,
+    "h": 620,
+    "used": 2
+  },
+  {
+    "name": "Parts/Additional/Order Summary/003",
+    "w": 350,
+    "h": 578,
+    "used": 2
+  },
+  {
+    "name": "Parts/Checkout/730px/Shipping to..",
+    "w": 730,
+    "h": 306,
+    "used": 2
+  },
+  {
+    "name": "Parts/Checkout/730px/Payment method",
+    "w": 730,
+    "h": 196,
+    "used": 2
+  },
+  {
+    "name": "Parts/Checkout/730px/Order review final",
+    "w": 730,
+    "h": 610,
+    "used": 2
+  },
+  {
+    "name": "Parts/Checkout/730px/Track Package",
+    "w": 730,
+    "h": 812,
+    "used": 2
+  },
+  {
+    "name": "Parts/Additional/Order Summary/004",
+    "w": 350,
+    "h": 733,
+    "used": 2
+  },
+  {
+    "name": "Parts/Sign In & Register/Register/001",
+    "w": 540,
+    "h": 660,
+    "used": 2
+  },
+  {
+    "name": "Parts/Sign In & Register/350px/Info/002",
+    "w": 350,
+    "h": 660,
+    "used": 2
+  },
+  {
+    "name": "Parts/Sign In & Register/Sign In/001",
+    "w": 540,
+    "h": 514,
+    "used": 2
+  },
+  {
+    "name": "Parts/Sign In & Register/350px/Info/001",
+    "w": 350,
+    "h": 514,
+    "used": 2
+  },
+  {
+    "name": "Parts/Sign In & Register/Register/002",
+    "w": 540,
+    "h": 650,
+    "used": 2
+  },
+  {
+    "name": "Parts/Sign In & Register/Sign In/002",
+    "w": 540,
+    "h": 511,
+    "used": 2
+  },
+  {
+    "name": "Parts/Sign In & Register/Benefit/540px/001",
+    "w": 540,
+    "h": 586,
+    "used": 2
+  },
+  {
+    "name": "Parts/Sign In & Register/Benefit/540px/002",
+    "w": 540,
+    "h": 560,
+    "used": 2
+  },
+  {
+    "name": "Base Shape/Shape/Outline/12 R",
+    "w": 100,
+    "h": 40,
+    "used": 2
+  },
+  {
+    "name": "Forms/Input/Right Icon/Large/Filled",
+    "w": 300,
+    "h": 48,
+    "used": 2
+  },
+  {
+    "name": "Icon/Glyph/25/Games",
+    "w": 25,
+    "h": 25,
+    "used": 2
+  },
+  {
+    "name": "Icon/Glyph/25/Badge",
+    "w": 25,
+    "h": 25,
+    "used": 2
+  },
+  {
+    "name": "Icon/Glyph/25/Product",
+    "w": 25,
+    "h": 25,
+    "used": 2
+  },
+  {
+    "name": "Icon/Glyph/25/Arrow/Left",
+    "w": 25,
+    "h": 25,
+    "used": 2
+  },
+  {
+    "name": "Icon/Glyph/25/Feature",
+    "w": 25,
+    "h": 25,
+    "used": 2
+  },
+  {
+    "name": "Icon/Multicolor/25/Success",
+    "w": 25,
+    "h": 25,
+    "used": 2
+  },
+  {
+    "name": "Icon/Glyph/25/Chat",
+    "w": 25,
+    "h": 25,
+    "used": 2
+  },
+  {
+    "name": "Icon/Glyph/25/Close",
+    "w": 25,
+    "h": 25,
+    "used": 2
+  },
+  {
+    "name": "Icon/Glyph/25/Healthy",
+    "w": 25,
+    "h": 25,
+    "used": 2
+  },
+  {
+    "name": "Logo/Expedition/DHL",
+    "w": 80,
+    "h": 36,
+    "used": 2
+  },
+  {
+    "name": "Logo/Payment/Cirrus",
+    "w": 80,
+    "h": 36,
+    "used": 2
+  },
+  {
+    "name": "Logo/Payment/American Express",
+    "w": 80,
+    "h": 36,
+    "used": 2
+  },
+  {
+    "name": "Logo/Marketplace/Dropbox",
+    "w": 197,
+    "h": 64,
+    "used": 2
+  },
+  {
+    "name": "Logo/Brand/Sony",
+    "w": 110,
+    "h": 110,
+    "used": 2
+  },
+  {
+    "name": "Logo/Brand/Wacom",
+    "w": 110,
+    "h": 110,
+    "used": 2
+  },
+  {
+    "name": "Elements/Header/001",
+    "w": 1440,
+    "h": 686,
+    "used": 1
+  },
+  {
+    "name": "Elements/Blog/001",
+    "w": 1440,
+    "h": 598,
+    "used": 1
+  },
+  {
+    "name": "Elements/Banner/1110px/006",
+    "w": 1110,
+    "h": 353,
+    "used": 1
+  },
+  {
+    "name": "Elements/Benefit/001",
+    "w": 1440,
+    "h": 124,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 3/001",
+    "w": 255,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 3/Active",
+    "w": 255,
+    "h": 489,
+    "used": 1
+  },
+  {
+    "name": "Elements/Category/001",
+    "w": 1440,
+    "h": 397,
+    "used": 1
+  },
+  {
+    "name": "Elements/Best Seller Product/001",
+    "w": 1440,
+    "h": 1080,
+    "used": 1
+  },
+  {
+    "name": "Elements/Product List/001",
+    "w": 1440,
+    "h": 570,
+    "used": 1
+  },
+  {
+    "name": "Elements/Shop Categories/001",
+    "w": 1440,
+    "h": 1433,
+    "used": 1
+  },
+  {
+    "name": "Elements/Tittle/Search result/001",
+    "w": 1440,
+    "h": 198,
+    "used": 1
+  },
+  {
+    "name": "Elements/Content result grid/001",
+    "w": 1440,
+    "h": 1946,
+    "used": 1
+  },
+  {
+    "name": "Elements/Product Card details/001",
+    "w": 1440,
+    "h": 623,
+    "used": 1
+  },
+  {
+    "name": "Elements/Description/001",
+    "w": 1440,
+    "h": 594,
+    "used": 1
+  },
+  {
+    "name": "Elements/Review/001",
+    "w": 1440,
+    "h": 1212,
+    "used": 1
+  },
+  {
+    "name": "Elements/Related Products/4 item/001",
+    "w": 1440,
+    "h": 516,
+    "used": 1
+  },
+  {
+    "name": "Elements/Tittle/Order Tracking/001",
+    "w": 1440,
+    "h": 138,
+    "used": 1
+  },
+  {
+    "name": "Elements/Related Products/6 item/001",
+    "w": 1440,
+    "h": 481,
+    "used": 1
+  },
+  {
+    "name": "Elements/Order Success/001",
+    "w": 1440,
+    "h": 456,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 1/001",
+    "w": 255,
+    "h": 399,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 1/002",
+    "w": 255,
+    "h": 399,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 1/003",
+    "w": 255,
+    "h": 399,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 2/001",
+    "w": 255,
+    "h": 421,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 2/002",
+    "w": 255,
+    "h": 421,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 2/003",
+    "w": 255,
+    "h": 421,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 2/004",
+    "w": 255,
+    "h": 421,
+    "used": 1
+  },
+  {
+    "name": "Parts/Testi/1 item/001",
+    "w": 1110,
+    "h": 300,
+    "used": 1
+  },
+  {
+    "name": "Parts/Testi/1 item/002",
+    "w": 1110,
+    "h": 340,
+    "used": 1
+  },
+  {
+    "name": "Elements/Brand Logo/Full width/6 Brand",
+    "w": 1440,
+    "h": 121,
+    "used": 1
+  },
+  {
+    "name": "Elements/Brand Logo/Full width/10 Brand box",
+    "w": 1440,
+    "h": 638,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 3/002",
+    "w": 255,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 3/004",
+    "w": 255,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 3/005",
+    "w": 255,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 3/003",
+    "w": 255,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 4/001",
+    "w": 255,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 3/006",
+    "w": 255,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 3/007",
+    "w": 255,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 4/003",
+    "w": 256,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 4/004",
+    "w": 256,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 4/002",
+    "w": 256,
+    "h": 380,
+    "used": 1
+  },
+  {
+    "name": "Parts/Shop Categories/3 item/004",
+    "w": 350,
+    "h": 556,
+    "used": 1
+  },
+  {
+    "name": "Parts/Shop Categories/3 item/002",
+    "w": 350,
+    "h": 556,
+    "used": 1
+  },
+  {
+    "name": "Parts/Shop Categories/3 item/005",
+    "w": 350,
+    "h": 556,
+    "used": 1
+  },
+  {
+    "name": "Parts/Shop Categories/3 item/003",
+    "w": 350,
+    "h": 556,
+    "used": 1
+  },
+  {
+    "name": "Parts/Shop Categories/3 item/006",
+    "w": 350,
+    "h": 556,
+    "used": 1
+  },
+  {
+    "name": "Parts/Shop Categories/3 item/001",
+    "w": 350,
+    "h": 556,
+    "used": 1
+  },
+  {
+    "name": "Parts/Store Featured/4 item/001",
+    "w": 255,
+    "h": 340,
+    "used": 1
+  },
+  {
+    "name": "Elements/Filter/4 item/Full",
+    "w": 256,
+    "h": 1140,
+    "used": 1
+  },
+  {
+    "name": "Elements/Filter/4 item/011",
+    "w": 255,
+    "h": 328,
+    "used": 1
+  },
+  {
+    "name": "Elements/Filter/4 item/012",
+    "w": 255,
+    "h": 270,
+    "used": 1
+  },
+  {
+    "name": "Elements/Filter/4 item/013",
+    "w": 255,
+    "h": 156,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 6/Active",
+    "w": 255,
+    "h": 360,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 6/001",
+    "w": 255,
+    "h": 360,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 6/003",
+    "w": 255,
+    "h": 360,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/4 item/Type 6/002",
+    "w": 255,
+    "h": 360,
+    "used": 1
+  },
+  {
+    "name": "Parts/Shopping cart/item/selected",
+    "w": 99,
+    "h": 56,
+    "used": 1
+  },
+  {
+    "name": "Parts/Shopping cart/item/Finished",
+    "w": 99,
+    "h": 56,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/6 item/Type 1/002",
+    "w": 160,
+    "h": 305,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/6 item/Type 1/003",
+    "w": 160,
+    "h": 305,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/6 item/Type 1/004",
+    "w": 160,
+    "h": 305,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/6 item/Type 1/005",
+    "w": 160,
+    "h": 305,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/6 item/Type 1/006",
+    "w": 160,
+    "h": 305,
+    "used": 1
+  },
+  {
+    "name": "Parts/Product/6 item/Type 1/001",
+    "w": 160,
+    "h": 305,
+    "used": 1
+  },
+  {
+    "name": "Parts/Checkout/Customer Receive/730px/001",
+    "w": 730,
+    "h": 426,
+    "used": 1
+  },
+  {
+    "name": "Buttons/Primary & Right Icon/Align Left & Right/Regular",
+    "w": 120,
+    "h": 40,
+    "used": 1
+  },
+  {
+    "name": "Base Shape/Shape/Outline/16 R",
+    "w": 100,
+    "h": 40,
+    "used": 1
+  },
+  {
+    "name": "Base Shape/Shape/Fill Outline/16 R",
+    "w": 100,
+    "h": 40,
+    "used": 1
+  },
+  {
+    "name": "Base Shape/Shape/Fill Light/12 R",
+    "w": 100,
+    "h": 40,
+    "used": 1
+  },
+  {
+    "name": "Base Shape/Shape/Fill Outline/12 R",
+    "w": 100,
+    "h": 40,
+    "used": 1
+  },
+  {
+    "name": "Base Shape/Shape/Outline/0 R",
+    "w": 100,
+    "h": 40,
+    "used": 1
+  },
+  {
+    "name": "Forms/Input/Right Icon/Medium/Blank",
+    "w": 300,
+    "h": 40,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Chevron/Up",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/View",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Share",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Refresh",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Report",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/View/Grid",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/View/List",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Arrow/Down",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Ball",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Shopping bag",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Copy",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Microphone",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Battery",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Info",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Burger",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Icon/Glyph/25/Notification",
+    "w": 25,
+    "h": 25,
+    "used": 1
+  },
+  {
+    "name": "Logo/Expedition/FedEx",
+    "w": 80,
+    "h": 36,
+    "used": 1
+  },
+  {
+    "name": "Logo/Expedition/Express",
+    "w": 80,
+    "h": 36,
+    "used": 1
+  },
+  {
+    "name": "Logo/Expedition/JNE",
+    "w": 80,
+    "h": 36,
+    "used": 1
+  },
+  {
+    "name": "Logo/Expedition/POS",
+    "w": 80,
+    "h": 36,
+    "used": 1
+  },
+  {
+    "name": "Logo/Language/Germany",
+    "w": 28,
+    "h": 20,
+    "used": 1
+  },
+  {
+    "name": "Logo/Brand/Fila",
+    "w": 110,
+    "h": 110,
+    "used": 1
+  },
+  {
+    "name": "Logo/Brand/Barbour",
+    "w": 110,
+    "h": 110,
+    "used": 1
+  },
+  {
+    "name": "Pagination/Active",
+    "w": 38,
+    "h": 38,
+    "used": 1
+  },
+  {
+    "name": "Elements/Header/002",
+    "w": 1440,
+    "h": 900,
+    "used": 0
+  },
+  {
+    "name": "Elements/Header/003",
+    "w": 1440,
+    "h": 887,
+    "used": 0
+  },
+  {
+    "name": "Elements/Header/004",
+    "w": 1440,
+    "h": 907,
+    "used": 0
+  },
+  {
+    "name": "Elements/Header/005",
+    "w": 1440,
+    "h": 676,
+    "used": 0
+  },
+  {
+    "name": "Elements/Blog/002",
+    "w": 1440,
+    "h": 656,
+    "used": 0
+  },
+  {
+    "name": "Elements/Blog/003",
+    "w": 1440,
+    "h": 645,
+    "used": 0
+  },
+  {
+    "name": "Elements/Blog/005",
+    "w": 1440,
+    "h": 530,
+    "used": 0
+  },
+  {
+    "name": "Elements/Blog/006",
+    "w": 1440,
+    "h": 780,
+    "used": 0
+  },
+  {
+    "name": "Elements/Blog/004",
+    "w": 1440,
+    "h": 664,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/Full Width/001",
+    "w": 1440,
+    "h": 300,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/540px/001",
+    "w": 540,
+    "h": 220,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/350px/Potrait/001",
+    "w": 350,
+    "h": 370,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/540px/002",
+    "w": 540,
+    "h": 220,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/350px/Potrait/002",
+    "w": 350,
+    "h": 370,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/540px/003",
+    "w": 540,
+    "h": 200,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/350px/Landscape/002",
+    "w": 350,
+    "h": 162,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/540px/004",
+    "w": 540,
+    "h": 200,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/350px/Potrait/003",
+    "w": 350,
+    "h": 370,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/540px/005",
+    "w": 540,
+    "h": 200,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/350px/Landscape/001",
+    "w": 350,
+    "h": 162,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/Full Width/004",
+    "w": 1440,
+    "h": 350,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/Full Width/005",
+    "w": 1440,
+    "h": 310,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/Full Width/003",
+    "w": 1440,
+    "h": 350,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/1110px/001",
+    "w": 1110,
+    "h": 380,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/825px/001",
+    "w": 825,
+    "h": 340,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/825px/002",
+    "w": 825,
+    "h": 297,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/825px/003",
+    "w": 825,
+    "h": 300,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/730px/001",
+    "w": 730,
+    "h": 280,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/730px/002",
+    "w": 730,
+    "h": 280,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/730px/003",
+    "w": 730,
+    "h": 290,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/1110px/002",
+    "w": 1110,
+    "h": 340,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/1110px/003",
+    "w": 1110,
+    "h": 400,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/1110px/004",
+    "w": 1110,
+    "h": 400,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/1110px/005",
+    "w": 1110,
+    "h": 350,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/350px/Landscape/003",
+    "w": 350,
+    "h": 162,
+    "used": 0
+  },
+  {
+    "name": "Elements/Banner/Full Width/002",
+    "w": 1440,
+    "h": 350,
+    "used": 0
+  },
+  {
+    "name": "Parts/Blog/2 items/003",
+    "w": 540,
+    "h": 240,
+    "used": 0
+  },
+  {
+    "name": "Elements/Flash Sale/001",
+    "w": 1440,
+    "h": 559,
+    "used": 0
+  },
+  {
+    "name": "Elements/Testimonial/001",
+    "w": 1440,
+    "h": 477,
+    "used": 0
+  },
+  {
+    "name": "Elements/Download Apps/001",
+    "w": 1440,
+    "h": 232,
+    "used": 0
+  },
+  {
+    "name": "Elements/Download Apps/005",
+    "w": 1110,
+    "h": 362,
+    "used": 0
+  },
+  {
+    "name": "Elements/Download Apps/002",
+    "w": 1440,
+    "h": 232,
+    "used": 0
+  },
+  {
+    "name": "Elements/Download Apps/003",
+    "w": 1440,
+    "h": 232,
+    "used": 0
+  },
+  {
+    "name": "Elements/Download Apps/004",
+    "w": 1440,
+    "h": 232,
+    "used": 0
+  },
+  {
+    "name": "Elements/Testimonial/005",
+    "w": 1440,
+    "h": 522,
+    "used": 0
+  },
+  {
+    "name": "Elements/Testimonial/002",
+    "w": 1440,
+    "h": 455,
+    "used": 0
+  },
+  {
+    "name": "Elements/Testimonial/003",
+    "w": 1440,
+    "h": 860,
+    "used": 0
+  },
+  {
+    "name": "Elements/Testimonial/004",
+    "w": 1440,
+    "h": 460,
+    "used": 0
+  },
+  {
+    "name": "Elements/Flash Sale/002",
+    "w": 1440,
+    "h": 637,
+    "used": 0
+  },
+  {
+    "name": "Elements/Brand Logo/1110px/6 Brand",
+    "w": 1110,
+    "h": 120,
+    "used": 0
+  },
+  {
+    "name": "Elements/Brand Logo/1110px/10 Brand",
+    "w": 1110,
+    "h": 240,
+    "used": 0
+  },
+  {
+    "name": "Elements/Brand Logo/1110px/5 Brand",
+    "w": 1110,
+    "h": 120,
+    "used": 0
+  },
+  {
+    "name": "Elements/Brand Logo/1110px/4 Brand",
+    "w": 1110,
+    "h": 120,
+    "used": 0
+  },
+  {
+    "name": "Elements/Benefit/002",
+    "w": 1440,
+    "h": 154,
+    "used": 0
+  },
+  {
+    "name": "Elements/Category/002",
+    "w": 1440,
+    "h": 371,
+    "used": 0
+  },
+  {
+    "name": "Elements/Best Seller Product/002",
+    "w": 1440,
+    "h": 670,
+    "used": 0
+  },
+  {
+    "name": "Elements/Product Card details/002",
+    "w": 1440,
+    "h": 575,
+    "used": 0
+  },
+  {
+    "name": "Elements/Shopping Cart/001",
+    "w": 1440,
+    "h": 791,
+    "used": 0
+  },
+  {
+    "name": "Elements/Shopping Cart/002",
+    "w": 1440,
+    "h": 1048,
+    "used": 0
+  },
+  {
+    "name": "Elements/Shopping Cart/003",
+    "w": 1440,
+    "h": 1317,
+    "used": 0
+  },
+  {
+    "name": "Elements/Shopping Cart/004",
+    "w": 1440,
+    "h": 1212,
+    "used": 0
+  },
+  {
+    "name": "Elements/Shopping Cart/005",
+    "w": 1440,
+    "h": 852,
+    "used": 0
+  },
+  {
+    "name": "Elements/Register/001",
+    "w": 1440,
+    "h": 780,
+    "used": 0
+  },
+  {
+    "name": "Elements/Sign In/001",
+    "w": 1440,
+    "h": 634,
+    "used": 0
+  },
+  {
+    "name": "Elements/Register/002",
+    "w": 1440,
+    "h": 770,
+    "used": 0
+  },
+  {
+    "name": "Elements/Sign In/002",
+    "w": 1440,
+    "h": 660,
+    "used": 0
+  },
+  {
+    "name": "Elements/Order Success/002",
+    "w": 1440,
+    "h": 456,
+    "used": 0
+  },
+  {
+    "name": "Parts/Blog/3 items/004",
+    "w": 350,
+    "h": 328,
+    "used": 0
+  },
+  {
+    "name": "Parts/Badge/4 item/Flash Sale",
+    "w": 255,
+    "h": 284,
+    "used": 0
+  },
+  {
+    "name": "Parts/Product/4 item/Type 3/008",
+    "w": 255,
+    "h": 380,
+    "used": 0
+  },
+  {
+    "name": "Parts/Product/3 item/Type 1/001",
+    "w": 350,
+    "h": 363,
+    "used": 0
+  },
+  {
+    "name": "Parts/Product/3 item/Type 1/002",
+    "w": 350,
+    "h": 429,
+    "used": 0
+  },
+  {
+    "name": "Parts/Product/3 item/Type 1/003",
+    "w": 350,
+    "h": 429,
+    "used": 0
+  },
+  {
+    "name": "Parts/Product/4 item/Banner/001",
+    "w": 255,
+    "h": 380,
+    "used": 0
+  },
+  {
+    "name": "Parts/Product/4 item/Banner/002",
+    "w": 255,
+    "h": 380,
+    "used": 0
+  },
+  {
+    "name": "Parts/Product/4 item/Banner/003",
+    "w": 255,
+    "h": 380,
+    "used": 0
+  },
+  {
+    "name": "Parts/Store Featured/4 item/002",
+    "w": 255,
+    "h": 340,
+    "used": 0
+  },
+  {
+    "name": "Elements/Filter/4 item/001",
+    "w": 255,
+    "h": 212,
+    "used": 0
+  },
+  {
+    "name": "Elements/Filter/4 item/010",
+    "w": 255,
+    "h": 270,
+    "used": 0
+  },
+  {
+    "name": "Elements/Filter/4 item/006",
+    "w": 255,
+    "h": 282,
+    "used": 0
+  },
+  {
+    "name": "Elements/Filter/4 item/007",
+    "w": 255,
+    "h": 102,
+    "used": 0
+  },
+  {
+    "name": "Elements/Filter/4 item/009",
+    "w": 255,
+    "h": 236,
+    "used": 0
+  },
+  {
+    "name": "Elements/Filter/4 item/008",
+    "w": 255,
+    "h": 174,
+    "used": 0
+  },
+  {
+    "name": "Elements/Filter/4 item/004",
+    "w": 255,
+    "h": 212,
+    "used": 0
+  },
+  {
+    "name": "Elements/Filter/4 item/002",
+    "w": 255,
+    "h": 212,
+    "used": 0
+  },
+  {
+    "name": "Elements/Filter/4 item/003",
+    "w": 255,
+    "h": 212,
+    "used": 0
+  },
+  {
+    "name": "Elements/Filter/4 item/005",
+    "w": 255,
+    "h": 212,
+    "used": 0
+  },
+  {
+    "name": "Parts/Product/4 item/Type 6/004",
+    "w": 255,
+    "h": 360,
+    "used": 0
+  },
+  {
+    "name": "Parts/Chekout/Form/Payment with/002",
+    "w": 730,
+    "h": 624,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Footer/006",
+    "w": 1440,
+    "h": 600,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Footer/010",
+    "w": 1440,
+    "h": 530,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Footer/002",
+    "w": 1440,
+    "h": 748,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Footer/003",
+    "w": 1440,
+    "h": 794,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Footer/009",
+    "w": 1440,
+    "h": 1041,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Menu Block/001",
+    "w": 1440,
+    "h": 888,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Menu Block/002",
+    "w": 1440,
+    "h": 548,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Menu Block/003",
+    "w": 1440,
+    "h": 503,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Menu Block/004",
+    "w": 1440,
+    "h": 565,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Footer/007",
+    "w": 1440,
+    "h": 592,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Footer/008",
+    "w": 1440,
+    "h": 592,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Navbar/001",
+    "w": 1440,
+    "h": 80,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Navbar/002",
+    "w": 1440,
+    "h": 80,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Navbar/005",
+    "w": 1440,
+    "h": 140,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Navbar/006",
+    "w": 1440,
+    "h": 203,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Navbar/010",
+    "w": 1440,
+    "h": 168,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Navbar/008",
+    "w": 1440,
+    "h": 148,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Navbar/007",
+    "w": 1440,
+    "h": 175,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Navbar/009",
+    "w": 1440,
+    "h": 105,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Navbar/004",
+    "w": 1440,
+    "h": 154,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Footer/004",
+    "w": 1440,
+    "h": 560,
+    "used": 0
+  },
+  {
+    "name": "Base Element/Footer/005",
+    "w": 1440,
+    "h": 360,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline & Right Icon/Align Center/Large",
+    "w": 120,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Primary & Left Icon/Align Left & Right/Large",
+    "w": 120,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline & Left Icon/Align Left & Right/Large",
+    "w": 120,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline & Left Icon/Align Center/Regular",
+    "w": 120,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Primary & Right Icon/Align Center/Regular",
+    "w": 120,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline & Right Icon/Align Center/Regular",
+    "w": 120,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Primary & Left Icon/Align Left & Right/Regular",
+    "w": 120,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline & Left Icon/Align Left & Right/Regular",
+    "w": 120,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline & Right Icon/Align Left & Right/Regular",
+    "w": 120,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Form/Outline/99 R",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Form/Fill Outline/99 R",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Shape/Fill/16 R",
+    "w": 100,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Form/Outline/16 R",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Form/Fill Outline/16 R",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Form/Outline/12 R",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Form/Fill Outline/12 R",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Form/Outline/4 R",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Form/Fill Outline/4 R",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Form/Outline/0 R",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Base Shape/Form/Fill Outline/0 R",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Normal/Medium/Blank",
+    "w": 300,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Normal/Small/Blank",
+    "w": 300,
+    "h": 32,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Normal/Medium/Filled",
+    "w": 300,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Normal/Small/Filled",
+    "w": 300,
+    "h": 32,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left Icon/Large/Blank",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left Icon/Medium/Blank",
+    "w": 300,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left Icon/Small/Blank",
+    "w": 300,
+    "h": 32,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left Icon/Large/Filled",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left Icon/Medium/Filled",
+    "w": 300,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left Icon/Small/Filled",
+    "w": 300,
+    "h": 32,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Right Icon/Small/Blank",
+    "w": 300,
+    "h": 32,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Right Icon/Medium/Filled",
+    "w": 300,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Right Icon/Small/Filled",
+    "w": 300,
+    "h": 32,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left & Right Icon/Large/Blank",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left & Right Icon/Medium/Blank",
+    "w": 300,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left & Right Icon/Small/Blank",
+    "w": 300,
+    "h": 32,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left & Right Icon/Large/Filled",
+    "w": 300,
+    "h": 48,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left & Right Icon/Medium/Filled",
+    "w": 300,
+    "h": 40,
+    "used": 0
+  },
+  {
+    "name": "Forms/Input/Left & Right Icon/Small/Filled",
+    "w": 300,
+    "h": 32,
+    "used": 0
+  },
+  {
+    "name": "Logo/Social Media/Slack",
+    "w": 25,
+    "h": 25,
+    "used": 0
+  },
+  {
+    "name": "Logo/Social Media/Google",
+    "w": 25,
+    "h": 25,
+    "used": 0
+  },
+  {
+    "name": "Icon/Glyph/25/Mouse",
+    "w": 25,
+    "h": 25,
+    "used": 0
+  },
+  {
+    "name": "Icon/Glyph/25/Arrow/Up",
+    "w": 25,
+    "h": 25,
+    "used": 0
+  },
+  {
+    "name": "Icon/Glyph/25/Best Prices",
+    "w": 25,
+    "h": 25,
+    "used": 0
+  },
+  {
+    "name": "Logo/Language/France",
+    "w": 28,
+    "h": 20,
+    "used": 0
+  },
+  {
+    "name": "Logo/Language/Spain",
+    "w": 28,
+    "h": 20,
+    "used": 0
+  },
+  {
+    "name": "Logo/Brand/Lenovo",
+    "w": 110,
+    "h": 110,
+    "used": 0
+  },
+  {
+    "name": "Logo/Brand/Huawei",
+    "w": 110,
+    "h": 110,
+    "used": 0
+  },
+  {
+    "name": "Logo/Brand/Converse",
+    "w": 110,
+    "h": 110,
+    "used": 0
+  },
+  {
+    "name": "Logo/Brand/Ikea",
+    "w": 110,
+    "h": 110,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Primary/Small",
+    "w": 80,
+    "h": 30,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Primary & Left Icon/Align Center/Small",
+    "w": 100,
+    "h": 30,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Primary & Right Icon/Align Center/Small",
+    "w": 100,
+    "h": 30,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Primary & Left Icon/Align Left & Right/Small",
+    "w": 100,
+    "h": 30,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline/Small",
+    "w": 80,
+    "h": 30,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline & Left Icon/Align Center/Small",
+    "w": 100,
+    "h": 30,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline & Right Icon/Align Center/Small",
+    "w": 100,
+    "h": 30,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline & Left Icon/Align Left & Right/Small",
+    "w": 100,
+    "h": 30,
+    "used": 0
+  },
+  {
+    "name": "Buttons/Outline & Right Icon/Align Left & Right/Small",
+    "w": 100,
+    "h": 30,
+    "used": 0
+  }
+]

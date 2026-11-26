@@ -30,23 +30,36 @@ services:
       timeout: 3s
       retries: 10
 
-  minio:
-    image: minio/minio:latest
-    container_name: ecom-minio
-    command: server /data --console-address ":9001"
+  # S3-compatible object storage. Docker Hub's minio/minio is no longer pullable, so local dev
+  # uses RustFS (Apache-2.0; S3 API on 9000, web console on 9001). Prod uses Cloudflare R2.
+  s3:
+    image: rustfs/rustfs:latest
+    container_name: ecom-s3
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      RUSTFS_CONSOLE_ENABLE: 'true'
     ports:
       - '9000:9000'
       - '9001:9001'
     volumes:
-      - minio_data:/data
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - s3_data:/data
+    user: root
+
+  # One-shot: creates buckets `kyc` (private) and `media` (public read). Idempotent.
+  s3-init:
+    image: amazon/aws-cli:latest
+    container_name: ecom-s3-init
+    depends_on:
+      - s3
+    restart: 'no'
+    environment:
+      AWS_ACCESS_KEY_ID: rustfsadmin
+      AWS_SECRET_ACCESS_KEY: rustfsadmin
+      AWS_DEFAULT_REGION: us-east-1
+    volumes:
+      - ./docker/s3-init.sh:/s3-init.sh:ro
+    entrypoint: ['sh', '/s3-init.sh']
 
   mailhog:
     image: mailhog/mailhog:latest
@@ -58,4 +71,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  minio_data:
+  s3_data:

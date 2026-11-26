@@ -1,4 +1,48 @@
-// Prisma schema (DB source of truth), client singleton, seed, migrations.
-// PrismaClient is NEVER exposed outside this package — see CLAUDE.md §6 NEVER DO.
-// Only PrismaService (apps/api) consumes it.
-export {};
+// Prisma schema (DB source of truth), client singleton, ledger + money boundary helpers.
+// PrismaClient is NEVER exposed outside this package as a constructor —
+// consumers import the configured `prisma` singleton or PrismaService (apps/api).
+export { prisma } from './client.js';
+export { assertZeroSum } from './ledger.js';
+export { toMoney, toDbAmount } from './money.js';
+export {
+  queueZaloMessages,
+  queueZaloStatusMessages,
+  type QueueZaloMessagesInput,
+} from './zalo-queue.js';
+export {
+  crmAudienceIds,
+  crmAudienceParams,
+  crmSegmentCutoffs,
+  crmSegmentThresholds,
+} from './crm.js';
+
+// Re-export generated enums + types so consumers never import @prisma/client directly.
+export {
+  Role,
+  OAuthProvider,
+  Locale,
+  Currency,
+  VendorStatus,
+  ApplicationStatus,
+  ProductStatus,
+  OrderStatus,
+  SubOrderStatus,
+  PaymentProvider,
+  PaymentStatus,
+  RefundStatus,
+  LedgerAccount,
+  LedgerEntryType,
+  CouponScope,
+  DiscountType,
+  CrmMessageKind,
+  CrmChannel,
+  CrmAutomationKind,
+  CrmCampaignStatus,
+  CrmMessageStatus,
+  ConsentSource,
+  ConsentAction,
+  ZaloAccountStatus,
+  ZaloMessageEvent,
+  ZaloMessageStatus,
+} from '@prisma/client';
+export type { Prisma } from '@prisma/client';

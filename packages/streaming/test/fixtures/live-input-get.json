@@ -1,0 +1,45 @@
+{
+  "errors": [],
+  "messages": [],
+  "success": true,
+  "result": {
+    "created": "2014-01-02T02:20:00Z",
+    "deleteRecordingAfterDays": 45,
+    "enabled": true,
+    "meta": { "name": "01JH0000000000000000000000" },
+    "modified": "2014-01-02T02:20:00Z",
+    "playback": {
+      "dash": "https://customer-abc123.cloudflarestream.com/66be4bf738797e01e1fca35a7bdecdcd/manifest/video.mpd",
+      "hls": "https://customer-abc123.cloudflarestream.com/66be4bf738797e01e1fca35a7bdecdcd/manifest/video.m3u8"
+    },
+    "preferLowLatency": false,
+    "recording": {
+      "allowedOrigins": [],
+      "hideLiveViewerCount": false,
+      "mode": "automatic",
+      "requireSignedURLs": false,
+      "timeoutSeconds": 0
+    },
+    "rtmps": {
+      "streamKey": "2fb3cb9f17e68a2568d6ebed8d5505eak66be4bf738797e01e1fca35a7bdecdcd",
+      "url": "rtmps://live.cloudflare.com:443/live/"
+    },
+    "rtmpsPlayback": {
+      "streamKey": "2fb3cb9f17e68a2568d6ebed8d5505eak66be4bf738797e01e1fca35a7bdecdcd",
+      "url": "rtmps://live.cloudflare.com:443/live/"
+    },
+    "srt": {
+      "passphrase": "2fb3cb9f17e68a2568d6ebed8d5505eak66be4bf738797e01e1fca35a7bdecdcd",
+      "streamId": "f256e6ea9341d51eea64c9454659e576",
+      "url": "srt://live.cloudflare.com:778"
+    },
+    "status": "connected",
+    "uid": "66be4bf738797e01e1fca35a7bdecdcd",
+    "webRTC": {
+      "url": "https://customer-abc123.cloudflarestream.com/66be4bf738797e01e1fca35a7bdecdcd/webRTC/publish"
+    },
+    "webRTCPlayback": {
+      "url": "https://customer-abc123.cloudflarestream.com/66be4bf738797e01e1fca35a7bdecdcd/webRTC/play"
+    }
+  }
+}

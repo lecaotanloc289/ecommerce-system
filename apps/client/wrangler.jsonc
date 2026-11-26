@@ -1,0 +1,18 @@
+// Cloudflare Worker for the storefront, built by @opennextjs/cloudflare (`.open-next/`).
+// Deploy per branch with `--env dev|prod` → Worker `elma-web-dev` / `elma-web-prod`
+// (wrangler appends the env name). Local preview without --env uses `elma-web`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "elma-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-19",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  "env": {
+    "dev": {},
+    "prod": {},
+  },
+}

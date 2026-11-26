@@ -1,0 +1,22 @@
+{
+  "uid": "a2c3b8b8f1d14c3fa9e0c4f7f3b9d001",
+  "creator": null,
+  "readyToStream": true,
+  "status": {
+    "state": "ready",
+    "pctComplete": "100.000000",
+    "errorReasonCode": "",
+    "errorReasonText": ""
+  },
+  "meta": { "name": "01JH0000000000000000000000" },
+  "created": "2022-06-30T17:53:12.512033Z",
+  "modified": "2022-06-30T18:20:21.774299Z",
+  "liveInput": "eb222fcca08eeb1ae84c981ebe8aeeb6",
+  "duration": 1612.4,
+  "input": { "width": 1280, "height": 720 },
+  "playback": {
+    "hls": "https://customer-f33zs165nr7gyfy4.cloudflarestream.com/a2c3b8b8f1d14c3fa9e0c4f7f3b9d001/manifest/video.m3u8",
+    "dash": "https://customer-f33zs165nr7gyfy4.cloudflarestream.com/a2c3b8b8f1d14c3fa9e0c4f7f3b9d001/manifest/video.mpd"
+  },
+  "watermark": null
+}

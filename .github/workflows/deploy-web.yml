@@ -1,0 +1,60 @@
+name: Deploy web → Cloudflare Workers
+
+on:
+  push:
+    branches: [dev, prod]
+    paths:
+      - 'apps/client/**'
+      - 'packages/ui/**'
+      - 'packages/core/**'
+      - 'packages/i18n/**'
+      - 'packages/sdk/**'
+      - 'pnpm-lock.yaml'
+      - 'turbo.json'
+      - '.github/workflows/deploy-web.yml'
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: opennextjs-cloudflare build + deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # Inlined at build time (public). `github.ref_name` is `dev` or `prod`.
+      NEXT_PUBLIC_API_URL: https://elma-api-${{ github.ref_name }}.fly.dev
+    defaults:
+      run:
+        working-directory: apps/client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # @repo/core + @repo/i18n are consumed from their built dist/.
+      - name: Build workspace dependencies
+        run: pnpm turbo run build --filter=@apps/web^...
+
+      # Runs `next build`, then bundles .open-next/worker.js + .open-next/assets.
+      # `--env` picks the wrangler.jsonc environment, not a Next `.env.<name>` file.
+      - name: Build (OpenNext for Cloudflare)
+        run: pnpm exec opennextjs-cloudflare build --env ${{ github.ref_name }}
+
+      # wrangler.jsonc env `dev` / `prod` → Worker `elma-web-dev` / `elma-web-prod`.
+      - name: Deploy Worker
+        run: pnpm exec opennextjs-cloudflare deploy --env ${{ github.ref_name }}
+        env:
+          # Read by wrangler; scoped to this step so install/build scripts never see them.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

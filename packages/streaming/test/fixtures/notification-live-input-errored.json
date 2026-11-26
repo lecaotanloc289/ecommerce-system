@@ -1,0 +1,19 @@
+{
+  "name": "Live Webhook Test",
+  "text": "Notification type: Stream Live Input\nInput ID: eb222fcca08eeb1ae84c981ebe8aeeb6\nEvent type: live_input.errored\nUpdated at: 2022-01-13T11:45:10.000000000Z",
+  "data": {
+    "notification_name": "Stream Live Input",
+    "input_id": "eb222fcca08eeb1ae84c981ebe8aeeb6",
+    "event_type": "live_input.errored",
+    "updated_at": "2022-01-13T11:45:10.000000000Z",
+    "live_input_errored": {
+      "error": {
+        "code": "ERR_GOP_OUT_OF_RANGE",
+        "message": "Input GOP size or keyframe interval is out of range."
+      },
+      "video_codec": "",
+      "audio_codec": ""
+    }
+  },
+  "ts": 1642074310
+}

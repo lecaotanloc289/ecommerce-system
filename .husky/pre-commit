@@ -1,1 +1,5 @@
 pnpm lint-staged
+
+# Golden Rule #10: lint + typecheck every workspace changed since HEAD (staged or not) and every
+# workspace that depends on it. Turbo caches results, so untouched workspaces cost nothing.
+pnpm turbo run lint typecheck --filter='...[HEAD]' --output-logs=errors-only
