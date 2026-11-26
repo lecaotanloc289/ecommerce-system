@@ -126,3 +126,5 @@ export type NotificationId = z.infer<typeof NotificationIdSchema>;
 
 export const CrmConsentEventIdSchema = UlidSchema.brand<'CrmConsentEventId'>();
 export type CrmConsentEventId = z.infer<typeof CrmConsentEventIdSchema>;
+export const LiveSessionIdSchema = UlidSchema.brand<'LiveSessionId'>();
+export type LiveSessionId = z.infer<typeof LiveSessionIdSchema>;

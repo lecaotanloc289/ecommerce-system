@@ -1192,6 +1192,41 @@
         ],
         "type": "object"
       },
+      "CreateLiveSessionDto": {
+        "properties": {
+          "productIds": {
+            "items": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "scheduledAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 3,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "productIds"
+        ],
+        "type": "object"
+      },
       "CrmAutomationDto_Output": {
         "additionalProperties": false,
         "properties": {
@@ -2663,6 +2698,18 @@
           "primaryLocale",
           "roles",
           "vendorId"
+        ],
+        "type": "object"
+      },
+      "MuteLiveUserDto": {
+        "properties": {
+          "userId": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId"
         ],
         "type": "object"
       },
@@ -6164,6 +6211,22 @@
         ],
         "type": "object"
       },
+      "ReplaceLiveSessionProductsDto": {
+        "properties": {
+          "productIds": {
+            "items": {
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "productIds"
+        ],
+        "type": "object"
+      },
       "ReviewCreateBodyDto": {
         "properties": {
           "body": {
@@ -6376,6 +6439,41 @@
         ],
         "type": "object"
       },
+      "SendLiveChatMessageDto": {
+        "properties": {
+          "clientMessageId": {
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientMessageId",
+          "text"
+        ],
+        "type": "object"
+      },
+      "SendLiveReactionDto": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "HEART",
+              "LIKE",
+              "WOW",
+              "CLAP"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
       "ShippingMethodDto_Output": {
         "additionalProperties": false,
         "properties": {
@@ -6536,6 +6634,17 @@
         },
         "type": "array"
       },
+      "SimulateEncoderDto": {
+        "properties": {
+          "connected": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "connected"
+        ],
+        "type": "object"
+      },
       "StaffListDto_Output": {
         "items": {
           "additionalProperties": false,
@@ -6593,6 +6702,19 @@
         "required": [
           "carrier",
           "trackingNumber"
+        ],
+        "type": "object"
+      },
+      "TerminateLiveSessionDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 3,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
         ],
         "type": "object"
       },
@@ -10124,6 +10246,30 @@
         ]
       }
     },
+    "/v1/dev/live-sessions/{id}/encoder": {
+      "post": {
+        "operationId": "DevLiveSessionsController_simulateEncoder",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateEncoderDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "DevLiveSessions"
+        ]
+      }
+    },
     "/v1/health": {
       "get": {
         "operationId": "HealthController_check",
@@ -10165,6 +10311,135 @@
         "summary": "Readiness probe (checks the database)",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/v1/live-sessions": {
+      "get": {
+        "operationId": "PublicLiveSessionsController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SCHEDULED",
+                "LIVE",
+                "ENDED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicLiveSessions"
+        ]
+      }
+    },
+    "/v1/live-sessions/{id}": {
+      "get": {
+        "operationId": "PublicLiveSessionsController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PublicLiveSessions"
+        ]
+      }
+    },
+    "/v1/live-sessions/{id}/events": {
+      "get": {
+        "operationId": "LiveRealtimeController_events",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "LiveRealtime"
+        ]
+      }
+    },
+    "/v1/live-sessions/{id}/messages": {
+      "get": {
+        "operationId": "LiveRealtimeController_messages",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "LiveRealtime"
+        ]
+      },
+      "post": {
+        "operationId": "LiveRealtimeController_sendMessage",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendLiveChatMessageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "LiveRealtime"
+        ]
+      }
+    },
+    "/v1/live-sessions/{id}/reactions": {
+      "post": {
+        "operationId": "LiveRealtimeController_react",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendLiveReactionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "LiveRealtime"
         ]
       }
     },
@@ -11083,6 +11358,59 @@
         "summary": "Cancel a DRAFT / SCHEDULED campaign with a reason",
         "tags": [
           "platform"
+        ]
+      }
+    },
+    "/v1/platform/live-sessions": {
+      "get": {
+        "operationId": "PlatformLiveSessionsController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SCHEDULED",
+                "LIVE",
+                "ENDED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformLiveSessions"
+        ]
+      }
+    },
+    "/v1/platform/live-sessions/{id}/terminate": {
+      "post": {
+        "operationId": "PlatformLiveSessionsController_terminate",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerminateLiveSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "PlatformLiveSessions"
         ]
       }
     },
@@ -13612,6 +13940,231 @@
         ]
       }
     },
+    "/v1/vendor/live-sessions": {
+      "get": {
+        "operationId": "VendorLiveSessionsController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SCHEDULED",
+                "LIVE",
+                "ENDED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveSessions"
+        ]
+      },
+      "post": {
+        "operationId": "VendorLiveSessionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLiveSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveSessions"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}": {
+      "get": {
+        "operationId": "VendorLiveSessionsController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveSessions"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}/cancel": {
+      "post": {
+        "operationId": "VendorLiveSessionsController_cancel",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveSessions"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}/end": {
+      "post": {
+        "operationId": "VendorLiveSessionsController_end",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveSessions"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}/go-live": {
+      "post": {
+        "operationId": "VendorLiveSessionsController_goLive",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveSessions"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}/ingest-credentials": {
+      "get": {
+        "operationId": "VendorLiveSessionsController_ingestCredentials",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveSessions"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}/messages/{messageId}/delete": {
+      "post": {
+        "operationId": "VendorLiveModerationController_deleteMessage",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveModeration"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}/mutes": {
+      "post": {
+        "operationId": "VendorLiveModerationController_mute",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MuteLiveUserDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveModeration"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}/mutes/{userId}/unmute": {
+      "post": {
+        "operationId": "VendorLiveModerationController_unmute",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveModeration"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}/products": {
+      "put": {
+        "operationId": "VendorLiveSessionsController_replaceProducts",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceLiveSessionProductsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveSessions"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}/products/{productId}/pin": {
+      "post": {
+        "operationId": "VendorLiveSessionsController_pin",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveSessions"
+        ]
+      }
+    },
+    "/v1/vendor/live-sessions/{id}/products/{productId}/unpin": {
+      "post": {
+        "operationId": "VendorLiveSessionsController_unpin",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "VendorLiveSessions"
+        ]
+      }
+    },
     "/v1/vendor/products": {
       "get": {
         "operationId": "VendorProductsController_list",
@@ -14894,6 +15447,34 @@
         "summary": "Public shop page: vendor header + its products",
         "tags": [
           "catalog"
+        ]
+      }
+    },
+    "/v1/webhooks/cloudflare/live-input": {
+      "post": {
+        "operationId": "LiveWebhooksController_liveInput",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "LiveWebhooks"
+        ]
+      }
+    },
+    "/v1/webhooks/cloudflare/stream": {
+      "post": {
+        "operationId": "LiveWebhooksController_stream",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "LiveWebhooks"
         ]
       }
     }

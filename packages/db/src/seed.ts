@@ -10,6 +10,8 @@ import {
   Role,
   VendorStatus,
   ProductStatus,
+  LiveSessionStatus,
+  LiveEndReason,
   OrderStatus,
   SubOrderStatus,
   ConsentSource,
@@ -108,6 +110,8 @@ async function main() {
       paymentTimeoutMinutes: 30,
       supportedCurrencies: [Currency.VND, Currency.USD],
       defaultCurrency: Currency.VND,
+      liveDisconnectGraceSeconds: 120,
+      liveChatCooldownSeconds: 2,
     },
   });
 
@@ -315,6 +319,50 @@ async function main() {
   });
 
   await seedCrmDemo();
+
+  // Live sessions for Vendor A: one ENDED and one SCHEDULED, pinning seeded products.
+  await prisma.liveSession.upsert({
+    where: { id: IDS.liveSessionEnded },
+    update: {},
+    create: {
+      id: IDS.liveSessionEnded,
+      vendorId: IDS.vendorA,
+      createdById: IDS.vendorAOwner,
+      idempotencyKey: 'seed-live-ended',
+      title: 'Seed replay',
+      status: LiveSessionStatus.ENDED,
+      startedAt: new Date('2026-11-20T10:00:00Z'),
+      endedAt: new Date('2026-11-20T11:00:00Z'),
+      endReason: LiveEndReason.VENDOR,
+      recordingVideoId: 'seedrecording1',
+      peakViewers: 128,
+      products: {
+        create: [IDS.productA1, IDS.productA2].map((productId, position) => ({
+          productId,
+          position,
+        })),
+      },
+    },
+  });
+  await prisma.liveSession.upsert({
+    where: { id: IDS.liveSessionScheduled },
+    update: {},
+    create: {
+      id: IDS.liveSessionScheduled,
+      vendorId: IDS.vendorA,
+      createdById: IDS.vendorAOwner,
+      idempotencyKey: 'seed-live-scheduled',
+      title: 'Seed upcoming live',
+      status: LiveSessionStatus.SCHEDULED,
+      scheduledAt: new Date('2026-12-01T10:00:00Z'),
+      products: {
+        create: [IDS.productA1, IDS.productA2].map((productId, position) => ({
+          productId,
+          position,
+        })),
+      },
+    },
+  });
 
   console.info('Seed complete.');
 }

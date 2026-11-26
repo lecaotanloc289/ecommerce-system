@@ -166,3 +166,10 @@ export const ZaloMessageEvent = ZaloMessageEventSchema.enum;
 export const ZaloMessageStatusSchema = z.enum(['PENDING', 'SENDING', 'SENT', 'SKIPPED', 'FAILED']);
 export type ZaloMessageStatus = z.infer<typeof ZaloMessageStatusSchema>;
 export const ZaloMessageStatus = ZaloMessageStatusSchema.enum;
+export const LiveSessionStatusSchema = z.enum(['SCHEDULED', 'LIVE', 'ENDED', 'CANCELLED']);
+export type LiveSessionStatus = z.infer<typeof LiveSessionStatusSchema>;
+export const LiveSessionStatus = LiveSessionStatusSchema.enum;
+
+export const LiveEndReasonSchema = z.enum(['VENDOR', 'DISCONNECT_TIMEOUT', 'TERMINATED']);
+export type LiveEndReason = z.infer<typeof LiveEndReasonSchema>;
+export const LiveEndReason = LiveEndReasonSchema.enum;

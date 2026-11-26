@@ -50,6 +50,8 @@ const coreEnums: Record<string, z.ZodEnum> = {
   ZaloAccountStatus: enums.ZaloAccountStatusSchema,
   ZaloMessageEvent: enums.ZaloMessageEventSchema,
   ZaloMessageStatus: enums.ZaloMessageStatusSchema,
+  LiveSessionStatus: enums.LiveSessionStatusSchema,
+  LiveEndReason: enums.LiveEndReasonSchema,
 };
 
 describe('enums mirror Prisma', () => {

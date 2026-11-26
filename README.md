@@ -8,21 +8,23 @@ The full constitution lives in [`CLAUDE.md`](./CLAUDE.md) — read that before c
 
 ## Workspaces
 
-| Path                | Package          | Role                                                                   |
-| ------------------- | ---------------- | ---------------------------------------------------------------------- |
-| `apps/client`       | `@apps/web`      | Next.js 15 storefront on Cloudflare Workers (OpenNext), i18n vi/en     |
-| `apps/admin`        | `@apps/admin`    | Vite 6 + React 19 dashboard (platform console + vendor portal)         |
-| `server`            | `@server/api`    | NestJS 11 + Fastify API, prefix `/v1`, OpenAPI export                  |
-| `workers/jobs`      | `@workers/jobs`  | Outbox dispatcher (payment sessions, refunds, emails) + scheduled jobs |
-| `workers/zalo`      | `@workers/zalo`  | Shop Zalo sessions (zca-js) + automated order messages                 |
-| `e2e`               | `@repo/e2e`      | Playwright smoke flows over the whole stack                            |
-| `packages/core`     | `@repo/core`     | Zod schemas, types, Money utility, pricing + ledger rules, enums       |
-| `packages/db`       | `@repo/db`       | Prisma client + schema + migrations + seed                             |
-| `packages/sdk`      | `@repo/sdk`      | Typed API client generated from OpenAPI                                |
-| `packages/payments` | `@repo/payments` | `PaymentProvider` interface + VNPay / Stripe adapters                  |
-| `packages/i18n`     | `@repo/i18n`     | vi/en message catalogs + formatters                                    |
-| `packages/ui`       | `@repo/ui`       | shadcn/ui components + design tokens (Tailwind v4)                     |
-| `packages/config`   | `@repo/config`   | Shared ESLint / TS / Prettier configs                                  |
+| Path                 | Package           | Role                                                                   |
+| -------------------- | ----------------- | ---------------------------------------------------------------------- |
+| `apps/client`        | `@apps/web`       | Next.js 15 storefront on Cloudflare Workers (OpenNext), i18n vi/en     |
+| `apps/admin`         | `@apps/admin`     | Vite 6 + React 19 dashboard (platform console + vendor portal)         |
+| `server`             | `@server/api`     | NestJS 11 + Fastify API, prefix `/v1`, OpenAPI export                  |
+| `workers/jobs`       | `@workers/jobs`   | Outbox dispatcher (payment sessions, refunds, emails) + scheduled jobs |
+| `workers/zalo`       | `@workers/zalo`   | Shop Zalo sessions (zca-js) + automated order messages                 |
+| `workers/outbox`     | `@workers/outbox` | Live-shopping outbox handlers (claims only `live_session.*` events)    |
+| `e2e`                | `@repo/e2e`       | Playwright smoke flows over the whole stack                            |
+| `packages/core`      | `@repo/core`      | Zod schemas, types, Money utility, pricing + ledger rules, enums       |
+| `packages/db`        | `@repo/db`        | Prisma client + schema + migrations + seed                             |
+| `packages/sdk`       | `@repo/sdk`       | Typed API client generated from OpenAPI                                |
+| `packages/payments`  | `@repo/payments`  | `PaymentProvider` interface + VNPay / Stripe adapters                  |
+| `packages/streaming` | `@repo/streaming` | Live video adapter (Cloudflare Stream + fake), webhook verification    |
+| `packages/i18n`      | `@repo/i18n`      | vi/en message catalogs + formatters                                    |
+| `packages/ui`        | `@repo/ui`        | shadcn/ui components + design tokens (Tailwind v4)                     |
+| `packages/config`    | `@repo/config`    | Shared ESLint / TS / Prettier configs                                  |
 
 Dependency rule: `apps/* → packages/*` and `server → packages/*` only. `apps/*` never imports from `apps/*` or `server`; `workers/*` never imports from `server` or `apps/*` and talks to the API only through the DB / outbox. Full map in [`CLAUDE.md` §3](./CLAUDE.md#3-monorepo-map).
 
@@ -76,6 +78,7 @@ pnpm --filter @apps/admin dev          # admin               → http://localhos
 pnpm --filter @server/api dev          # API                 → http://localhost:3001
 pnpm --filter @workers/jobs dev        # jobs worker (no HTTP)
 pnpm --filter @workers/zalo dev        # Zalo worker (no HTTP)
+pnpm --filter @workers/outbox dev      # live-shopping outbox worker (no HTTP)
 ```
 
 ### Design-system showcase

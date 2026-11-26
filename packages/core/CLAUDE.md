@@ -14,7 +14,7 @@ Pure TypeScript + `zod` — runs in browser and Node. Never imports `@repo/db`, 
 | `src/orders/`   | `@repo/core/orders`    | `deriveOrderStatus` (Order status from its sub-orders, D11); `subOrderPaid`, `subOrderNet`, `computeEscrowInPostings`, `computeRefundPostings` (escrow ledger pairs, D3/D7/D12); sub-order state machine `canTransition` / `assertTransition` |
 | `src/crm/`      | `@repo/core/crm`       | `classifyCustomer`, `assertCrmTemplate` / `findLink` (NFKC-normalised link detection), `renderCrmTemplate`, `assertCrmCouponCode`, `deriveUnsubscribeToken` / `hashUnsubscribeToken` (WebCrypto HMAC, browser + Node safe)                    |
 | `src/errors/`   | `@repo/core/errors`    | `ERROR_CODES`, `ERROR_HTTP_STATUS`, `ErrorResponseSchema`, `DomainError`                                                                                                                                                                      |
-| `src/schemas/*` | `@repo/core/schemas/*` | one file per area (incl. `crm`, `notification`) — see "Schemas" below                                                                                                                                                                         |
+| `src/schemas/*` | `@repo/core/schemas/*` | one file per area (incl. `crm`, `notification`, `live`) — see "Schemas" below                                                                                                                                                                 |
 | `src/calendar/` | `@repo/core/calendar`  | `lunarToSolar` (VN lunar calendar, UTC+7), `SEASONAL_EVENTS` + `getActiveSeasonalEvent` / `getSeasonalCalendar` / `getUpcomingSeasonalEvents`, `vietnamToday`                                                                                 |
 
 The root export (`@repo/core`) re-exports everything; Money helpers are namespaced there:
@@ -122,6 +122,10 @@ Checked at checkout and payment retry (`payment.error.provider-currency-unsuppor
   `price`, `vendorId`, `userId` or `role` — the server re-reads them.
 - **CRM templates:** plain text only. Placeholders are `{customerName}`, `{shopName}`, `{couponCode}` and
   nothing else; links are rejected (`crm.error.links-not-allowed`); `{couponCode}` requires an attached coupon.
+- **Live (`schemas/live.ts`):** request/read shapes, the realtime `LiveEventSchema` union (SSE
+  payloads) and `LiveOutboxEventSchema` (outbox rows the worker consumes) — the shared contract of
+  `docs/superpowers/plans/2026-11-23-live-shopping.md` §1. `ReactionKind` lives here, not in
+  `enums/`, because it is never persisted. Request datetimes accept an offset; read datetimes are UTC `Z`.
 
 ## Commands
 

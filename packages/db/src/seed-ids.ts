@@ -63,6 +63,8 @@ export const SEED_IDS = {
   crmNote: '01SEED0000000000000000003B',
   crmAutomationThankYou: '01SEED0000000000000000003C',
   crmConsentEventVip: '01SEED0000000000000000003D',
+  liveSessionEnded: '01SEED0000000000000000003E',
+  liveSessionScheduled: '01SEED0000000000000000003F',
 } as const;
 
 // Reference date for which the CRM demo customers land in their documented segments (see seed.ts).

@@ -16,10 +16,10 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 
 ### Implementation status (as of 2026-11-26)
 
-- `packages/db` — done: Prisma schema (32 models, 19 enums) incl. ops fields (payment redirect/expiry, sub-order fulfilment and platform discount, `OutboxEvent.nextAttemptAt`), `Refund`, `VendorInvitation` and the Zalo tables; migrations, idempotent seed, ledger/money tests (see `packages/db/CLAUDE.md`).
-- `apps/client` (`@apps/web`) — storefront on the API: catalog, search and vendor pages in RSC, SSR on Cloudflare Workers via OpenNext (D1), OAuth sign-in with in-memory session, guest + server cart (merged on sign-in), checkout (per-vendor shipping, VNPay/Stripe, coupons, payment-session polling), order pages, account, seller application and product reviews; appearance panel (mode / accent / radius / text size), seasonal theming and the `/events` calendar; `/design-system` showcase (see `apps/client/CLAUDE.md`).
+- `packages/db` — done: Prisma schema (42 models, 28 enums) incl. ops fields (payment redirect/expiry, sub-order fulfilment and platform discount, `OutboxEvent.nextAttemptAt`), `Refund`, `VendorInvitation` the Zalo, vendor CRM and live-shopping tables; migrations, idempotent seed, ledger/money tests (see `packages/db/CLAUDE.md`).
+- `apps/client` (`@apps/web`) — storefront on the API: catalog, search and vendor pages in RSC, SSR on Cloudflare Workers via OpenNext (D1), OAuth sign-in with in-memory session, guest + server cart (merged on sign-in), checkout (per-vendor shipping, VNPay/Stripe, coupons, payment-session polling), order pages, account, seller application and product reviews; live list/watch pages (`/live`, still on mock data); appearance panel (mode / accent / radius / text size), seasonal theming and the `/events` calendar; `/design-system` showcase (see `apps/client/CLAUDE.md`).
 - `apps/admin` (`@apps/admin`) — Vite 6 + React Router 7: in-memory auth session + role guards, `@repo/sdk` with `useApiMutation` (stable Idempotency-Key), `admin.*` i18n; vendor portal (`/vendor/*`: dashboard, products, orders with fulfilment actions, shipping, wallet, staff + invitations) and platform console (`/platform/*`: applications, vendors, products, orders, refunds, settings, users); ESLint + Vitest (see `apps/admin/CLAUDE.md`).
-- `server` (`@server/api`) — NestJS 11 + Fastify API: OAuth + JWT + rotating refresh, `@Idempotent()`, Redis rate limit, cursor pagination, Zod env, OpenAPI export; modules for me/addresses, cart, public catalog, vendor catalog + shipping methods, vendor applications (KYC), checkout + customer orders, vendor fulfilment + wallet, presigned uploads, payment webhooks + confirmation, refunds, reviews, vendor staff, platform admin and Zalo; ESLint, Jest with a Testcontainers harness (see `server/CLAUDE.md`).
+- `server` (`@server/api`) — NestJS 11 + Fastify API: OAuth + JWT + rotating refresh, `@Idempotent()`, Redis rate limit, cursor pagination, Zod env, OpenAPI export; modules for me/addresses, cart, public catalog, vendor catalog + shipping methods, vendor applications (KYC), checkout + customer orders, vendor fulfilment + wallet, presigned uploads, payment webhooks + confirmation, refunds, reviews, vendor staff, platform admin, Zalo, vendor CRM and live sessions (Cloudflare Stream webhooks, SSE realtime chat / reactions / viewers); ESLint, Jest with a Testcontainers harness (see `server/CLAUDE.md`).
 - `workers/jobs` (`@workers/jobs`) — outbox dispatcher (claims only event types it has a handler for, `FOR UPDATE SKIP LOCKED`, exponential backoff, dead-letter after 10 attempts) with handlers for `payment.requested` (provider session via `@repo/payments`, or the zero-amount confirmation), `refund.requested` (provider refund → Refund SUCCEEDED / FAILED / PENDING, Payment REFUNDED when fully refunded) and transactional emails (nodemailer, vi/en via `@repo/i18n`); BullMQ repeatable jobs `expire-unpaid-orders`, `auto-complete-sub-orders`, `release-payouts` (D7 payout ledger + wallet credit), `outbox-retention`, plus `run-job` for one-off runs; Vitest + Testcontainers; own Dockerfile / Fly app `elma-worker-{env}` (see `workers/jobs/CLAUDE.md`).
 - `packages/core` — Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, Zod schemas for every MVP shape, pricing engine (D5–D8), escrow/refund ledger postings (D3/D7/D12), sub-order state machine (D11), seasonal event calendar with Vietnamese lunar dates, Vitest (see `packages/core/CLAUDE.md`).
 - `packages/i18n` — vi/en catalogs (storefront, admin, transactional emails), typed translator, error-code translations for every core code, money/date formatters; consumed by the storefront, admin and `workers/jobs` (see `packages/i18n/CLAUDE.md`).
@@ -28,7 +28,9 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 - `workers/zalo` — Zalo session keeper + automated order messages per shop (zca-js QR login, encrypted sessions, Redis leases, keep-alive, paced sending with retries); the API side is `server/src/zalo/` (see `workers/zalo/CLAUDE.md`).
 - `e2e` (`@repo/e2e`) — Playwright smoke flows (`00`–`05`) over the whole stack on a throwaway database: guest cart → two-vendor checkout (fake gateway, signed VNPay IPN) → fulfilment → auto-complete + payout → vendor application approval; run by `pnpm e2e` and CI `e2e.yml` (see `e2e/CLAUDE.md`).
 - `packages/payments` — `PaymentProvider` interface + VNPay (v2.1.0 HMAC-SHA512 pay URL, IPN/return verify, merchant-webapi refund) and Stripe (Checkout Session, `constructEvent` webhook verify, refunds) adapters; config via factory params, injectable `fetch` / Stripe client; ESLint + Vitest (see `packages/payments/CLAUDE.md`).
-- Vendor CRM (wave 7) — backend done on `feat/crm`: customer 360 / segments / tags / notes, post-purchase automations config, segment campaigns with coupons, customer notifications + per-shop consent + unsubscribe (see `docs/superpowers/plans/2026-11-23-vendor-crm.md`). Delivery (K5) runs in `@workers/jobs`: automation scheduling on `sub-order.delivered` / `.completed`, campaign start, per-message send with send-time re-checks (in-app; email behind `CRM_EMAIL_ENABLED`, off until the unsubscribe page exists; RFC 8058 one-click unsubscribe); the storefront unsubscribe page / notification UI and admin CRM screens are not built yet.
+- `packages/streaming` (`@repo/streaming`) — Cloudflare Stream live-input adapter + in-memory fake, timing-safe webhook verification (see `packages/streaming/CLAUDE.md`).
+- `workers/outbox` (`@workers/outbox`) — live-shopping outbox worker: claims only the `live_session.*` event types (everything else belongs to `@workers/jobs`), BullMQ queue + handlers (provision / retire Cloudflare live inputs, disconnect-grace auto-end) (see `workers/outbox/CLAUDE.md`).
+- Vendor CRM (wave 7) — backend done: customer 360 / segments / tags / notes, post-purchase automations config, segment campaigns with coupons, customer notifications + per-shop consent + unsubscribe (see `docs/superpowers/plans/2026-11-23-vendor-crm.md`). Delivery (K5) runs in `@workers/jobs`: automation scheduling on `sub-order.delivered` / `.completed`, campaign start, per-message send with send-time re-checks (in-app; email behind `CRM_EMAIL_ENABLED`, off until the unsubscribe page exists; RFC 8058 one-click unsubscribe); the storefront unsubscribe page / notification UI and admin CRM screens are not built yet.
 
 Known gap: on the current deploy targets the admin and API are cross-site, so the SameSite=Lax refresh cookie is not sent and admin sign-in does not persist until a shared domain or same-origin `/v1` proxy exists (see `apps/admin/CLAUDE.md`).
 
@@ -86,6 +88,8 @@ ecommerce-system/
 │                                  emails; scheduled jobs (payment expiry, auto-complete, payouts).
 │   └── zalo/                      `@workers/zalo`: holds shops' Zalo sessions (zca-js) + sends automated
 │                                  order messages from `zalo_messages` (roadmap D16).
+│   └── outbox/                    `@workers/outbox`: live-shopping outbox handlers (claims only
+│                                  `live_session.*` events; provision/retire live inputs, grace auto-end).
 ├── e2e/                           `@repo/e2e`: Playwright smoke flows over the whole stack (boots API,
 │                                  worker, storefront, admin on a throwaway DB; see e2e/CLAUDE.md).
 ├── packages/                      Shared libraries
@@ -100,6 +104,8 @@ ecommerce-system/
 │   │                              Re-exports Zod response schemas so web/admin can parse responses.
 │   ├── payments/                  PaymentProvider interface + VNPay / Stripe adapters.
 │   │                              Pure logic, no DB access; injected into `server/` services.
+│   ├── streaming/                 Live video provider abstraction: Cloudflare Stream adapter + fake,
+│   │                              webhook verification. Pure logic, no DB; used by `server/` and `workers/`.
 │   ├── i18n/                      Messages vi/en (typed TS catalogs), translator, formatters (currency, date).
 │   │                              Follows next-intl conventions, shared between web and admin.
 │   └── config/                    Shared ESLint / TS / Tailwind / Prettier / commitlint configs.
@@ -116,7 +122,7 @@ ecommerce-system/
 apps/*      → packages/*           (OK)
 server      → packages/*           (OK)
 workers/*   → packages/*           (OK)
-packages/*  → packages/*           (OK, in dependency direction: core → ui/i18n/db/sdk/payments; no cycles)
+packages/*  → packages/*           (OK, in dependency direction: core → ui/i18n/db/sdk/payments/streaming; no cycles)
 apps/*      ↔ apps/*               (FORBIDDEN — share via packages/*)
 apps/*      ↔ server               (FORBIDDEN — frontends call HTTP via @repo/sdk)
 workers/*   ↔ server | apps/*      (FORBIDDEN — workers talk to the API only through the DB / outbox)
@@ -384,7 +390,7 @@ Never rename or drop in a single migration:
 | `VENDOR_OWNER`, `VENDOR_STAFF`     | `apps/admin` → `/vendor/*` routes   |
 | `PLATFORM_STAFF`, `PLATFORM_ADMIN` | `apps/admin` → `/platform/*` routes |
 
-`server/` (HTTP, package `@server/api`) serves all roles via REST; webhooks (payment, OAuth callback) terminate here. Async work (outbox dispatch, emails, payment sessions, provider refunds; scheduled payment expiry, auto-complete and payouts) runs in `workers/jobs` (`@workers/jobs`) — not nested inside `server/`.
+`server/` (HTTP, package `@server/api`) serves all roles via REST; webhooks (payment, OAuth callback, Cloudflare Stream) terminate here. Async work (outbox dispatch, emails, payment sessions, provider refunds; scheduled payment expiry, auto-complete and payouts) runs in `workers/jobs` (`@workers/jobs`); live-session side effects run in `workers/outbox` (`@workers/outbox`) — neither is nested inside `server/`.
 
 ### Customer journey (features in scope for MVP)
 
@@ -494,6 +500,7 @@ pnpm --filter @server/api dev       # API only              → http://localhost
 pnpm --filter @workers/jobs dev     # outbox worker + scheduled jobs (no HTTP; needs DATABASE_URL + REDIS_URL, SMTP → Mailhog)
 pnpm --filter @workers/jobs run-job release-payouts   # one scheduled job, once, no Redis (job names: workers/jobs/CLAUDE.md)
 pnpm --filter @workers/zalo dev     # Zalo session keeper + message sender (no HTTP; needs ZALO_CREDENTIALS_KEY, DATABASE_URL, REDIS_URL)
+pnpm --filter @workers/outbox dev   # live-shopping outbox worker (no HTTP; needs DATABASE_URL + REDIS_URL)
 ```
 
 ### Build / lint / typecheck / test
@@ -544,7 +551,7 @@ pnpm services:logs
 | `@apps/web`   | 3000        | Next.js storefront                                                                                         |
 | `@server/api` | 3001        | NestJS + Fastify, prefix `/v1`                                                                             |
 | `@apps/admin` | 5173        | Vite dev server                                                                                            |
-| `workers/*`   | —           | No HTTP port: `@workers/jobs` and `@workers/zalo` talk to Postgres + Redis only                            |
+| `workers/*`   | —           | No HTTP port: `@workers/jobs`, `@workers/zalo` and `@workers/outbox` talk to Postgres + Redis only         |
 | `e2e`         | 4100–4104   | Test-only ports (web / API / admin / fake gateway / SMTP sink); see `e2e/CLAUDE.md`                        |
 | Postgres      | 5432        | DBs: `ecommerce`, `ecommerce_shadow` (created by `docker/postgres-init.sql`)                               |
 | Redis         | 6379        | Cache + BullMQ                                                                                             |

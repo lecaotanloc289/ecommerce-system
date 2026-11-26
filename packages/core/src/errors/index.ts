@@ -104,6 +104,20 @@ export const ERROR_CODES = [
   'zalo.error.account-not-connected',
   'zalo.error.login-not-found',
   'zalo.error.unknown-placeholder',
+  // live
+  'live.error.not-found',
+  'live.error.invalid-transition',
+  'live.error.not-provisioned',
+  'live.error.encoder-offline',
+  'live.error.already-live',
+  'live.error.not-live',
+  'live.error.product-not-owned',
+  'live.error.product-inactive',
+  'live.error.too-many-products',
+  'live.error.chat-rate-limited',
+  'live.error.chat-muted',
+  'live.error.webhook-signature-invalid',
+  'live.error.stream-provider-unavailable',
 ] as const;
 
 export const ErrorCodeSchema = z.enum(ERROR_CODES);
@@ -190,6 +204,20 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'zalo.error.account-not-connected': 404,
   'zalo.error.login-not-found': 404,
   'zalo.error.unknown-placeholder': 422,
+  // live
+  'live.error.not-found': 404,
+  'live.error.invalid-transition': 409,
+  'live.error.not-provisioned': 409,
+  'live.error.encoder-offline': 409,
+  'live.error.already-live': 409,
+  'live.error.not-live': 409,
+  'live.error.product-not-owned': 422,
+  'live.error.product-inactive': 422,
+  'live.error.too-many-products': 422,
+  'live.error.chat-rate-limited': 429,
+  'live.error.chat-muted': 403,
+  'live.error.webhook-signature-invalid': 401,
+  'live.error.stream-provider-unavailable': 503,
 };
 
 /** Interpolation values for the translated message (e.g. `{ sku, available }`). */

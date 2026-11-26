@@ -65,9 +65,11 @@ SET attempts = 0, next_attempt_at = now() AT TIME ZONE 'UTC' WHERE id = '…'`.
    is recorded (best effort), the claim's lease delays the retry by 5 min and the attempt still
    counts — so a poison event that kills the process is dead-lettered too (a claimed `attempts`
    above the max is dead-lettered without running).
-6. **Event types without a handler are never touched.** This is the platform's single outbox
-   worker; other modules fold their handlers in here (vendor CRM did — see "CRM" below; live-shopping
-   `live_session.*` will). One handler per type: several consumers of a type are combined with
+6. **Event types without a handler are never touched.** This is the platform's main outbox
+   worker; other modules fold their handlers in here (vendor CRM did — see "CRM" below). Exception:
+   live-shopping `live_session.*` is owned by `workers/outbox` (`@workers/outbox`), which likewise claims
+   only its own types — never register a `live_session.*` handler here. Every event type has exactly
+   one owning worker, or both dispatchers would claim the same rows. One handler per type: several consumers of a type are combined with
    `fanOut` (`src/handlers/crm.ts`), DB-only consumers first, email last. Until a
    type is registered, its rows keep `attempts = 0`, `processed_at` NULL and their
    `next_attempt_at`, and they cannot starve a batch (the claim filters by type). The handler
@@ -152,12 +154,13 @@ Refund.amount, paymentAmount = Payment.amount, reason, initiatedBy = requestedBy
 - **PII:** log ids only. `describeError` replaces email addresses in `last_error` / logs (SMTP
   rejections echo the recipient). pino `redact` covers `email` / `to` / `redirectUrl` as a net.
 
-## Adding a handler (e.g. `live_session.*`)
+## Adding a handler (e.g. a new `vendor.*` event)
 
 1. Payload schema (ids only, unless a secret is unavoidable) in `@repo/core/schemas/outbox` and its
    entry in `OUTBOX_EVENT_SCHEMAS`. The emitter (API) writes the row in its business transaction.
    Until step 3 ships, those rows simply wait — this worker never claims a type it cannot handle.
-2. A module under `src/handlers/` (one file per domain, e.g. `live-session.ts`, `crm.ts`) exporting
+   Check first that no other worker owns the type (`workers/outbox` owns `live_session.*`).
+2. A module under `src/handlers/` (one file per domain, e.g. `crm.ts`, `notifications.ts`) exporting
    `xxxHandlers(deps)` that returns `{ 'event.type': defineHandler(OUTBOX_EVENT_SCHEMAS['event.type'],
 async (payload, ctx) => { … }) }`. Rules: re-read state through `ctx.tx` and write through it
    (atomic with the "processed" mark); be idempotent (redelivery happens); throw `PermanentError`

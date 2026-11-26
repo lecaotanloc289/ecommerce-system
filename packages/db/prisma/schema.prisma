@@ -195,27 +195,28 @@ model User {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  oauthIdentities    OAuthIdentity[]
-  roles              UserRole[]
-  addresses          Address[]
-  cart               Cart?
-  orders             Order[]
-  ownedVendors       Vendor[]                   @relation("VendorOwner")
-  vendorApplications VendorApplication[]        @relation("Applicant")
-  reviewedApps       VendorApplication[]        @relation("Reviewer")
-  reviews            Review[]
-  couponRedemptions  CouponRedemption[]
-  requestedRefunds   Refund[]                   @relation("RefundRequester")
-  sentInvitations    VendorInvitation[]         @relation("InvitationInviter")
-  crmConsentEvents   CrmConsentEvent[]
-  acceptedInvites    VendorInvitation[]         @relation("InvitationAcceptor")
-  vendorCustomers    VendorCustomer[]
-  crmNotesAbout      VendorCustomerNote[]       @relation("CrmNoteCustomer")
-  crmNotesWritten    VendorCustomerNote[]       @relation("CrmNoteAuthor")
-  vendorPreferences  CustomerVendorPreference[]
-  crmCampaigns       CrmCampaign[]
-  crmMessages        CrmMessage[]
-  notifications      Notification[]
+  oauthIdentities     OAuthIdentity[]
+  roles               UserRole[]
+  addresses           Address[]
+  cart                Cart?
+  orders              Order[]
+  ownedVendors        Vendor[]                   @relation("VendorOwner")
+  vendorApplications  VendorApplication[]        @relation("Applicant")
+  reviewedApps        VendorApplication[]        @relation("Reviewer")
+  reviews             Review[]
+  couponRedemptions   CouponRedemption[]
+  requestedRefunds    Refund[]                   @relation("RefundRequester")
+  sentInvitations     VendorInvitation[]         @relation("InvitationInviter")
+  crmConsentEvents    CrmConsentEvent[]
+  acceptedInvites     VendorInvitation[]         @relation("InvitationAcceptor")
+  vendorCustomers     VendorCustomer[]
+  crmNotesAbout       VendorCustomerNote[]       @relation("CrmNoteCustomer")
+  crmNotesWritten     VendorCustomerNote[]       @relation("CrmNoteAuthor")
+  vendorPreferences   CustomerVendorPreference[]
+  crmCampaigns        CrmCampaign[]
+  crmMessages         CrmMessage[]
+  notifications       Notification[]
+  createdLiveSessions LiveSession[]              @relation("LiveSessionCreator")
 
   @@map("users")
 }
@@ -307,6 +308,7 @@ model Vendor {
   crmCampaigns        CrmCampaign[]
   crmMessages         CrmMessage[]
   notifications       Notification[]
+  liveSessions        LiveSession[]
 
   @@index([ownerId])
   @@map("vendors")
@@ -396,12 +398,13 @@ model Product {
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
 
-  vendor       Vendor               @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  translations ProductTranslation[]
-  categories   ProductCategory[]
-  variants     ProductVariant[]
-  images       ProductImage[]
-  reviews      Review[]
+  vendor              Vendor               @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  translations        ProductTranslation[]
+  categories          ProductCategory[]
+  variants            ProductVariant[]
+  images              ProductImage[]
+  reviews             Review[]
+  liveSessionProducts LiveSessionProduct[]
 
   @@index([vendorId])
   @@index([status])
@@ -750,6 +753,8 @@ model PlatformSettings {
   crmVipMinOrders                   Int        @default(3) @map("crm_vip_min_orders")
   crmMaxCampaignsPerWeek            Int        @default(2) @map("crm_max_campaigns_per_week")
   crmMaxMarketingPerCustomerPerWeek Int        @default(2) @map("crm_max_marketing_per_customer_per_week")
+  liveDisconnectGraceSeconds        Int        @default(120) @map("live_disconnect_grace_seconds")
+  liveChatCooldownSeconds           Int        @default(2) @map("live_chat_cooldown_seconds")
   createdAt                         DateTime   @default(now()) @map("created_at")
   updatedAt                         DateTime   @updatedAt @map("updated_at")
 
@@ -1078,4 +1083,62 @@ model ZaloMessage {
   @@index([vendorId, status, scheduledAt])
   @@index([status, scheduledAt])
   @@map("zalo_messages")
+}
+
+enum LiveSessionStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum LiveEndReason {
+  VENDOR
+  DISCONNECT_TIMEOUT
+  TERMINATED
+}
+
+model LiveSession {
+  id                    String            @id
+  vendorId              String            @map("vendor_id")
+  createdById           String            @map("created_by_id")
+  idempotencyKey        String            @map("idempotency_key")
+  title                 String
+  status                LiveSessionStatus @default(SCHEDULED)
+  scheduledAt           DateTime?         @map("scheduled_at")
+  liveInputId           String?           @unique @map("live_input_id")
+  encoderConnectedAt    DateTime?         @map("encoder_connected_at")
+  encoderDisconnectedAt DateTime?         @map("encoder_disconnected_at")
+  encoderStatusAt       DateTime?         @map("encoder_status_at")
+  startedAt             DateTime?         @map("started_at")
+  endedAt               DateTime?         @map("ended_at")
+  endReason             LiveEndReason?    @map("end_reason")
+  endNote               String?           @map("end_note")
+  recordingVideoId      String?           @map("recording_video_id")
+  peakViewers           Int               @default(0) @map("peak_viewers")
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+
+  vendor    Vendor               @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  createdBy User                 @relation("LiveSessionCreator", fields: [createdById], references: [id])
+  products  LiveSessionProduct[]
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, status])
+  @@index([status, startedAt])
+  @@map("live_sessions")
+}
+
+model LiveSessionProduct {
+  liveSessionId String    @map("live_session_id")
+  productId     String    @map("product_id")
+  position      Int
+  pinnedAt      DateTime? @map("pinned_at")
+
+  liveSession LiveSession @relation(fields: [liveSessionId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@id([liveSessionId, productId])
+  @@index([productId])
+  @@map("live_session_products")
 }

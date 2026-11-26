@@ -1,0 +1,32 @@
+{
+  "name": "@workers/outbox",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsup",
+    "start": "node dist/main.js",
+    "retry-failed": "node dist/retry-failed.js",
+    "lint": "echo 'TODO: eslint'",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@repo/core": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/streaming": "workspace:*",
+    "bullmq": "^5.34.0",
+    "ioredis": "^5.11.1",
+    "pino": "^9.5.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@repo/config": "workspace:*",
+    "@types/node": "^22.19.19",
+    "pino-pretty": "^11.3.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.8"
+  }
+}

@@ -24,3 +24,4 @@ export * from './platform-admin';
 export * from './crm';
 export * from './notification';
 export * from './zalo';
+export * from './live';

@@ -17,6 +17,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { PlatformModule } from './platform/platform.module';
 import { PaymentsModule } from './payments/payments.module';
+import { devLiveRoutesEnabled, LiveModule } from './live/live.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -65,6 +66,7 @@ const isDev = process.env.NODE_ENV !== 'production';
     NotificationsModule,
     CrmConsentModule,
     ZaloModule,
+    LiveModule.register({ devRoutes: devLiveRoutesEnabled(process.env) }),
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

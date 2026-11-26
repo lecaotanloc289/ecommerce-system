@@ -88,6 +88,11 @@ Unset outside production → `http://localhost:3001`; unset in production → re
 - While an event runs (or is previewed from the panel / `/events`), the shell shows `SeasonalRibbon` and the home page (`components/home/home-seasonal.tsx`) swaps the carousel for `SeasonalHero` + `SeasonalEffects` and adds `SeasonalPicks` — up to 4 products from the event's categories via `GET /v1/products?categorySlug=` in the browser, hidden when none match (the seed catalog's categories don't match the event slugs yet). The server render has no appearance state, so seasonal UI appears after mount.
 - `/events` (`[locale]/events`) is the yearly events calendar (lunar dates, countdown, preview). Events will move to admin-managed campaigns later.
 
+## Live shopping (mock data)
+
+- `/live` (Live now / Upcoming / Replays) and `/live/[id]` live under `src/app/[locale]/live/` (`[id]` prerendered from `src/mocks/live.ts` via `generateStaticParams`); components in `src/components/live/`. Realtime is mocked by `useLiveEvents` in `src/lib/live-events.ts`, which reduces core `LiveEvent` input shapes (`z.input` of `LiveEventSchema`, unbranded ids). Swapping to the real SSE endpoint `GET /v1/live-sessions/:id/events` only changes that file. Player = Cloudflare Stream iframe, rendered only for https `*.cloudflarestream.com` URLs. Chat composer shows a sign-in prompt while `mockLiveUser.isSignedIn` is false.
+- Products shown in a session are display-only mocks (`liveProducts` in `src/mocks/live.ts`): they are not in the catalog, so `PinnedProductCard` has no product link or add-to-cart. Moving the pages to the API (`GET /v1/live-sessions`, session products, `useAuth()` for chat) is still to do; the server side is done (`server/CLAUDE.md` "Live sessions").
+
 ## Run
 
 `@repo/i18n`, `@repo/core` and `@repo/sdk` are consumed from their built `dist/`. Catalog pages need the API running (`pnpm --filter @server/api dev`, default `http://localhost:3001`) — without it they render the error page. `pnpm dev` (turbo) builds them once at start (no watch — after editing package source, re-run the build); for a bare filtered run, build them once: `pnpm turbo run build --filter=@apps/web^...`.

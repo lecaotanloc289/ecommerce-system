@@ -53,6 +53,8 @@ describe('seed idempotency', () => {
     expect(await prisma.customerVendorPreference.count()).toBe(1);
     expect(await prisma.crmAutomation.count()).toBe(1);
     expect(await prisma.crmConsentEvent.count()).toBe(1);
+    expect(await prisma.liveSession.count()).toBe(2);
+    expect(await prisma.liveSessionProduct.count()).toBe(4);
   });
 
   it('gives every seeded row a canonical ULID id (parses through @repo/core id schemas)', async () => {
@@ -70,6 +72,7 @@ describe('seed idempotency', () => {
       ...(await prisma.productVariant.findMany(select)),
       ...(await prisma.shippingMethod.findMany(select)),
       ...(await prisma.coupon.findMany(select)),
+      ...(await prisma.liveSession.findMany(select)),
     ];
     expect(rows.length).toBeGreaterThan(0);
     const invalid = rows.filter((r) => !UlidSchema.safeParse(r.id).success).map((r) => r.id);

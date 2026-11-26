@@ -14,9 +14,23 @@ const DurationSchema = z
 
 const SecretSchema = z.string().min(32, { message: 'Must be at least 32 characters' });
 
+export const NodeEnvSchema = z.enum(['development', 'test', 'production']).default('development');
+
+/** `fake` = in-memory provider for local dev/tests (never allowed in production). */
+export const LiveStreamProviderSchema = z.enum(['fake', 'cloudflare']).default('fake');
+
+/** Required when `LIVE_STREAM_PROVIDER=cloudflare` (plan §1.7). */
+const CLOUDFLARE_STREAM_KEYS = [
+  'CLOUDFLARE_STREAM_ACCOUNT_ID',
+  'CLOUDFLARE_STREAM_API_TOKEN',
+  'CLOUDFLARE_STREAM_CUSTOMER_CODE',
+  'CLOUDFLARE_STREAM_WEBHOOK_SECRET',
+  'CLOUDFLARE_NOTIFICATIONS_WEBHOOK_SECRET',
+] as const;
+
 export const EnvSchema = z
   .object({
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    NODE_ENV: NodeEnvSchema,
     PORT: z.coerce.number().int().positive().default(3001),
 
     REDIS_URL: z.url(),
@@ -82,6 +96,15 @@ export const EnvSchema = z
     VNPAY_API_URL: z.url().default('https://sandbox.vnpayment.vn/merchant_webapi/api/transaction'),
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+
+    LIVE_STREAM_PROVIDER: LiveStreamProviderSchema,
+    CLOUDFLARE_STREAM_ACCOUNT_ID: z.string().min(1).optional(),
+    CLOUDFLARE_STREAM_API_TOKEN: z.string().min(1).optional(),
+    CLOUDFLARE_STREAM_CUSTOMER_CODE: z.string().min(1).optional(),
+    /** Stream video webhook (`Webhook-Signature` HMAC). Unset → the webhook rejects everything. */
+    CLOUDFLARE_STREAM_WEBHOOK_SECRET: z.string().min(1).optional(),
+    /** Notifications webhook (`cf-webhook-auth`). Unset → the webhook rejects everything. */
+    CLOUDFLARE_NOTIFICATIONS_WEBHOOK_SECRET: z.string().min(1).optional(),
   })
   .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {
     message: 'JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must differ',
@@ -112,7 +135,25 @@ export const EnvSchema = z
       message: 'Placeholder CRM_UNSUBSCRIBE_SECRET is not allowed in production',
       path: ['CRM_UNSUBSCRIBE_SECRET'],
     },
-  );
+  )
+  // The fake provider hands out a guessable stream key and non-streaming URLs: a missing
+  // LIVE_STREAM_PROVIDER in production must fail boot, not silently "work".
+  .refine((env) => env.NODE_ENV !== 'production' || env.LIVE_STREAM_PROVIDER !== 'fake', {
+    message: 'LIVE_STREAM_PROVIDER=fake is not allowed in production',
+    path: ['LIVE_STREAM_PROVIDER'],
+  })
+  .superRefine((env, ctx) => {
+    if (env.LIVE_STREAM_PROVIDER !== 'cloudflare') return;
+    for (const key of CLOUDFLARE_STREAM_KEYS) {
+      if (env[key] === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Required when LIVE_STREAM_PROVIDER=cloudflare',
+          path: [key],
+        });
+      }
+    }
+  });
 
 export type Env = z.infer<typeof EnvSchema>;
 
