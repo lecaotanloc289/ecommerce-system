@@ -100,6 +100,7 @@ describe('outbox payload schemas', () => {
 
   it('maps every event type to its schema', () => {
     expect(Object.keys(OUTBOX_EVENT_SCHEMAS).sort()).toEqual([
+      'crm.campaign.scheduled',
       'order.cancelled',
       'order.created',
       'order.paid',

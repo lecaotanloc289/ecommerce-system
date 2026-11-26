@@ -28,6 +28,7 @@ This file is the **constitution**. Every PR must respect the Golden Rules and NE
 - `workers/zalo` — Zalo session keeper + automated order messages per shop (zca-js QR login, encrypted sessions, Redis leases, keep-alive, paced sending with retries); the API side is `server/src/zalo/` (see `workers/zalo/CLAUDE.md`).
 - `e2e` (`@repo/e2e`) — Playwright smoke flows (`00`–`05`) over the whole stack on a throwaway database: guest cart → two-vendor checkout (fake gateway, signed VNPay IPN) → fulfilment → auto-complete + payout → vendor application approval; run by `pnpm e2e` and CI `e2e.yml` (see `e2e/CLAUDE.md`).
 - `packages/payments` — `PaymentProvider` interface + VNPay (v2.1.0 HMAC-SHA512 pay URL, IPN/return verify, merchant-webapi refund) and Stripe (Checkout Session, `constructEvent` webhook verify, refunds) adapters; config via factory params, injectable `fetch` / Stripe client; ESLint + Vitest (see `packages/payments/CLAUDE.md`).
+- Vendor CRM (wave 7) — backend done on `feat/crm`: customer 360 / segments / tags / notes, post-purchase automations config, segment campaigns with coupons, customer notifications + per-shop consent + unsubscribe (see `docs/superpowers/plans/2026-11-23-vendor-crm.md`). Delivery (K5) runs in `@workers/jobs`: automation scheduling on `sub-order.delivered` / `.completed`, campaign start, per-message send with send-time re-checks (in-app; email behind `CRM_EMAIL_ENABLED`, off until the unsubscribe page exists; RFC 8058 one-click unsubscribe); the storefront unsubscribe page / notification UI and admin CRM screens are not built yet.
 
 Known gap: on the current deploy targets the admin and API are cross-site, so the SameSite=Lax refresh cookie is not sent and admin sign-in does not persist until a shared domain or same-origin `/v1` proxy exists (see `apps/admin/CLAUDE.md`).
 
@@ -437,9 +438,15 @@ PlatformSettings (singleton row)
 OutboxEvent
   aggregate_id, event_type, payload (JSONB), created_at, processed_at?,
   attempts, next_attempt_at (earliest retry; the dispatcher claims rows due now)
+
+Vendor ─── VendorCustomer (tags) / VendorCustomerNote / CrmAutomation / CrmCampaign
+User ─── CustomerVendorPreference (consent) / CrmConsentEvent (append-only) / Notification
+CrmMessage (one row per scheduled send: SCHEDULED → SENT / SKIPPED / FAILED)
 ```
 
 **Snapshot rule:** product price/title and shipping address are **copied into `OrderItem` / `SubOrder`** at checkout. Later edits to the underlying `Product` or `Address` must never alter historical orders.
+
+**CRM contact rule:** shops never see customer email/phone; all CRM contact goes through the platform (in-app + email); marketing requires explicit per-shop opt-in.
 
 ---
 

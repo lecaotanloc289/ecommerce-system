@@ -21,6 +21,11 @@ function toSettings(row: SettingsRow): PlatformSettings {
     paymentTimeoutMinutes: row.paymentTimeoutMinutes,
     supportedCurrencies: row.supportedCurrencies,
     defaultCurrency: row.defaultCurrency,
+    crmAtRiskAfterDays: row.crmAtRiskAfterDays,
+    crmLapsedAfterDays: row.crmLapsedAfterDays,
+    crmVipMinOrders: row.crmVipMinOrders,
+    crmMaxCampaignsPerWeek: row.crmMaxCampaignsPerWeek,
+    crmMaxMarketingPerCustomerPerWeek: row.crmMaxMarketingPerCustomerPerWeek,
     updatedAt: row.updatedAt.toISOString(),
   });
 }
@@ -60,6 +65,15 @@ export class PlatformSettingsService {
           reason: 'not-supported',
         });
       }
+      // Same merge rule for the CRM segment thresholds (the DB CHECK also enforces it).
+      const atRisk = body.crmAtRiskAfterDays ?? current.crmAtRiskAfterDays;
+      const lapsed = body.crmLapsedAfterDays ?? current.crmLapsedAfterDays;
+      if (atRisk >= lapsed) {
+        throw new DomainError('common.error.validation-failed', {
+          field: 'crmAtRiskAfterDays',
+          reason: 'not-below-lapsed',
+        });
+      }
       const data: Prisma.PlatformSettingsUpdateInput = {
         ...(body.commissionBps !== undefined && { commissionBps: body.commissionBps }),
         ...(body.holdPeriodDays !== undefined && { holdPeriodDays: body.holdPeriodDays }),
@@ -72,6 +86,19 @@ export class PlatformSettingsService {
           supportedCurrencies: body.supportedCurrencies,
         }),
         ...(body.defaultCurrency !== undefined && { defaultCurrency: body.defaultCurrency }),
+        ...(body.crmAtRiskAfterDays !== undefined && {
+          crmAtRiskAfterDays: body.crmAtRiskAfterDays,
+        }),
+        ...(body.crmLapsedAfterDays !== undefined && {
+          crmLapsedAfterDays: body.crmLapsedAfterDays,
+        }),
+        ...(body.crmVipMinOrders !== undefined && { crmVipMinOrders: body.crmVipMinOrders }),
+        ...(body.crmMaxCampaignsPerWeek !== undefined && {
+          crmMaxCampaignsPerWeek: body.crmMaxCampaignsPerWeek,
+        }),
+        ...(body.crmMaxMarketingPerCustomerPerWeek !== undefined && {
+          crmMaxMarketingPerCustomerPerWeek: body.crmMaxMarketingPerCustomerPerWeek,
+        }),
       };
       return tx.platformSettings.update({ where: { id }, data });
     });

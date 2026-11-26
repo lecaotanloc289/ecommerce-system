@@ -108,3 +108,21 @@ export type ZaloLoginId = z.infer<typeof ZaloLoginIdSchema>;
 /** `Idempotency-Key` header value (Golden Rule #3) — a client-generated ULID. */
 export const IdempotencyKeySchema = UlidSchema.brand<'IdempotencyKey'>();
 export type IdempotencyKey = z.infer<typeof IdempotencyKeySchema>;
+
+export const VendorCustomerNoteIdSchema = UlidSchema.brand<'VendorCustomerNoteId'>();
+export type VendorCustomerNoteId = z.infer<typeof VendorCustomerNoteIdSchema>;
+
+export const CrmCampaignIdSchema = UlidSchema.brand<'CrmCampaignId'>();
+export type CrmCampaignId = z.infer<typeof CrmCampaignIdSchema>;
+
+export const CrmMessageIdSchema = UlidSchema.brand<'CrmMessageId'>();
+export type CrmMessageId = z.infer<typeof CrmMessageIdSchema>;
+
+export const CrmAutomationIdSchema = UlidSchema.brand<'CrmAutomationId'>();
+export type CrmAutomationId = z.infer<typeof CrmAutomationIdSchema>;
+
+export const NotificationIdSchema = UlidSchema.brand<'NotificationId'>();
+export type NotificationId = z.infer<typeof NotificationIdSchema>;
+
+export const CrmConsentEventIdSchema = UlidSchema.brand<'CrmConsentEventId'>();
+export type CrmConsentEventId = z.infer<typeof CrmConsentEventIdSchema>;

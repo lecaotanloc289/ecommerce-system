@@ -6,8 +6,42 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
-import { DomainError, ERROR_HTTP_STATUS, type ErrorCode, type ErrorResponse } from '@repo/core';
+import {
+  DomainError,
+  ERROR_HTTP_STATUS,
+  type ErrorCode,
+  ErrorCodeSchema,
+  ErrorParamsSchema,
+  type ErrorResponse,
+} from '@repo/core';
 import { ZodValidationException } from 'nestjs-zod';
+import { z } from 'zod';
+
+/** Structural view of a Zod error (no `instanceof`: core and server may load different zod copies). */
+const ZodIssuesSchema = z.object({
+  issues: z.array(
+    z.object({ code: z.string(), message: z.string(), params: z.unknown().optional() }),
+  ),
+});
+
+/**
+ * A core schema refinement that rejects with a domain error (e.g. `CrmTemplateTextSchema` →
+ * `crm.error.links-not-allowed {match}`) records it as a custom issue whose message is the error
+ * code and whose params are the error params. Surface the first such 422 code instead of the
+ * generic `common.error.validation-failed`, so the client can show the precise reason.
+ */
+function domainIssue(zodError: unknown): ErrorResponse | null {
+  const parsed = ZodIssuesSchema.safeParse(zodError);
+  if (!parsed.success) return null;
+  for (const issue of parsed.data.issues) {
+    if (issue.code !== 'custom') continue;
+    const code = ErrorCodeSchema.safeParse(issue.message);
+    if (!code.success || ERROR_HTTP_STATUS[code.data] !== 422) continue;
+    const params = ErrorParamsSchema.safeParse(issue.params ?? {});
+    return { errorCode: code.data, params: params.success ? params.data : {} };
+  }
+  return null;
+}
 
 const STATUS_TO_CODE: Readonly<Record<number, ErrorCode>> = {
   401: 'common.error.unauthorized',
@@ -38,6 +72,8 @@ export class DomainErrorFilter implements ExceptionFilter {
       return { status: exception.httpStatus, body: exception.toResponse() };
     }
     if (exception instanceof ZodValidationException) {
+      const domain = domainIssue(exception.getZodError());
+      if (domain) return { status: ERROR_HTTP_STATUS[domain.errorCode], body: domain };
       const code: ErrorCode = 'common.error.validation-failed';
       return { status: ERROR_HTTP_STATUS[code], body: { errorCode: code, params: {} } };
     }

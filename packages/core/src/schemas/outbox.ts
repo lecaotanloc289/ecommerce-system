@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { PaymentProviderSchema } from '../enums';
 import {
+  CrmCampaignIdSchema,
   OrderIdSchema,
   PaymentIdSchema,
   RefundIdSchema,
@@ -141,6 +142,15 @@ export const VendorInvitationCreatedEventSchema = z.object({
 });
 export type VendorInvitationCreatedEvent = z.infer<typeof VendorInvitationCreatedEventSchema>;
 
+export const CRM_CAMPAIGN_AGGREGATE_TYPE = 'crm-campaign';
+
+/** `crm.campaign.scheduled` — campaign DRAFT → SCHEDULED (aggregateId = campaignId). */
+export const CrmCampaignScheduledEventSchema = z.object({
+  campaignId: CrmCampaignIdSchema,
+  vendorId: VendorIdSchema,
+});
+export type CrmCampaignScheduledEvent = z.infer<typeof CrmCampaignScheduledEventSchema>;
+
 /** Event type → payload schema, for the dispatcher's handler table. */
 export const OUTBOX_EVENT_SCHEMAS = {
   'order.created': OrderCreatedEventSchema,
@@ -155,5 +165,6 @@ export const OUTBOX_EVENT_SCHEMAS = {
   'vendor.application.approved': VendorApplicationApprovedEventSchema,
   'vendor.application.rejected': VendorApplicationRejectedEventSchema,
   'vendor.invitation.created': VendorInvitationCreatedEventSchema,
+  'crm.campaign.scheduled': CrmCampaignScheduledEventSchema,
 } as const;
 export type OutboxEventType = keyof typeof OUTBOX_EVENT_SCHEMAS;

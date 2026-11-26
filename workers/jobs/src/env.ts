@@ -37,6 +37,20 @@ const EnvSchema = z.object({
   STRIPE_SECRET_KEY: optional,
   STRIPE_WEBHOOK_SECRET: optional,
 
+  /**
+   * HMAC key of the per-(customer, shop) CRM unsubscribe tokens — must equal the API's value
+   * (server `CRM_UNSUBSCRIBE_SECRET`): the worker derives the same token for the email links.
+   */
+  CRM_UNSUBSCRIBE_SECRET: z.string().min(32),
+  /**
+   * Send CRM messages by email too (else in-app only). Keep `false` until the storefront
+   * `/{locale}/unsubscribe` page linked from every CRM email exists (legal opt-out path).
+   */
+  CRM_EMAIL_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+
   OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().min(100).default(1000),
   OUTBOX_BATCH_SIZE: z.coerce.number().int().min(1).max(500).default(50),
   /** Events handled in parallel; each holds one DB connection (keep below `connection_limit`). */
@@ -47,6 +61,8 @@ const EnvSchema = z.object({
   JOB_AUTO_COMPLETE_SUB_ORDERS_EVERY_MS: z.coerce.number().int().min(1000).default(3_600_000),
   JOB_RELEASE_PAYOUTS_EVERY_MS: z.coerce.number().int().min(1000).default(3_600_000),
   JOB_OUTBOX_RETENTION_EVERY_MS: z.coerce.number().int().min(1000).default(86_400_000),
+  JOB_CRM_START_CAMPAIGNS_EVERY_MS: z.coerce.number().int().min(1000).default(60_000),
+  JOB_CRM_DISPATCH_MESSAGES_EVERY_MS: z.coerce.number().int().min(1000).default(60_000),
   /** Rows read per keyset page by a job (each row still gets its own transaction). */
   JOB_BATCH_SIZE: z.coerce.number().int().min(1).max(1000).default(100),
   /** Processed outbox rows older than this many days are deleted (dead letters never are). */
@@ -61,6 +77,14 @@ export function parseEnv(source: NodeJS.ProcessEnv): Env {
   if (!result.success) {
     const issues = result.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`);
     throw new Error(`Invalid worker environment:\n${issues.join('\n')}`);
+  }
+  if (
+    result.data.NODE_ENV === 'production' &&
+    result.data.CRM_UNSUBSCRIBE_SECRET.startsWith('change-me')
+  ) {
+    throw new Error(
+      'Invalid worker environment:\n  - CRM_UNSUBSCRIBE_SECRET: placeholder not allowed in production',
+    );
   }
   if (result.data.SMTP_USER !== undefined && result.data.SMTP_PASS === undefined) {
     throw new Error('Invalid worker environment:\n  - SMTP_PASS: required when SMTP_USER is set');

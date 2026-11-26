@@ -430,6 +430,11 @@ describe('platform settings', () => {
       paymentTimeoutMinutes: 30,
       supportedCurrencies: ['VND', 'USD'],
       defaultCurrency: 'VND',
+      crmAtRiskAfterDays: 60,
+      crmLapsedAfterDays: 180,
+      crmVipMinOrders: 3,
+      crmMaxCampaignsPerWeek: 2,
+      crmMaxMarketingPerCustomerPerWeek: 2,
       updatedAt: at,
     };
     expect(PlatformSettingsSchema.safeParse(full).success).toBe(true);

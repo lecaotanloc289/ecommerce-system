@@ -106,6 +106,45 @@ export const RefundStatusSchema = z.enum(['PENDING', 'SUCCEEDED', 'FAILED']);
 export type RefundStatus = z.infer<typeof RefundStatusSchema>;
 export const RefundStatus = RefundStatusSchema.enum;
 
+// CRM (vendor customer care) — wave 7.
+export const CrmMessageKindSchema = z.enum(['SERVICE', 'MARKETING']);
+export type CrmMessageKind = z.infer<typeof CrmMessageKindSchema>;
+export const CrmMessageKind = CrmMessageKindSchema.enum;
+
+export const CrmChannelSchema = z.enum(['IN_APP', 'EMAIL']);
+export type CrmChannel = z.infer<typeof CrmChannelSchema>;
+export const CrmChannel = CrmChannelSchema.enum;
+
+export const CrmAutomationKindSchema = z.enum(['THANK_YOU', 'REVIEW_REQUEST', 'REORDER_REMINDER']);
+export type CrmAutomationKind = z.infer<typeof CrmAutomationKindSchema>;
+export const CrmAutomationKind = CrmAutomationKindSchema.enum;
+
+export const CrmCampaignStatusSchema = z.enum([
+  'DRAFT',
+  'SCHEDULED',
+  'SENDING',
+  'SENT',
+  'CANCELLED',
+]);
+export type CrmCampaignStatus = z.infer<typeof CrmCampaignStatusSchema>;
+export const CrmCampaignStatus = CrmCampaignStatusSchema.enum;
+
+export const CrmMessageStatusSchema = z.enum(['SCHEDULED', 'SENT', 'SKIPPED', 'FAILED']);
+export type CrmMessageStatus = z.infer<typeof CrmMessageStatusSchema>;
+export const CrmMessageStatus = CrmMessageStatusSchema.enum;
+
+export const ConsentSourceSchema = z.enum(['STOREFRONT', 'CHECKOUT', 'UNSUBSCRIBE_LINK']);
+export type ConsentSource = z.infer<typeof ConsentSourceSchema>;
+export const ConsentSource = ConsentSourceSchema.enum;
+
+export const ConsentActionSchema = z.enum([
+  'MARKETING_OPT_IN',
+  'MARKETING_OPT_OUT',
+  'SERVICE_OPT_OUT',
+  'SERVICE_OPT_IN',
+]);
+export type ConsentAction = z.infer<typeof ConsentActionSchema>;
+export const ConsentAction = ConsentActionSchema.enum;
 export const ZaloAccountStatusSchema = z.enum(['ACTIVE', 'EXPIRED', 'DISCONNECTED']);
 export type ZaloAccountStatus = z.infer<typeof ZaloAccountStatusSchema>;
 export const ZaloAccountStatus = ZaloAccountStatusSchema.enum;

@@ -26,6 +26,9 @@ export const EnvSchema = z
     JWT_ACCESS_TTL: DurationSchema.default(15 * 60),
     JWT_REFRESH_TTL: DurationSchema.default(30 * 86_400),
 
+    /** HMAC key of the per-(customer, shop) CRM unsubscribe tokens; rotating it voids every old link. */
+    CRM_UNSUBSCRIBE_SECRET: SecretSchema,
+
     GOOGLE_OAUTH_CLIENT_ID: z.string().min(1),
     GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1),
     GOOGLE_OAUTH_CALLBACK_URL: z.url(),
@@ -58,6 +61,8 @@ export const EnvSchema = z
     /** Requests per client IP per RATE_LIMIT_WINDOW: default bucket / `@RateLimit('strict')` routes. */
     RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
     RATE_LIMIT_STRICT_MAX: z.coerce.number().int().positive().default(20),
+    /** Public CRM unsubscribe (legal opt-out): looser than strict — NATs and mail scanners share IPs. */
+    RATE_LIMIT_UNSUBSCRIBE_MAX: z.coerce.number().int().positive().default(60),
     RATE_LIMIT_WINDOW: DurationSchema.default(60),
     /**
      * Reverse proxies in front of the API that append to X-Forwarded-For (Fly.io edge = 1).
@@ -99,6 +104,13 @@ export const EnvSchema = z
     {
       message: 'Placeholder JWT secrets are not allowed in production',
       path: ['JWT_ACCESS_SECRET'],
+    },
+  )
+  .refine(
+    (env) => env.NODE_ENV !== 'production' || !env.CRM_UNSUBSCRIBE_SECRET.startsWith('change-me'),
+    {
+      message: 'Placeholder CRM_UNSUBSCRIBE_SECRET is not allowed in production',
+      path: ['CRM_UNSUBSCRIBE_SECRET'],
     },
   );
 

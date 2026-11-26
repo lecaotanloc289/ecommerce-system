@@ -45,7 +45,17 @@ async function main(): Promise<void> {
   );
 
   const jobs = createJobs(
-    { batchSize: env.JOB_BATCH_SIZE, outboxRetentionDays: env.OUTBOX_RETENTION_DAYS },
+    {
+      batchSize: env.JOB_BATCH_SIZE,
+      outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
+      crm: {
+        mailer,
+        webOrigin: env.WEB_ORIGIN,
+        apiPublicUrl: env.API_PUBLIC_URL,
+        unsubscribeSecret: env.CRM_UNSUBSCRIBE_SECRET,
+        emailEnabled: env.CRM_EMAIL_ENABLED,
+      },
+    },
     log,
   );
   const scheduler = new JobScheduler(
@@ -66,6 +76,14 @@ async function main(): Promise<void> {
       'outbox-retention': {
         everyMs: env.JOB_OUTBOX_RETENTION_EVERY_MS,
         run: jobs['outbox-retention'],
+      },
+      'crm-start-campaigns': {
+        everyMs: env.JOB_CRM_START_CAMPAIGNS_EVERY_MS,
+        run: jobs['crm-start-campaigns'],
+      },
+      'crm-dispatch-messages': {
+        everyMs: env.JOB_CRM_DISPATCH_MESSAGES_EVERY_MS,
+        run: jobs['crm-dispatch-messages'],
       },
     } satisfies Record<keyof typeof jobs, unknown>,
     log,

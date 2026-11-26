@@ -9,6 +9,12 @@ export {
   queueZaloStatusMessages,
   type QueueZaloMessagesInput,
 } from './zalo-queue.js';
+export {
+  crmAudienceIds,
+  crmAudienceParams,
+  crmSegmentCutoffs,
+  crmSegmentThresholds,
+} from './crm.js';
 
 // Re-export generated enums + types so consumers never import @prisma/client directly.
 export {
@@ -28,6 +34,13 @@ export {
   LedgerEntryType,
   CouponScope,
   DiscountType,
+  CrmMessageKind,
+  CrmChannel,
+  CrmAutomationKind,
+  CrmCampaignStatus,
+  CrmMessageStatus,
+  ConsentSource,
+  ConsentAction,
   ZaloAccountStatus,
   ZaloMessageEvent,
   ZaloMessageStatus,

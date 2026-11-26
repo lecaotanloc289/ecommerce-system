@@ -32,6 +32,11 @@
       "import": "./dist/orders/index.js",
       "require": "./dist/orders/index.cjs"
     },
+    "./crm": {
+      "types": "./dist/crm/index.d.ts",
+      "import": "./dist/crm/index.js",
+      "require": "./dist/crm/index.cjs"
+    },
     "./errors": {
       "types": "./dist/errors/index.d.ts",
       "import": "./dist/errors/index.js",

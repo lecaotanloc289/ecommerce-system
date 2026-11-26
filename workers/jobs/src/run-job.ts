@@ -1,4 +1,5 @@
 import { prisma } from '@repo/db';
+import { createSmtpMailer } from './email/mailer';
 import { parseEnv } from './env';
 import { createJobs, isJobName, JOB_NAMES } from './jobs';
 import { createLogger, describeError } from './logger';
@@ -15,14 +16,33 @@ async function runJob(): Promise<void> {
   }
   const env = parseEnv(process.env);
   const log = createLogger(env.LOG_LEVEL);
+  // Only `crm-dispatch-messages` sends mail; nodemailer connects lazily, so others never touch SMTP.
+  const mailer = createSmtpMailer({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS,
+    from: env.SMTP_FROM,
+  });
   try {
     const result = await createJobs(
-      { batchSize: env.JOB_BATCH_SIZE, outboxRetentionDays: env.OUTBOX_RETENTION_DAYS },
+      {
+        batchSize: env.JOB_BATCH_SIZE,
+        outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
+        crm: {
+          mailer,
+          webOrigin: env.WEB_ORIGIN,
+          apiPublicUrl: env.API_PUBLIC_URL,
+          unsubscribeSecret: env.CRM_UNSUBSCRIBE_SECRET,
+          emailEnabled: env.CRM_EMAIL_ENABLED,
+        },
+      },
       log,
     )[name]();
     log.info({ job: name, result }, 'job finished');
     if (result.failed > 0) process.exitCode = 1;
   } finally {
+    mailer.close();
     await prisma.$disconnect();
   }
 }

@@ -200,6 +200,7 @@
 
 - **API** (vendor scope): `GET /v1/vendor/sub-orders?status=` (cursor), `GET /v1/vendor/sub-orders/:id` (items, shipping address snapshot, khách: tên + phone), `POST .../:id/accept` (PAID→PROCESSING), `POST .../:id/ship {carrier, trackingNumber}` (PROCESSING→SHIPPED), `POST .../:id/deliver` (SHIPPED→DELIVERED); khách: `POST /v1/orders/:orderId/sub-orders/:id/confirm-received` (SHIPPED|DELIVERED→COMPLETED); `GET /v1/vendor/wallet` (balance + `pending` = tổng net của sub-order PAID..COMPLETED chưa payout), `GET /v1/vendor/ledger` (cursor). Ví chỉ `VENDOR_OWNER`.
 - **Service:** state machine một chỗ (`sub-order-state.ts` — bảng chuyển trạng thái, sai → `order.error.invalid-status-transition`); mỗi chuyển kèm timestamp + outbox (`sub-order.shipped`, …); cập nhật Order.status suy ra (D11) trong cùng transaction; cập nhật đồng thời dùng điều kiện `WHERE status = <from>` để chống race.
+- **Bắt buộc cho CRM (Đợt 7):** phát đúng `sub-order.delivered` (SHIPPED→DELIVERED) và `sub-order.completed` (khách xác nhận; job tự hoàn tất của T3.2 cũng phát) với payload đã định nghĩa trong `@repo/core` `schemas/outbox.ts` (xem `docs/superpowers/plans/2026-11-23-vendor-crm.md` §2.5).
 - **Test:** toàn bộ ma trận chuyển hợp lệ/không hợp lệ, vendor khác → 404, staff không xem ví, Order.status suy ra đúng khi 2 sub-order khác trạng thái.
 
 ### T3.4 — Platform admin API · **sonnet**
@@ -284,7 +285,11 @@
 Đợt 4: T4.1 ║ T4.2            (+ regenerate SDK trước)
 Đợt 5: T5.1 ║ T5.2 ║ T5.3 ║ T5.4
 Đợt 6: T6.1 ║ T6.2
+Đợt 7: CRM cho shop — K1 ║ K2 → K3 ║ K4a ║ K4b → K6 → K5 (worker, xong sau khi T2.2 + T3.3 vào integration)
+       (chi tiết: docs/superpowers/plans/2026-11-23-vendor-crm.md)
 ```
+
+**Worker duy nhất (quyết định 2026-11-23):** `feat/live-shopping` (PR #3) có `@workers/outbox` riêng cho live shopping. Không chạy song song hai dispatcher trên `outbox_events`: khi `@workers/jobs` (T2.2) vào integration, các handler live (`live_session.*`, job grace) được chuyển sang `@workers/jobs` và `workers/outbox` bị xoá. Cho tới lúc đó dispatcher của `@workers/jobs` **không được** đánh dấu xong / dead-letter event mà nó không có handler — bỏ qua để worker khác (hoặc handler thêm sau) xử lý.
 
 Sau mỗi đợt: merge các branch vào `dev` (giải xung đột ở file đăng ký chung: `app.module.ts`, `schemas/index.ts`, `errors`, catalog i18n), `pnpm sdk:generate`, gate đầy đủ, review bằng `code-reviewer`, sửa lỗi, commit.
 

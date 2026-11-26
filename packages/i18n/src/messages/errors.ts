@@ -81,6 +81,19 @@ export const errorsEn: ErrorMessages = {
     'This variant already appears in orders or carts and can’t be removed. Set its stock to 0 instead.',
   'product.error.stock-below-reserved':
     'Stock can’t be lower than the quantity already reserved by pending orders.',
+  'crm.error.not-a-customer': 'This person is not a customer of your shop.',
+  'crm.error.note-not-found': 'This note could not be found.',
+  'crm.error.campaign-not-found': 'This campaign could not be found.',
+  'crm.error.campaign-not-editable': 'This campaign can no longer be edited.',
+  'crm.error.campaign-limit-reached':
+    'You have reached the campaign limit for this week. Please try again next week.',
+  'crm.error.coupon-invalid': 'This voucher can’t be used with this campaign.',
+  'crm.error.links-not-allowed': 'Links are not allowed in messages to customers.',
+  'crm.error.unknown-placeholder':
+    'The message uses a placeholder that is not supported. Only customer name, shop name and voucher code are allowed.',
+  'crm.error.empty-audience': 'No customers match this audience.',
+  'crm.error.unsubscribe-invalid': 'This unsubscribe link is invalid or has expired.',
+  'notification.error.not-found': 'This notification could not be found.',
   'zalo.error.account-not-connected': 'No Zalo account is connected to this shop.',
   'zalo.error.login-not-found': 'This Zalo login request has expired. Please start a new one.',
   'zalo.error.unknown-placeholder':
@@ -162,6 +175,19 @@ export const errorsVi: ErrorMessages = {
     'Biến thể này đã có trong đơn hàng hoặc giỏ hàng nên không thể xóa. Hãy đặt tồn kho về 0.',
   'product.error.stock-below-reserved':
     'Tồn kho không thể thấp hơn số lượng đang được giữ cho các đơn chờ xử lý.',
+  'crm.error.not-a-customer': 'Người này chưa từng mua hàng tại cửa hàng của bạn.',
+  'crm.error.note-not-found': 'Không tìm thấy ghi chú này.',
+  'crm.error.campaign-not-found': 'Không tìm thấy chiến dịch này.',
+  'crm.error.campaign-not-editable': 'Chiến dịch này không còn có thể chỉnh sửa.',
+  'crm.error.campaign-limit-reached':
+    'Bạn đã đạt giới hạn số chiến dịch trong tuần này. Vui lòng thử lại vào tuần sau.',
+  'crm.error.coupon-invalid': 'Mã giảm giá này không thể dùng cho chiến dịch.',
+  'crm.error.links-not-allowed': 'Không được chèn liên kết vào nội dung gửi khách hàng.',
+  'crm.error.unknown-placeholder':
+    'Nội dung dùng một biến không được hỗ trợ. Chỉ được dùng tên khách hàng, tên cửa hàng và mã giảm giá.',
+  'crm.error.empty-audience': 'Không có khách hàng nào phù hợp với nhóm này.',
+  'crm.error.unsubscribe-invalid': 'Liên kết hủy đăng ký không hợp lệ hoặc đã hết hạn.',
+  'notification.error.not-found': 'Không tìm thấy thông báo này.',
   'zalo.error.account-not-connected': 'Cửa hàng chưa kết nối tài khoản Zalo.',
   'zalo.error.login-not-found': 'Yêu cầu đăng nhập Zalo đã hết hạn. Vui lòng thử lại.',
   'zalo.error.unknown-placeholder':

@@ -34,6 +34,9 @@ Root export only (`@repo/i18n`), built by tsup to `dist/`.
   `SEASONAL_EVENT_IDS` (kebab ids); `test/catalog.test.ts` fails if an event lacks copy or has extra copy.
   `appearance.*` = storefront appearance panel, `seasonal.*` = shared event UI (ribbon, hero, calendar).
 - Existing catalog keys are camelCase leaves (`common.addToCart`); keep that style within the tree.
+- **`crm.*` namespace:** platform default CRM templates (each must pass core `assertCrmTemplate`, and none may
+  contain `{couponCode}`; tested in `test/crm-templates.test.ts`), notification titles, and the email /
+  unsubscribe / preferences strings.
 - Transactional email text lives under `email.*` (+ `paymentSession.description`, sent to payment
   providers); `@workers/jobs` renders it in the recipient's `User.primaryLocale` (`fromCoreLocale`).
 

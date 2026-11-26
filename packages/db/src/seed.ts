@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { ulid } from 'ulid';
 import { prisma } from './client.js';
 import { SEED_IDS as IDS } from './seed-ids.js';
@@ -9,6 +10,11 @@ import {
   Role,
   VendorStatus,
   ProductStatus,
+  OrderStatus,
+  SubOrderStatus,
+  ConsentSource,
+  ConsentAction,
+  CrmAutomationKind,
 } from '@prisma/client';
 
 // Demo catalog. Each product and variant has a fixed id and is upserted on its own, so adding a
@@ -308,7 +314,336 @@ async function main() {
     },
   });
 
+  await seedCrmDemo();
+
   console.info('Seed complete.');
+}
+
+// ---- Vendor CRM demo (vendor A) ----
+// Fixed-date valid sub-orders (COMPLETED) so each demo customer lands in one segment of the CRM
+// plan (C3) for the reference date CRM_SEED_REFERENCE_DATE with the default thresholds
+// (at-risk > 60 days, lapsed > 180 days, VIP >= 3 orders, returning >= 2):
+//   crm-new       1 order  last 2026-11-10 (13d)  -> NEW
+//   crm-returning 2 orders last 2026-11-01 (22d)  -> RETURNING
+//   crm-vip       3 orders last 2026-11-15 (8d)   -> VIP
+//   crm-at-risk   1 valid order last 2026-08-01 (114d) -> AT_RISK (+ a newer CANCELLED order that must not count)
+//   crm-lapsed    1 order  last 2026-03-01 (267d) -> LAPSED
+// Segments drift as real time passes; tests must pass an explicit `now`.
+const CRM_CUSTOMERS = [
+  {
+    id: IDS.crmCustomerNew,
+    slug: 'crm-new',
+    name: 'CRM Khách mới',
+    city: 'Hà Nội',
+    tags: [] as string[],
+  },
+  {
+    id: IDS.crmCustomerReturning,
+    slug: 'crm-returning',
+    name: 'CRM Khách quay lại',
+    city: 'Đà Nẵng',
+    tags: ['quen'],
+  },
+  {
+    id: IDS.crmCustomerVip,
+    slug: 'crm-vip',
+    name: 'CRM Khách VIP',
+    city: 'TP. Hồ Chí Minh',
+    tags: ['vip', 'quen'],
+  },
+  {
+    id: IDS.crmCustomerAtRisk,
+    slug: 'crm-at-risk',
+    name: 'CRM Khách sắp rời',
+    city: 'Hải Phòng',
+    tags: [] as string[],
+  },
+  {
+    id: IDS.crmCustomerLapsed,
+    slug: 'crm-lapsed',
+    name: 'CRM Khách đã rời',
+    city: 'Cần Thơ',
+    tags: [] as string[],
+  },
+] as const;
+
+// paid = subtotal + shipping - discount - platformDiscount (roadmap D7). Item = jeans W30 (459 000) or tee (199 000).
+const CRM_ORDERS = [
+  {
+    key: 'New1',
+    customer: IDS.crmCustomerNew,
+    order: IDS.crmOrderNew1,
+    sub: IDS.crmSubOrderNew1,
+    item: IDS.crmItemNew1,
+    at: '2026-11-10T03:00:00.000Z',
+    variant: IDS.variantA1,
+    title: 'Áo thun cơ bản',
+    unit: 199_000n,
+    discount: 0n,
+    platformDiscount: 0n,
+    cancelled: false,
+  },
+  {
+    key: 'Returning1',
+    customer: IDS.crmCustomerReturning,
+    order: IDS.crmOrderReturning1,
+    sub: IDS.crmSubOrderReturning1,
+    item: IDS.crmItemReturning1,
+    at: '2026-09-20T03:00:00.000Z',
+    variant: IDS.variantA1,
+    title: 'Áo thun cơ bản',
+    unit: 199_000n,
+    discount: 0n,
+    platformDiscount: 19_900n,
+    cancelled: false,
+  },
+  {
+    key: 'Returning2',
+    customer: IDS.crmCustomerReturning,
+    order: IDS.crmOrderReturning2,
+    sub: IDS.crmSubOrderReturning2,
+    item: IDS.crmItemReturning2,
+    at: '2026-11-01T03:00:00.000Z',
+    variant: IDS.variantA2W30,
+    title: 'Quần jean ống đứng',
+    unit: 459_000n,
+    discount: 0n,
+    platformDiscount: 0n,
+    cancelled: false,
+  },
+  {
+    key: 'Vip1',
+    customer: IDS.crmCustomerVip,
+    order: IDS.crmOrderVip1,
+    sub: IDS.crmSubOrderVip1,
+    item: IDS.crmItemVip1,
+    at: '2026-08-15T03:00:00.000Z',
+    variant: IDS.variantA2W32,
+    title: 'Quần jean ống đứng',
+    unit: 459_000n,
+    discount: 0n,
+    platformDiscount: 0n,
+    cancelled: false,
+  },
+  {
+    key: 'Vip2',
+    customer: IDS.crmCustomerVip,
+    order: IDS.crmOrderVip2,
+    sub: IDS.crmSubOrderVip2,
+    item: IDS.crmItemVip2,
+    at: '2026-10-05T03:00:00.000Z',
+    variant: IDS.variantA1,
+    title: 'Áo thun cơ bản',
+    unit: 199_000n,
+    discount: 0n,
+    platformDiscount: 0n,
+    cancelled: false,
+  },
+  {
+    key: 'Vip3',
+    customer: IDS.crmCustomerVip,
+    order: IDS.crmOrderVip3,
+    sub: IDS.crmSubOrderVip3,
+    item: IDS.crmItemVip3,
+    at: '2026-11-15T03:00:00.000Z',
+    variant: IDS.variantA2W30,
+    title: 'Quần jean ống đứng',
+    unit: 459_000n,
+    discount: 22_950n,
+    platformDiscount: 0n,
+    cancelled: false,
+  },
+  {
+    key: 'AtRisk1',
+    customer: IDS.crmCustomerAtRisk,
+    order: IDS.crmOrderAtRisk1,
+    sub: IDS.crmSubOrderAtRisk1,
+    item: IDS.crmItemAtRisk1,
+    at: '2026-08-01T03:00:00.000Z',
+    variant: IDS.variantA1,
+    title: 'Áo thun cơ bản',
+    unit: 199_000n,
+    discount: 0n,
+    platformDiscount: 0n,
+    cancelled: false,
+  },
+  {
+    key: 'AtRiskCancelled',
+    customer: IDS.crmCustomerAtRisk,
+    order: IDS.crmOrderAtRiskCancelled,
+    sub: IDS.crmSubOrderAtRiskCancelled,
+    item: IDS.crmItemAtRiskCancelled,
+    at: '2026-11-05T03:00:00.000Z',
+    variant: IDS.variantA1,
+    title: 'Áo thun cơ bản',
+    unit: 199_000n,
+    discount: 0n,
+    platformDiscount: 0n,
+    cancelled: true,
+  },
+  {
+    key: 'Lapsed1',
+    customer: IDS.crmCustomerLapsed,
+    order: IDS.crmOrderLapsed1,
+    sub: IDS.crmSubOrderLapsed1,
+    item: IDS.crmItemLapsed1,
+    at: '2026-03-01T03:00:00.000Z',
+    variant: IDS.variantA2W30,
+    title: 'Quần jean ống đứng',
+    unit: 459_000n,
+    discount: 0n,
+    platformDiscount: 0n,
+    cancelled: false,
+  },
+] as const;
+
+// The hardcoded numbers below mirror the seeded PlatformSettings (commission 1000 bps = 10%), vendor A's
+// "Standard" shipping method (30 000) and coupons VENDORA5 (5%) / WELCOME10 (10%). These demo orders are
+// CRM fixtures only: they have NO Payment, ledger, wallet or coupon-redemption rows. Segment tests must
+// classify with an explicit now = CRM_SEED_REFERENCE_DATE (seed-ids.ts), never the wall clock.
+const CRM_SHIPPING = 30_000n;
+
+async function seedCrmDemo() {
+  for (const c of CRM_CUSTOMERS) {
+    await prisma.user.upsert({
+      where: { id: c.id },
+      update: {},
+      create: {
+        id: c.id,
+        email: `${c.slug}@example.com`,
+        name: c.name,
+        primaryLocale: Locale.VI,
+        roles: { create: { id: ulid(), role: Role.CUSTOMER } },
+      },
+    });
+    await prisma.vendorCustomer.upsert({
+      where: { vendorId_userId: { vendorId: IDS.vendorA, userId: c.id } },
+      update: {},
+      create: { vendorId: IDS.vendorA, userId: c.id, tags: [...c.tags] },
+    });
+  }
+
+  for (const o of CRM_ORDERS) {
+    const city = CRM_CUSTOMERS.find((c) => c.id === o.customer)?.city ?? '';
+    const at = new Date(o.at);
+    const paid = o.unit + CRM_SHIPPING - o.discount - o.platformDiscount;
+    await prisma.order.upsert({
+      where: { id: o.order },
+      update: {},
+      create: {
+        id: o.order,
+        customerId: o.customer,
+        status: o.cancelled ? OrderStatus.CANCELLED : OrderStatus.COMPLETED,
+        currency: Currency.VND,
+        itemsTotalAmount: o.unit,
+        shippingTotalAmount: CRM_SHIPPING,
+        discountTotalAmount: o.discount + o.platformDiscount,
+        grandTotalAmount: paid,
+        idempotencyKey: `seed-crm-order-${o.key}`,
+        createdAt: at,
+      },
+    });
+    await prisma.subOrder.upsert({
+      where: { id: o.sub },
+      update: {},
+      create: {
+        id: o.sub,
+        orderId: o.order,
+        vendorId: IDS.vendorA,
+        status: o.cancelled ? SubOrderStatus.CANCELLED : SubOrderStatus.COMPLETED,
+        subtotalAmount: o.unit,
+        shippingAmount: CRM_SHIPPING,
+        discountAmount: o.discount,
+        platformDiscountAmount: o.platformDiscount,
+        commissionAmount: ((o.unit - o.discount) * 1000n) / 10_000n,
+        currency: Currency.VND,
+        shippingMethodId: IDS.shippingAStandard,
+        shippingAddress: {
+          recipientName: CRM_CUSTOMERS.find((c) => c.id === o.customer)?.name ?? '',
+          phone: '0900000000',
+          line1: '1 Demo Street',
+          line2: null,
+          ward: 'Demo ward',
+          district: 'Demo district',
+          city,
+          country: 'VN',
+        },
+        cancelledAt: o.cancelled ? at : null,
+        deliveredAt: o.cancelled ? null : at,
+        completedAt: o.cancelled ? null : at,
+        createdAt: at,
+      },
+    });
+    await prisma.orderItem.upsert({
+      where: { id: o.item },
+      update: {},
+      create: {
+        id: o.item,
+        subOrderId: o.sub,
+        variantId: o.variant,
+        productTitleSnapshot: o.title,
+        variantAttributesSnapshot: {},
+        unitPriceAmount: o.unit,
+        quantity: 1,
+        lineTotalAmount: o.unit,
+        currency: Currency.VND,
+      },
+    });
+  }
+
+  // crm-vip opted in to marketing from vendor A (hash = sha256 of a throwaway demo token).
+  await prisma.customerVendorPreference.upsert({
+    where: { userId_vendorId: { userId: IDS.crmCustomerVip, vendorId: IDS.vendorA } },
+    update: {},
+    create: {
+      userId: IDS.crmCustomerVip,
+      vendorId: IDS.vendorA,
+      marketingOptInAt: new Date('2026-08-16T03:00:00.000Z'),
+      marketingOptInSource: ConsentSource.CHECKOUT,
+      unsubscribeTokenHash: createHash('sha256')
+        .update('seed-crm-vip-unsubscribe-token')
+        .digest('hex'),
+    },
+  });
+
+  // Append-only consent evidence for the opt-in above.
+  await prisma.crmConsentEvent.upsert({
+    where: { id: IDS.crmConsentEventVip },
+    update: {},
+    create: {
+      id: IDS.crmConsentEventVip,
+      userId: IDS.crmCustomerVip,
+      vendorId: IDS.vendorA,
+      action: ConsentAction.MARKETING_OPT_IN,
+      source: ConsentSource.CHECKOUT,
+      createdAt: new Date('2026-08-16T03:00:00.000Z'),
+    },
+  });
+
+  await prisma.vendorCustomerNote.upsert({
+    where: { id: IDS.crmNote },
+    update: {},
+    create: {
+      id: IDS.crmNote,
+      vendorId: IDS.vendorA,
+      userId: IDS.crmCustomerVip,
+      authorId: IDS.vendorAOwner,
+      body: 'Khách thích size 32, hay mua vào cuối tháng.',
+      createdAt: new Date('2026-11-16T03:00:00.000Z'),
+    },
+  });
+
+  await prisma.crmAutomation.upsert({
+    where: { id: IDS.crmAutomationThankYou },
+    update: {},
+    create: {
+      id: IDS.crmAutomationThankYou,
+      vendorId: IDS.vendorA,
+      kind: CrmAutomationKind.THANK_YOU,
+      isEnabled: true,
+      delayDays: 1,
+    },
+  });
 }
 
 main()

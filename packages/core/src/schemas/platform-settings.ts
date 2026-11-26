@@ -7,6 +7,10 @@ const MAX_BPS = 10_000;
 const MAX_DAYS = 365;
 const MAX_PAYMENT_TIMEOUT_MINUTES = 24 * 60;
 const MAX_COUPON_STACK = 10;
+const MAX_CRM_DAYS = 3650;
+
+const crmInt = z.number().int().min(1);
+const crmIntBounded = crmInt.max(MAX_CRM_DAYS);
 
 const currenciesSchema = z
   .array(CurrencySchema)
@@ -31,6 +35,11 @@ export const PlatformSettingsSchema = z.object({
   paymentTimeoutMinutes: z.number().int().min(1),
   supportedCurrencies: z.array(CurrencySchema).min(1),
   defaultCurrency: CurrencySchema,
+  crmAtRiskAfterDays: crmInt,
+  crmLapsedAfterDays: crmInt,
+  crmVipMinOrders: crmInt,
+  crmMaxCampaignsPerWeek: crmInt,
+  crmMaxMarketingPerCustomerPerWeek: crmInt,
   updatedAt: IsoDateTimeSchema,
 });
 export type PlatformSettings = z.infer<typeof PlatformSettingsSchema>;
@@ -45,6 +54,11 @@ export const PlatformSettingsUpdateSchema = z
     paymentTimeoutMinutes: z.number().int().min(5).max(MAX_PAYMENT_TIMEOUT_MINUTES),
     supportedCurrencies: currenciesSchema,
     defaultCurrency: CurrencySchema,
+    crmAtRiskAfterDays: crmIntBounded,
+    crmLapsedAfterDays: crmIntBounded,
+    crmVipMinOrders: crmIntBounded,
+    crmMaxCampaignsPerWeek: crmIntBounded,
+    crmMaxMarketingPerCustomerPerWeek: crmIntBounded,
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0, 'At least one field is required')
@@ -54,5 +68,12 @@ export const PlatformSettingsUpdateSchema = z
       v.defaultCurrency === undefined ||
       v.supportedCurrencies.includes(v.defaultCurrency),
     { message: 'defaultCurrency must be a supported currency', path: ['defaultCurrency'] },
+  )
+  .refine(
+    (v) =>
+      v.crmAtRiskAfterDays === undefined ||
+      v.crmLapsedAfterDays === undefined ||
+      v.crmAtRiskAfterDays < v.crmLapsedAfterDays,
+    { message: 'crmAtRiskAfterDays must be < crmLapsedAfterDays', path: ['crmAtRiskAfterDays'] },
   );
 export type PlatformSettingsUpdate = z.infer<typeof PlatformSettingsUpdateSchema>;

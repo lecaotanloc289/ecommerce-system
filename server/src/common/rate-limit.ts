@@ -8,7 +8,7 @@ import type { Env } from '../config/env';
 import { REDIS } from '../redis/redis.module';
 
 /** Named limit tiers a route can opt into (the default bucket needs no decorator). */
-export type RateLimitTier = 'strict';
+export type RateLimitTier = 'strict' | 'unsubscribe';
 
 /**
  * Tighter limit for a sensitive handler (auth, checkout, payments): `RATE_LIMIT_STRICT_MAX`
@@ -51,10 +51,12 @@ export async function registerRateLimit(app: NestFastifyApplication): Promise<vo
     nameSpace: 'rl:',
     timeWindow: env.RATE_LIMIT_WINDOW * 1000,
     keyGenerator: (request) => clientIp(request, env.TRUSTED_PROXY_HOPS),
-    max: (request) =>
-      request.routeOptions.config.rateLimitTier === 'strict'
-        ? env.RATE_LIMIT_STRICT_MAX
-        : env.RATE_LIMIT_MAX,
+    max: (request) => {
+      const tier = request.routeOptions.config.rateLimitTier;
+      if (tier === 'strict') return env.RATE_LIMIT_STRICT_MAX;
+      if (tier === 'unsubscribe') return env.RATE_LIMIT_UNSUBSCRIBE_MAX;
+      return env.RATE_LIMIT_MAX;
+    },
     skipOnError: true,
     errorResponseBuilder: () => new DomainError('common.error.rate-limited'),
   });

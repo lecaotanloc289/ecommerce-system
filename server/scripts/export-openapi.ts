@@ -19,6 +19,7 @@ const DUMMY_ENV: Record<string, string> = {
   REDIS_URL: 'redis://localhost:6379',
   JWT_ACCESS_SECRET: 'openapi-export-access-secret-0123456789',
   JWT_REFRESH_SECRET: 'openapi-export-refresh-secret-0123456789',
+  CRM_UNSUBSCRIBE_SECRET: 'openapi-export-crm-unsubscribe-0123456789',
   GOOGLE_OAUTH_CLIENT_ID: 'openapi-export',
   GOOGLE_OAUTH_CLIENT_SECRET: 'openapi-export',
   GOOGLE_OAUTH_CALLBACK_URL: 'http://localhost:3001/v1/auth/google/callback',
