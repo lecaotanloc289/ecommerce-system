@@ -13,7 +13,7 @@ import {
   DrawerTrigger,
   Switch,
 } from '@repo/ui';
-import { useT, type MessageKey } from '../../i18n/locale-provider';
+import { useT, type MessageKey } from '../../i18n/use-locale';
 import { ACCENT_LABELS, ACCENT_SWATCH, ACCENTS } from '../../lib/seasonal-themes';
 import { cn } from '../../lib/utils';
 import {

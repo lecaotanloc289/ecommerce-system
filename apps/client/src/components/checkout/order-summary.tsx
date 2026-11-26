@@ -2,12 +2,12 @@
 
 import type { ReactNode } from 'react';
 import { Card } from '@repo/ui';
-import { useLocale } from '../../i18n/locale-provider';
+import { useLocale } from '../../i18n/use-locale';
 import type { OrderTotals } from '../../lib/cart';
-import { lineTotal } from '../../lib/cart';
+import { attributesLabel, lineTotal, type CartLineView } from '../../lib/cart';
 import { formatMoney } from '@repo/i18n';
 import { cn } from '../../lib/utils';
-import type { CartLine } from '../../types';
+import { ProductImage } from '../product/product-image';
 
 /**
  * Order Summary card (Parts/Additional/Order Summary/001–004). Pure display of
@@ -15,18 +15,21 @@ import type { CartLine } from '../../types';
  * `useOrderTotals()`). `footer`/`children` slot in a CTA or extra content per screen.
  */
 export function OrderSummary({
-  lines,
+  lines = [],
   totals,
   footer,
   children,
   showItems = false,
+  estimate = false,
   className,
 }: {
-  lines: CartLine[];
+  lines?: readonly CartLineView[];
   totals: OrderTotals;
   footer?: ReactNode;
   children?: ReactNode;
   showItems?: boolean;
+  /** Totals are a client-side estimate (the server prices the real order): label them so. */
+  estimate?: boolean;
   className?: string;
 }) {
   const { locale, t } = useLocale();
@@ -39,21 +42,20 @@ export function OrderSummary({
       {showItems && lines.length > 0 ? (
         <ul className="flex flex-col gap-3 border-b border-border-subtle pb-4">
           {lines.map((line) => (
-            <li key={line.key} className="flex items-center gap-3">
-              <img
-                src={line.product.image}
-                alt={line.product.title}
-                width={48}
-                height={48}
-                className="size-12 shrink-0 rounded-md object-cover"
-                loading="lazy"
+            <li key={line.variantId} className="flex items-center gap-3">
+              <ProductImage
+                src={line.imageUrl}
+                alt={line.productName}
+                className="size-12 shrink-0 rounded-md"
               />
               <div className="min-w-0 flex-1">
                 <p className="line-clamp-1 text-body-s font-medium text-text-primary">
-                  {line.product.title}
+                  {line.productName}
                 </p>
                 <p className="text-body-s text-text-muted">
-                  {line.variantLabel ? `${line.variantLabel} · ` : ''}×{line.qty}
+                  {[attributesLabel(line.attributes), `×${line.quantity}`]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </p>
               </div>
               <span className="text-body-s font-semibold text-text-price">
@@ -87,10 +89,16 @@ export function OrderSummary({
 
       <div className="border-t border-border-subtle pt-4">
         <div className="flex items-center justify-between">
-          <span className="text-body-m font-semibold text-text-primary">{t('summary.total')}</span>
+          <span className="text-body-m font-semibold text-text-primary">
+            {estimate ? t('checkout.estimateTitle') : t('summary.total')}
+          </span>
           <span className="text-h5 font-bold text-text-price">{formatMoney(total, locale)}</span>
         </div>
       </div>
+
+      {estimate ? (
+        <p className="text-body-s text-text-muted">{t('checkout.estimateNote')}</p>
+      ) : null}
 
       {footer}
     </Card>

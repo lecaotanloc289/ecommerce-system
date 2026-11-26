@@ -2,6 +2,7 @@
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [".env", "tsconfig.base.json"],
   "globalEnv": ["NODE_ENV", "CI"],
+  "globalPassThroughEnv": ["DOCKER_HOST", "DOCKER_CONFIG", "DOCKER_CONTEXT", "TESTCONTAINERS_*"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -22,7 +23,20 @@
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"]
     },
+    "@repo/db#test": {
+      "dependsOn": ["^build"],
+      "passThroughEnv": ["DATABASE_URL", "SHADOW_DATABASE_URL"],
+      "cache": false
+    },
     "@repo/db#generate": {
+      "cache": false
+    },
+    "@server/api#openapi:export": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "@repo/sdk#generate": {
+      "dependsOn": ["@server/api#openapi:export"],
       "cache": false
     }
   }

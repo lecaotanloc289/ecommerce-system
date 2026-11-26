@@ -18,6 +18,12 @@ export function testEnv(overrides: Record<string, string> = {}): Env {
     FACEBOOK_OAUTH_CLIENT_ID: 'facebook-id',
     FACEBOOK_OAUTH_CLIENT_SECRET: 'facebook-secret',
     FACEBOOK_OAUTH_CALLBACK_URL: 'http://localhost:3001/v1/auth/facebook/callback',
+    S3_ACCESS_KEY_ID: 'test-s3-key',
+    S3_SECRET_ACCESS_KEY: 'test-s3-secret',
+    VNPAY_TMN_CODE: 'TESTTMN1',
+    VNPAY_HASH_SECRET: 'test-vnpay-hash-secret',
+    STRIPE_SECRET_KEY: 'sk_test_dummy',
+    STRIPE_WEBHOOK_SECRET: 'whsec_test_secret',
     ...overrides,
   });
 }
@@ -39,16 +45,16 @@ export class InMemoryRefreshTokenStore implements Pick<
   /** Test clock; advance past REFRESH_REUSE_GRACE_MS to make a replay count as reuse. */
   now: () => number = () => Date.now();
 
-  async createFamily(familyId: string, userId: string, tokenHash: string, ttl: number) {
+  createFamily(familyId: string, userId: string, tokenHash: string, ttl: number): Promise<void> {
     this.families.set(familyId, { userId, current: tokenHash, ttl });
+    return Promise.resolve();
   }
 
-  async rotate(
-    familyId: string,
-    presented: string,
-    next: string,
-    ttl: number,
-  ): Promise<RotateResult> {
+  rotate(familyId: string, presented: string, next: string, ttl: number): Promise<RotateResult> {
+    return Promise.resolve(this.rotateSync(familyId, presented, next, ttl));
+  }
+
+  private rotateSync(familyId: string, presented: string, next: string, ttl: number): RotateResult {
     const family = this.families.get(familyId);
     if (!family) return 'missing';
     const now = this.now();
@@ -73,8 +79,9 @@ export class InMemoryRefreshTokenStore implements Pick<
     return 'reused';
   }
 
-  async revokeFamily(familyId: string) {
+  revokeFamily(familyId: string): Promise<void> {
     this.families.delete(familyId);
+    return Promise.resolve();
   }
 
   /** Move the clock past the grace window. */

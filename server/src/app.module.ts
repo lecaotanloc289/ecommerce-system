@@ -1,13 +1,28 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
-import { ZodValidationPipe } from 'nestjs-zod';
+import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AuthModule } from './auth/auth.module';
+import { CartModule } from './cart/cart.module';
+import { CatalogModule } from './catalog/catalog.module';
 import { DomainErrorFilter } from './common/domain-error.filter';
+import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { ConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
+import { MeModule } from './me/me.module';
+import { OrdersModule } from './orders/orders.module';
+import { PlatformModule } from './platform/platform.module';
+import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { RefundsModule } from './refunds/refunds.module';
+import { StorageModule } from './storage/storage.module';
+import { VendorApplicationsModule } from './vendor-applications/vendor-applications.module';
+import { VendorStaffModule } from './vendor-staff/vendor-staff.module';
+import { VendorModule } from './vendor/vendor.module';
+import { VendorOrdersModule } from './vendor-orders/vendor-orders.module';
+import { ZaloModule } from './zalo/zalo.module';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -26,9 +41,25 @@ const isDev = process.env.NODE_ENV !== 'production';
     RedisModule,
     HealthModule,
     AuthModule,
+    IdempotencyModule,
+    MeModule,
+    CartModule,
+    CatalogModule,
+    OrdersModule,
+    ReviewsModule,
+    PlatformModule,
+    PaymentsModule,
+    StorageModule,
+    VendorApplicationsModule,
+    VendorModule,
+    VendorStaffModule,
+    RefundsModule,
+    VendorOrdersModule,
+    ZaloModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
+    { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
     { provide: APP_FILTER, useClass: DomainErrorFilter },
   ],
 })

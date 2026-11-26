@@ -14,15 +14,22 @@ A single order may contain products from multiple vendors → the backend automa
 
 This file is the **constitution**. Every PR must respect the Golden Rules and NEVER DO list. Any deviation must be justified in the PR description and the file updated accordingly.
 
-### Implementation status (as of 2026-11-19)
+### Implementation status (as of 2026-11-26)
 
-- `packages/db` — done: full Prisma schema, migrations, seed, tests (see `packages/db/CLAUDE.md`).
-- `apps/client` — storefront UI for all `SCREENS.md` screens + `/events` calendar, appearance panel (mode / accent / radius / text size) and seasonal theming, on mock data (see `apps/client/CLAUDE.md`).
-- `server` — NestJS bootstrap + `PrismaService` + DB readiness probe + auth module (Google/Facebook OAuth, access JWT, Redis-backed rotating refresh cookie, `JwtAuthGuard` / `RolesGuard` / `@Roles` / `@CurrentUser`), Zod-validated env, Jest (see `server/CLAUDE.md`).
-- `apps/admin` — scaffold only.
-- `packages/core` — foundation done: Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, first Zod schemas (address, category, product, cart, checkout), seasonal event calendar with Vietnamese lunar dates, Vitest (see `packages/core/CLAUDE.md`).
-- `packages/i18n` — vi/en catalogs, typed translator, error-code translations for every core code, money/date formatters, Vitest; consumed by the storefront (see `packages/i18n/CLAUDE.md`).
-- `packages/{sdk,payments}` — placeholders (empty `src/index.ts`, scripts print `echo 'TODO: ...'`).
+- `packages/db` — done: Prisma schema (32 models, 19 enums) incl. ops fields (payment redirect/expiry, sub-order fulfilment and platform discount, `OutboxEvent.nextAttemptAt`), `Refund`, `VendorInvitation` and the Zalo tables; migrations, idempotent seed, ledger/money tests (see `packages/db/CLAUDE.md`).
+- `apps/client` (`@apps/web`) — storefront on the API: catalog, search and vendor pages in RSC, SSR on Cloudflare Workers via OpenNext (D1), OAuth sign-in with in-memory session, guest + server cart (merged on sign-in), checkout (per-vendor shipping, VNPay/Stripe, coupons, payment-session polling), order pages, account, seller application and product reviews; appearance panel (mode / accent / radius / text size), seasonal theming and the `/events` calendar; `/design-system` showcase (see `apps/client/CLAUDE.md`).
+- `apps/admin` (`@apps/admin`) — Vite 6 + React Router 7: in-memory auth session + role guards, `@repo/sdk` with `useApiMutation` (stable Idempotency-Key), `admin.*` i18n; vendor portal (`/vendor/*`: dashboard, products, orders with fulfilment actions, shipping, wallet, staff + invitations) and platform console (`/platform/*`: applications, vendors, products, orders, refunds, settings, users); ESLint + Vitest (see `apps/admin/CLAUDE.md`).
+- `server` (`@server/api`) — NestJS 11 + Fastify API: OAuth + JWT + rotating refresh, `@Idempotent()`, Redis rate limit, cursor pagination, Zod env, OpenAPI export; modules for me/addresses, cart, public catalog, vendor catalog + shipping methods, vendor applications (KYC), checkout + customer orders, vendor fulfilment + wallet, presigned uploads, payment webhooks + confirmation, refunds, reviews, vendor staff, platform admin and Zalo; ESLint, Jest with a Testcontainers harness (see `server/CLAUDE.md`).
+- `workers/jobs` (`@workers/jobs`) — outbox dispatcher (claims only event types it has a handler for, `FOR UPDATE SKIP LOCKED`, exponential backoff, dead-letter after 10 attempts) with handlers for `payment.requested` (provider session via `@repo/payments`, or the zero-amount confirmation), `refund.requested` (provider refund → Refund SUCCEEDED / FAILED / PENDING, Payment REFUNDED when fully refunded) and transactional emails (nodemailer, vi/en via `@repo/i18n`); BullMQ repeatable jobs `expire-unpaid-orders`, `auto-complete-sub-orders`, `release-payouts` (D7 payout ledger + wallet credit), `outbox-retention`, plus `run-job` for one-off runs; Vitest + Testcontainers; own Dockerfile / Fly app `elma-worker-{env}` (see `workers/jobs/CLAUDE.md`).
+- `packages/core` — Money utility, branded ULID ids, Prisma-mirrored enums, error catalog, Zod schemas for every MVP shape, pricing engine (D5–D8), escrow/refund ledger postings (D3/D7/D12), sub-order state machine (D11), seasonal event calendar with Vietnamese lunar dates, Vitest (see `packages/core/CLAUDE.md`).
+- `packages/i18n` — vi/en catalogs (storefront, admin, transactional emails), typed translator, error-code translations for every core code, money/date formatters; consumed by the storefront, admin and `workers/jobs` (see `packages/i18n/CLAUDE.md`).
+- `packages/ui` — shadcn/ui base components on design tokens (Tailwind v4).
+- `packages/sdk` — done: OpenAPI pipeline + `createApiClient` (openapi-fetch; Bearer, auto Idempotency-Key, single-flight 401 refresh); `pnpm sdk:generate`, CI drift check (see `packages/sdk/CLAUDE.md`).
+- `workers/zalo` — Zalo session keeper + automated order messages per shop (zca-js QR login, encrypted sessions, Redis leases, keep-alive, paced sending with retries); the API side is `server/src/zalo/` (see `workers/zalo/CLAUDE.md`).
+- `e2e` (`@repo/e2e`) — Playwright smoke flows (`00`–`05`) over the whole stack on a throwaway database: guest cart → two-vendor checkout (fake gateway, signed VNPay IPN) → fulfilment → auto-complete + payout → vendor application approval; run by `pnpm e2e` and CI `e2e.yml` (see `e2e/CLAUDE.md`).
+- `packages/payments` — `PaymentProvider` interface + VNPay (v2.1.0 HMAC-SHA512 pay URL, IPN/return verify, merchant-webapi refund) and Stripe (Checkout Session, `constructEvent` webhook verify, refunds) adapters; config via factory params, injectable `fetch` / Stripe client; ESLint + Vitest (see `packages/payments/CLAUDE.md`).
+
+Known gap: on the current deploy targets the admin and API are cross-site, so the SameSite=Lax refresh cookie is not sent and admin sign-in does not persist until a shared domain or same-origin `/v1` proxy exists (see `apps/admin/CLAUDE.md`).
 
 Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables (commission %, hold period, refund window) live in `PlatformSettings`, so their final values don't block code.
 
@@ -42,7 +49,7 @@ Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables
 
 **Database**
 
-- PostgreSQL 18, Prisma 6
+- PostgreSQL 16, Prisma 6
 - `pg_trgm` + `tsvector` for product search; JSONB for variant attributes
 - Prisma Client is a **singleton** inside `packages/db` and never exposed outside it
 - Migrations: `prisma migrate dev` (local), `prisma migrate deploy` (prod). **Forward-only**
@@ -50,7 +57,7 @@ Per-workspace state lives in each workspace's own `CLAUDE.md`. Business tunables
 **Cache, Queue, Storage**
 
 - Redis 7: session denylist, rate limiting, BullMQ
-- S3-compatible storage: R2 (prod) or MinIO (local docker) for product images and KYC documents
+- S3-compatible storage: R2 (prod) or RustFS (local docker; MinIO images are no longer pullable) for product images and KYC documents
 
 **Payment**
 
@@ -72,9 +79,14 @@ ecommerce-system/
 │   └── admin/                     Vite + React dashboard, package `@apps/admin` (platform admin + vendor portal)
 ├── server/                        Backend API (NestJS + Fastify), single workspace, package `@server/api`.
 │                                   Versioned /v1, OpenAPI exposed. Code in `server/src/`.
-│                                   Future async workers (outbox dispatcher, payout cron, email sender)
-│                                   live OUTSIDE this workspace — likely a sibling top-level dir like
-│                                   `workers/<name>/` if/when added.
+│                                   Async work lives OUTSIDE this workspace, in `workers/`.
+├── workers/                       Background processes (no HTTP); never import from server/ or apps/.
+│   └── jobs/                      `@workers/jobs`: outbox dispatcher → payment sessions, refunds,
+│                                  emails; scheduled jobs (payment expiry, auto-complete, payouts).
+│   └── zalo/                      `@workers/zalo`: holds shops' Zalo sessions (zca-js) + sends automated
+│                                  order messages from `zalo_messages` (roadmap D16).
+├── e2e/                           `@repo/e2e`: Playwright smoke flows over the whole stack (boots API,
+│                                  worker, storefront, admin on a throwaway DB; see e2e/CLAUDE.md).
 ├── packages/                      Shared libraries
 │   ├── core/                      Domain layer: Zod schemas, types (z.infer), enums, error codes,
 │   │                              Money utility, ID brands, shared constants.
@@ -83,14 +95,14 @@ ecommerce-system/
 │   │                              Pure components: no API calls, no awareness of auth.
 │   ├── db/                        Prisma schema (DB source of truth), client singleton, seed,
 │   │                              migrations. Repository layer lives here or in server/src/*.repository.ts
-│   ├── sdk/                       Typed API client (generated from OpenAPI via openapi-typescript / orval).
+│   ├── sdk/                       Typed API client (generated from OpenAPI via openapi-typescript + openapi-fetch).
 │   │                              Re-exports Zod response schemas so web/admin can parse responses.
 │   ├── payments/                  PaymentProvider interface + VNPay / Stripe adapters.
 │   │                              Pure logic, no DB access; injected into `server/` services.
 │   ├── i18n/                      Messages vi/en (typed TS catalogs), translator, formatters (currency, date).
 │   │                              Follows next-intl conventions, shared between web and admin.
 │   └── config/                    Shared ESLint / TS / Tailwind / Prettier / commitlint configs.
-├── docker-compose.yml + docker/   Local Postgres + Redis + MinIO + Mailhog
+├── docker-compose.yml + docker/   Local Postgres + Redis + RustFS (S3) + Mailhog
 ├── turbo.json
 ├── pnpm-workspace.yaml
 ├── .env.example                   (NEVER commit real .env)
@@ -102,10 +114,12 @@ ecommerce-system/
 ```
 apps/*      → packages/*           (OK)
 server      → packages/*           (OK)
+workers/*   → packages/*           (OK)
 packages/*  → packages/*           (OK, in dependency direction: core → ui/i18n/db/sdk/payments; no cycles)
 apps/*      ↔ apps/*               (FORBIDDEN — share via packages/*)
 apps/*      ↔ server               (FORBIDDEN — frontends call HTTP via @repo/sdk)
-packages/*  → apps/* | server      (FORBIDDEN — packages don't depend on consumers)
+workers/*   ↔ server | apps/*      (FORBIDDEN — workers talk to the API only through the DB / outbox)
+packages/*  → apps/* | server | workers/* (FORBIDDEN — packages don't depend on consumers)
 ```
 
 ---
@@ -127,21 +141,24 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
    │  4. JwtAuthGuard → verifies access token → req.user = { id, roles, vendorId? }
    │  5. RolesGuard @Roles('CUSTOMER') → allow
    │  6. ZodValidationPipe → parses body against CheckoutSchema; reject 422 on failure.
-   │  7. OrdersController.checkout → OrdersService.checkoutCart(userId, dto, idemKey)
+   │  7. OrdersController.checkout → CheckoutService.checkout(userId, dto, idemKey)
    ▼
-[OrdersService — orchestration]
-   │  8. Idempotency check via Redis (idemKey → existing orderId if already processed).
+[CheckoutService — orchestration]
+   │  8. Idempotency check via Redis (idemKey → stored response if already processed);
+   │     Order.idempotencyKey (unique) is the DB backstop.
    │  9. Open a Prisma $transaction:
-   │       a. Lock + reserve inventory (UPDATE ... WHERE stock >= qty)
-   │       b. Group items by vendorId
-   │       c. INSERT Order (parent) + N SubOrder (one per vendor) + OrderItems
-   │       d. INSERT LedgerEntry (escrow IN from customer)
+   │       a. Group items by vendorId; lock coupons (FOR UPDATE) and price the order (core priceOrder)
+   │       b. Reserve inventory (UPDATE ... WHERE stock_on_hand - stock_reserved >= qty)
+   │       c. INSERT Order (parent) + N SubOrder (one per vendor) + OrderItems + CouponRedemptions
+   │       d. INSERT Payment (PENDING, attempt 1) — NO ledger yet: escrow IN is written when the
+   │          payment is confirmed (step 14, roadmap D3)
    │       e. INSERT OutboxEvent rows (order.created, payment.requested)
    │  10. Commit. Return Order DTO (parsed through a Zod response schema).
    ▼
 [Worker (BullMQ)]
-   │  11. Consume outbox: send a payment request via the VNPay/Stripe adapter (packages/payments).
-   │  12. Gateway returns a redirect URL → API → web → browser redirects user.
+   │  11. Consume outbox: create a payment session via the VNPay/Stripe adapter (packages/payments).
+   │  12. Worker stores Payment.redirectUrl; web polls GET /v1/orders/:id/payment (202 → 200)
+   │      and redirects the browser.
    ▼
 [Payment gateway]
    │  13. User pays → gateway POSTs to /v1/payments/webhook/:provider.
@@ -150,8 +167,8 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
    ▼
 [Hold period elapses (cron / scheduler)]
    │  16. Job scans SubOrders that are COMPLETED past the hold window
-   │      → computes payout = subtotal − commission.
-   │  17. Writes LedgerEntry (escrow OUT → vendor wallet); outbox payout.requested.
+   │      → computes net = subtotal + shipping − vendor discount − commission (roadmap D7).
+   │  17. Writes LedgerEntry (escrow OUT → vendor wallet, PAYOUT_OUT) + wallet credit; outbox payout.released.
 ```
 
 **Principles enforced by this flow:**
@@ -180,9 +197,9 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
 
 8. **Migrations are forward-only and reviewed.** Created with `pnpm db:migrate dev`. Never edit an applied migration. Destructive changes (drop column, rename) require a 2-phase migration: ship code that reads both → migrate → cleanup migration.
 
-9. **Side effects go through the Outbox.** Email, webhooks, payouts, notifications — write to `outbox_events` inside the same transaction as the business change; a BullMQ worker dispatches them. Do NOT `await externalApi()` in the request thread.
+9. **Side effects go through the Outbox.** Email, webhooks, payouts, notifications — write to `outbox_events` inside the same transaction as the business change; a BullMQ worker dispatches them. Do NOT `await externalApi()` in the request thread. _Exception:_ automated Zalo messages use their own outbox table `zalo_messages` (same transaction, written by `queueZaloMessages` / `queueZaloStatusMessages` in `server/src/zalo/`, delivered by `workers/zalo`) because they need a per-row send time (post-delivery care), per-shop session affinity and a vendor-visible send log.
 
-10. **CI gate must pass.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` must be green before merge. The pre-commit hook runs `lint-staged` + `typecheck` on changed files.
+10. **CI gate must pass.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` must be green before merge. The pre-commit hook runs `lint-staged` (Prettier on staged files) + `lint` and `typecheck` on every workspace changed since `HEAD` and its dependents (`turbo run lint typecheck --filter=...[HEAD]`).
 
 ---
 
@@ -208,26 +225,26 @@ Worked example: **a customer checks out a cart containing items from 2 vendors**
 
 ## 7. Naming conventions
 
-| Scope               | Convention                                                             | Example                                                 |
-| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
-| File                | kebab-case                                                             | `product-card.tsx`, `vendor-payout.service.ts`          |
-| React component     | PascalCase export                                                      | `export function ProductCard()`                         |
-| React hook          | `useXxx`                                                               | `useCartQuery`, `useCurrentVendor`                      |
-| Zod schema          | `XxxSchema`                                                            | `CheckoutSchema`, `VendorApplicationSchema`             |
-| Type from schema    | `Xxx = z.infer<typeof XxxSchema>`                                      | `type Checkout = z.infer<typeof CheckoutSchema>`        |
-| NestJS class        | `XxxController` / `XxxService` / `XxxModule` / `XxxRepository`         | `OrdersService`                                         |
-| Prisma model        | PascalCase, **singular**                                               | `Product`, `Order`, `OrderItem`, `SubOrder`             |
-| DB table (physical) | snake_case, **plural** via `@@map`                                     | `@@map("order_items")`                                  |
-| Enum (Prisma + TS)  | SCREAMING_SNAKE_CASE values                                            | `OrderStatus.AWAITING_PAYMENT`                          |
-| API route           | kebab-case, plural noun, versioned                                     | `POST /v1/vendor-applications`                          |
-| Env var             | SCREAMING_SNAKE_CASE                                                   | `DATABASE_URL`, `GOOGLE_OAUTH_CLIENT_ID`                |
-| i18n key            | dot-namespaced; namespaces + error codes kebab, UI leaf keys camelCase | `checkout.error.out-of-stock`, `common.addToCart`       |
-| Branch              | `feat/`, `fix/`, `chore/`, `refactor/`                                 | `feat/vendor-payout-cron`                               |
-| Commit              | Conventional Commits                                                   | `feat(orders): split multi-vendor cart into sub-orders` |
-| Workspace package   | `@apps/<n>` (UI), `@server/<n>` (backend), `@repo/<n>` (shared)        | `@apps/web`, `@server/api`, `@repo/core`                |
-| ID                  | ULID (text), brand type per entity                                     | `type OrderId = Brand<string, 'OrderId'>`               |
-| Boolean             | `is/has/can/should` prefix                                             | `isActive`, `hasShipped`, `canRefund`                   |
-| Money field         | suffix `_amount` + `_currency`                                         | `subtotal_amount`, `subtotal_currency`                  |
+| Scope               | Convention                                                                                   | Example                                                   |
+| ------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| File                | kebab-case                                                                                   | `product-card.tsx`, `vendor-payout.service.ts`            |
+| React component     | PascalCase export                                                                            | `export function ProductCard()`                           |
+| React hook          | `useXxx`                                                                                     | `useCartQuery`, `useCurrentVendor`                        |
+| Zod schema          | `XxxSchema`                                                                                  | `CheckoutSchema`, `VendorApplicationSchema`               |
+| Type from schema    | `Xxx = z.infer<typeof XxxSchema>`                                                            | `type Checkout = z.infer<typeof CheckoutSchema>`          |
+| NestJS class        | `XxxController` / `XxxService` / `XxxModule` / `XxxRepository`                               | `OrdersService`                                           |
+| Prisma model        | PascalCase, **singular**                                                                     | `Product`, `Order`, `OrderItem`, `SubOrder`               |
+| DB table (physical) | snake_case, **plural** via `@@map`                                                           | `@@map("order_items")`                                    |
+| Enum (Prisma + TS)  | SCREAMING_SNAKE_CASE values                                                                  | `OrderStatus.AWAITING_PAYMENT`                            |
+| API route           | kebab-case, plural noun, versioned                                                           | `POST /v1/vendor-applications`                            |
+| Env var             | SCREAMING_SNAKE_CASE                                                                         | `DATABASE_URL`, `GOOGLE_OAUTH_CLIENT_ID`                  |
+| i18n key            | dot-namespaced; namespaces + error codes kebab, UI leaf keys camelCase                       | `checkout.error.out-of-stock`, `common.addToCart`         |
+| Branch              | `feat/`, `fix/`, `chore/`, `refactor/`                                                       | `feat/vendor-payout-cron`                                 |
+| Commit              | Conventional Commits                                                                         | `feat(orders): split multi-vendor cart into sub-orders`   |
+| Workspace package   | `@apps/<n>` (UI), `@server/<n>` (backend), `@workers/<n>` (background), `@repo/<n>` (shared) | `@apps/web`, `@server/api`, `@workers/jobs`, `@repo/core` |
+| ID                  | ULID (text), brand type per entity                                                           | `type OrderId = Brand<string, 'OrderId'>`                 |
+| Boolean             | `is/has/can/should` prefix                                                                   | `isActive`, `hasShipped`, `canRefund`                     |
+| Money field         | suffix `_amount` + `_currency`                                                               | `subtotal_amount`, `subtotal_currency`                    |
 
 ---
 
@@ -313,7 +330,7 @@ Never rename or drop in a single migration:
 
 - **Unit (Vitest, per `packages/*`):** pure functions, schema validation, Money math, payment adapter logic with mocked HTTP. Fast (<1s per file).
 - **Integration (Jest, in `server/`):** services that hit DB via Testcontainers (Postgres + Redis). Covers transaction rollback, idempotency replay, outbox publishing, role + ownership guards.
-- **E2E (Playwright, in `apps/web` and `apps/admin`):** smoke flows only — OAuth sign-in (mocked provider), browse → add to cart → checkout, vendor apply → admin approve → vendor lists a product.
+- **E2E (Playwright, in the `e2e/` workspace `@repo/e2e`):** smoke flows only, against the real API + worker + storefront + admin on a throwaway DB (see `e2e/CLAUDE.md`): guest cart → sign-in merge (minted refresh cookie, no OAuth), 2-vendor checkout → signed VNPay IPN → paid, vendor accept/ship/deliver + customer confirm, payout job → exact wallet net, admin approves a vendor application. CI: `.github/workflows/e2e.yml` (PRs into `prod` + manual dispatch).
 
 **What to test**
 
@@ -336,7 +353,7 @@ Never rename or drop in a single migration:
 - One workspace: `pnpm --filter @repo/core test`
 - Single file: `pnpm --filter @server/api test -- order.service.spec.ts`
 - Watch mode: append `-- --watch`
-- E2E headed: `pnpm --filter @apps/web e2e -- --headed`
+- E2E: `pnpm e2e` (headless; builds + boots the whole stack, needs Postgres + Redis) · headed: `pnpm e2e:headed` · one flow: `pnpm e2e -- -g payout`
 
 **Coverage**
 
@@ -366,7 +383,7 @@ Never rename or drop in a single migration:
 | `VENDOR_OWNER`, `VENDOR_STAFF`     | `apps/admin` → `/vendor/*` routes   |
 | `PLATFORM_STAFF`, `PLATFORM_ADMIN` | `apps/admin` → `/platform/*` routes |
 
-`server/` (HTTP, package `@server/api`) serves all roles via REST; webhooks (payment, OAuth callback) terminate here. Future async workers (outbox dispatch, payout cron, email send) will live in a separate top-level dir (e.g. `workers/*`) — not nested inside `server/`.
+`server/` (HTTP, package `@server/api`) serves all roles via REST; webhooks (payment, OAuth callback) terminate here. Async work (outbox dispatch, emails, payment sessions, provider refunds; scheduled payment expiry, auto-complete and payouts) runs in `workers/jobs` (`@workers/jobs`) — not nested inside `server/`.
 
 ### Customer journey (features in scope for MVP)
 
@@ -387,6 +404,9 @@ Vendor ─── Product[]
        ─── Wallet                   (balance from released escrow)
        ─── SubOrder[]
        ─── VendorApplication        (PENDING → APPROVED / REJECTED)
+       ─── VendorInvitation[]       (staff invite: email lowercased, tokenHash, expiresAt; accepted / revoked)
+       ─── ZaloAccount?             (one per shop, ACTIVE / EXPIRED / DISCONNECTED; credentials encrypted)
+       ─── ZaloMessageTemplate[]    (one per (vendor, event); no row = disabled)
 
 Product ─── ProductVariant[] ─── Inventory   (per warehouse if needed)
         ─── ProductImage[]
@@ -401,17 +421,22 @@ Order (parent, customer-facing)
   │     ├── ShippingMethod (chosen)
   │     ├── ShippingAddress          (snapshot of Address at checkout)
   │     ├── CouponRedemption[]       (vendor-scoped coupons)
+  │     ├── Refund[]                 (admin refund of the whole sub-order: amount, status
+  │     │                             PENDING / SUCCEEDED / FAILED; at most one non-FAILED)
+  │     ├── ZaloMessage[]            (one per sub-order + event: PENDING / SENDING / SENT /
+  │     │                             SKIPPED / FAILED; opt-in orders only)
   │     └── status: AWAITING_PAYMENT → PAID → PROCESSING → SHIPPED
   │                  → DELIVERED → COMPLETED / REFUNDED / CANCELLED
   ├── CouponRedemption[]             (platform-scoped coupons)
-  ├── Payment[]                      (one row per attempt; latest = current)
+  ├── Payment[]                      (one row per attempt; latest = current; refunds reference it)
   └── LedgerEntry[]                  (escrow IN, payout OUT, refund, fees)
 
 PlatformSettings (singleton row)
   commission_bps, hold_period_days, refund_window_days, supported_currencies, ...
 
 OutboxEvent
-  aggregate_id, event_type, payload (JSONB), created_at, processed_at?
+  aggregate_id, event_type, payload (JSONB), created_at, processed_at?,
+  attempts, next_attempt_at (earliest retry; the dispatcher claims rows due now)
 ```
 
 **Snapshot rule:** product price/title and shipping address are **copied into `OrderItem` / `SubOrder`** at checkout. Later edits to the underlying `Product` or `Address` must never alter historical orders.
@@ -459,6 +484,9 @@ pnpm dev                            # all workspaces in parallel via Turbo
 pnpm --filter @apps/web dev         # storefront only       → http://localhost:3000
 pnpm --filter @apps/admin dev       # admin only            → http://localhost:5173
 pnpm --filter @server/api dev       # API only              → http://localhost:3001
+pnpm --filter @workers/jobs dev     # outbox worker + scheduled jobs (no HTTP; needs DATABASE_URL + REDIS_URL, SMTP → Mailhog)
+pnpm --filter @workers/jobs run-job release-payouts   # one scheduled job, once, no Redis (job names: workers/jobs/CLAUDE.md)
+pnpm --filter @workers/zalo dev     # Zalo session keeper + message sender (no HTTP; needs ZALO_CREDENTIALS_KEY, DATABASE_URL, REDIS_URL)
 ```
 
 ### Build / lint / typecheck / test
@@ -470,9 +498,12 @@ pnpm typecheck                      # all
 pnpm test                           # all (unit + integration)
 
 pnpm --filter @repo/core test                                # one workspace
-pnpm --filter @server/api test -- order.service.spec.ts      # one test file
+pnpm --filter @server/api test -- reviews.spec.ts            # one test file
 pnpm --filter @server/api test -- --watch                    # watch mode
-pnpm --filter @apps/web e2e -- --headed                      # Playwright headed
+pnpm format                                                  # Prettier --write over the repo
+pnpm format:check                                            # Prettier --check (no writes)
+pnpm e2e                                                     # Playwright smoke flows on the full stack (e2e/CLAUDE.md)
+pnpm e2e:headed                                              # same, visible browser
 ```
 
 ### Database (Prisma, via `@repo/db`)
@@ -480,37 +511,46 @@ pnpm --filter @apps/web e2e -- --headed                      # Playwright headed
 ```bash
 pnpm db:generate                    # regenerate Prisma Client
 pnpm db:migrate                     # migrate dev — creates a new migration
+pnpm --filter @repo/db migrate:deploy   # apply committed migrations only (CI / prod); never generates
 pnpm db:reset                       # drop + reapply + seed   — LOCAL ONLY
 pnpm db:seed                        # idempotent seed (PlatformSettings, demo data)
+```
+
+### SDK (OpenAPI → `@repo/sdk`)
+
+```bash
+pnpm sdk:generate                   # export spec (no DB/Redis needed) → openapi-typescript → build; commit the diff (CI drift check)
 ```
 
 ### Local services (docker compose)
 
 ```bash
-pnpm services:up                    # postgres + redis + minio + mailhog
+pnpm services:up                    # postgres + redis + s3 (+ s3-init) + mailhog
 pnpm services:down
 pnpm services:logs
 ```
 
 ### Ports
 
-| Service       | Port        | Notes                                     |
-| ------------- | ----------- | ----------------------------------------- |
-| `@apps/web`   | 3000        | Next.js storefront                        |
-| `@server/api` | 3001        | NestJS + Fastify, prefix `/v1`            |
-| `@apps/admin` | 5173        | Vite dev server                           |
-| Postgres      | 5432        | DBs: `ecommerce`, `ecommerce_shadow`      |
-| Redis         | 6379        | Cache + BullMQ                            |
-| MinIO         | 9000 / 9001 | S3 API / web console (`minioadmin`/`...`) |
-| Mailhog       | 1025 / 8025 | SMTP / web UI                             |
+| Service       | Port        | Notes                                                                                                      |
+| ------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
+| `@apps/web`   | 3000        | Next.js storefront                                                                                         |
+| `@server/api` | 3001        | NestJS + Fastify, prefix `/v1`                                                                             |
+| `@apps/admin` | 5173        | Vite dev server                                                                                            |
+| `workers/*`   | —           | No HTTP port: `@workers/jobs` and `@workers/zalo` talk to Postgres + Redis only                            |
+| `e2e`         | 4100–4104   | Test-only ports (web / API / admin / fake gateway / SMTP sink); see `e2e/CLAUDE.md`                        |
+| Postgres      | 5432        | DBs: `ecommerce`, `ecommerce_shadow` (created by `docker/postgres-init.sql`)                               |
+| Redis         | 6379        | Cache + BullMQ                                                                                             |
+| RustFS (S3)   | 9000 / 9001 | S3 API / web console (local `rustfsadmin` / `rustfsadmin`); buckets `kyc` (private), `media` (public read) |
+| Mailhog       | 1025 / 8025 | SMTP / web UI                                                                                              |
 
 ### First-time setup
 
 ```bash
 pnpm install
-cp .env.example .env                # fill in OAuth client IDs, JWT secrets, etc.
-pnpm services:up                    # spin up local infra
-pnpm db:migrate                     # apply schema (once db package has it)
-pnpm db:seed
+cp .env.example .env                # Vite (admin) reads it; API and workers read the shell or Doppler (doppler.yaml)
+pnpm services:up                    # postgres + redis + rustfs + mailhog
+pnpm db:migrate                     # create/apply migrations on the local DB
+pnpm db:seed                        # idempotent demo data
 pnpm dev                            # or filter to one workspace as above
 ```

@@ -12,19 +12,32 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./vnpay": "./src/vnpay/index.ts",
-    "./stripe": "./src/stripe/index.ts"
+    "./vnpay": {
+      "types": "./dist/vnpay/index.d.ts",
+      "import": "./dist/vnpay/index.js",
+      "require": "./dist/vnpay/index.cjs"
+    },
+    "./stripe": {
+      "types": "./dist/stripe/index.d.ts",
+      "import": "./dist/stripe/index.js",
+      "require": "./dist/stripe/index.cjs"
+    }
   },
   "scripts": {
     "build": "tsup",
-    "lint": "echo 'TODO: eslint'",
-    "typecheck": "tsc --noEmit",
-    "test": "echo 'TODO: vitest'"
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
-    "@repo/core": "workspace:*",
     "@types/node": "^22.10.0",
-    "typescript": "^5.7.0"
+    "eslint": "^10.15.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "@repo/core": "workspace:*",
+    "stripe": "23.1.0"
   }
 }

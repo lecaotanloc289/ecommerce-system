@@ -122,7 +122,7 @@ const mode = JSON.parse(localStorage.appearance ?? '{}').mode ?? localStorage.th
 const dark =
   mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
 document.documentElement.classList.toggle('dark', dark);
-// storefront: AppearanceProvider + script no-flash trong app/layout.tsx; các preset khác ở mục 12
+// storefront: AppearanceProvider + script no-flash trong components/layout/storefront-shell.tsx; các preset khác ở mục 12
 ```
 
 ---

@@ -83,6 +83,28 @@ export type ReviewId = z.infer<typeof ReviewIdSchema>;
 export const OutboxEventIdSchema = UlidSchema.brand<'OutboxEventId'>();
 export type OutboxEventId = z.infer<typeof OutboxEventIdSchema>;
 
+export const PlatformSettingsIdSchema = UlidSchema.brand<'PlatformSettingsId'>();
+export type PlatformSettingsId = z.infer<typeof PlatformSettingsIdSchema>;
+
+export const RefundIdSchema = UlidSchema.brand<'RefundId'>();
+export type RefundId = z.infer<typeof RefundIdSchema>;
+
+export const VendorInvitationIdSchema = UlidSchema.brand<'VendorInvitationId'>();
+export type VendorInvitationId = z.infer<typeof VendorInvitationIdSchema>;
+
+export const ZaloAccountIdSchema = UlidSchema.brand<'ZaloAccountId'>();
+export type ZaloAccountId = z.infer<typeof ZaloAccountIdSchema>;
+
+export const ZaloMessageTemplateIdSchema = UlidSchema.brand<'ZaloMessageTemplateId'>();
+export type ZaloMessageTemplateId = z.infer<typeof ZaloMessageTemplateIdSchema>;
+
+export const ZaloMessageIdSchema = UlidSchema.brand<'ZaloMessageId'>();
+export type ZaloMessageId = z.infer<typeof ZaloMessageIdSchema>;
+
+/** Id of one QR login attempt (`POST /v1/vendor/zalo/login-requests`); lives only in Redis. */
+export const ZaloLoginIdSchema = UlidSchema.brand<'ZaloLoginId'>();
+export type ZaloLoginId = z.infer<typeof ZaloLoginIdSchema>;
+
 /** `Idempotency-Key` header value (Golden Rule #3) — a client-generated ULID. */
 export const IdempotencyKeySchema = UlidSchema.brand<'IdempotencyKey'>();
 export type IdempotencyKey = z.infer<typeof IdempotencyKeySchema>;

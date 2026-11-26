@@ -1,9 +1,7 @@
-// TODO(core): move the response shapes below (TokenResponse, MeResponse) into
-// @repo/core/schemas/auth so @repo/sdk, apps/web and apps/admin can parse them. Token-claim and
-// OAuth-profile schemas are server-internal and stay here.
+// Server-internal auth schemas (token claims, request user, OAuth profile). The HTTP response shapes
+// (TokenResponse, MeResponse) live in @repo/core/schemas/me so @repo/sdk and the frontends share them.
 import { z } from 'zod';
 import {
-  LocaleSchema,
   OAuthProviderSchema,
   RoleSchema,
   UlidSchema,
@@ -53,22 +51,3 @@ export type OAuthProfile = z.infer<typeof OAuthProfileSchema>;
 /** Which frontend started the OAuth flow; decides the post-login redirect. */
 export const AuthAppSchema = z.enum(['web', 'admin']);
 export type AuthApp = z.infer<typeof AuthAppSchema>;
-
-export const TokenResponseSchema = z.object({
-  accessToken: z.string().min(1),
-  tokenType: z.literal('Bearer'),
-  /** Seconds until the access token expires. */
-  expiresIn: z.number().int().positive(),
-});
-export type TokenResponse = z.infer<typeof TokenResponseSchema>;
-
-export const MeResponseSchema = z.object({
-  id: UserIdSchema,
-  email: z.string().nullable(),
-  name: z.string(),
-  avatarUrl: z.string().nullable(),
-  primaryLocale: LocaleSchema,
-  roles: z.array(RoleSchema),
-  vendorId: VendorIdSchema.nullable(),
-});
-export type MeResponse = z.infer<typeof MeResponseSchema>;

@@ -29,8 +29,6 @@
     ],
     "ask": [
       "Bash(git push:*)",
-      "Bash(pnpm add:*)",
-      "Bash(pnpm install:*)",
       "Bash(pnpm remove:*)",
       "Bash(pnpm db:migrate:*)",
       "Bash(pnpm db:reset:*)",
@@ -38,12 +36,9 @@
       "Bash(pnpm services:*)",
       "Bash(docker:*)",
       "Edit(.env*)",
-      "Edit(package.json)",
-      "Edit(**/package.json)",
-      "Edit(**/prisma/schema.prisma)",
-      "Edit(**/migrations/**)",
-      "Edit(.github/**)",
-      "Edit(.claude/**)"
+      "Edit(.claude/settings*.json)",
+      "Edit(.claude/hooks/**)",
+      "Edit(.claude/agents/**)"
     ],
     "deny": [
       "Read(**/.env)",

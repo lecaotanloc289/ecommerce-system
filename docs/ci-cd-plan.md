@@ -1,4 +1,4 @@
-# CI/CD Setup — Cloudflare Pages + Fly.io
+# CI/CD Setup — Cloudflare (Workers + Pages) + Fly.io
 
 ## Context
 
@@ -7,19 +7,21 @@ Elma e-commerce monorepo currently has:
 - `.github/workflows/ci.yml` that lints / typechecks / tests / builds — but does **not deploy** anywhere.
 - No `Dockerfile`, no platform configs (Vercel / Fly / Railway / Cloudflare).
 - Branches: `dev` (active) + `prod` (production trunk — already renamed on origin from the old `main`).
-- 3 deployables: `apps/web` (Next.js 15), `apps/admin` (Vite SPA), `server` (NestJS + Fastify).
+- 3 deployables: `apps/client` (package `@apps/web`, Next.js 15 SSR), `apps/admin` (Vite SPA), `server` (NestJS + Fastify).
 
 Goal: every push to `dev` triggers a build + deploy of all 3 to the **dev environment**; every push to `prod` (merged from `dev`) triggers the same to the **production environment**.
 
 Chosen stack (per user answers):
 
-| Concern                   | Platform                                                           |
-| ------------------------- | ------------------------------------------------------------------ |
-| `apps/web` + `apps/admin` | **Cloudflare Pages** (subdomain `*.pages.dev`)                     |
-| `server`                  | **Fly.io** Docker (subdomain `*.fly.dev`)                          |
-| Postgres                  | **Neon** — DB branches per env                                     |
-| Redis                     | **Upstash** — 2 separate databases                                 |
-| Secrets                   | GitHub Actions repo secrets, mirrored to Fly via `fly secrets set` |
+| Concern                    | Platform                                                                                      |
+| -------------------------- | --------------------------------------------------------------------------------------------- |
+| `apps/client` (storefront) | **Cloudflare Workers** — Next.js SSR via `@opennextjs/cloudflare` (subdomain `*.workers.dev`) |
+| `apps/admin`               | **Cloudflare Pages** (subdomain `*.pages.dev`)                                                |
+| `server`                   | **Fly.io** Docker (subdomain `*.fly.dev`)                                                     |
+| `workers/jobs`             | **Fly.io** Docker, separate app `elma-worker-{dev,prod}`, no HTTP service                     |
+| Postgres                   | **Neon** — DB branches per env                                                                |
+| Redis                      | **Upstash** — 2 separate databases                                                            |
+| Secrets                    | GitHub Actions repo secrets, mirrored to Fly via `fly secrets set`                            |
 
 ---
 
@@ -48,21 +50,25 @@ Steps:
 
 ### New — platform configs
 
-| Path                                  | Purpose                                                                                     |
-| ------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `server/Dockerfile`                   | Multi-stage Node 20 build → small runtime image                                             |
-| `server/.dockerignore`                | Exclude `node_modules`, `.next`, `dist`, tests, env files                                   |
-| `server/fly.toml`                     | Fly app config (region `sin`, internal port `3001`, health check `/v1/health`)              |
-| `apps/web/wrangler.toml` _(optional)_ | If using `@cloudflare/next-on-pages` CLI; alternative is configuring via CF Pages dashboard |
+| Path                              | Purpose                                                                                       |
+| --------------------------------- | --------------------------------------------------------------------------------------------- |
+| `server/Dockerfile`               | Multi-stage Node 20 build → small runtime image                                               |
+| `server/.dockerignore`            | Exclude `node_modules`, `.next`, `dist`, tests, env files                                     |
+| `server/fly.toml`                 | Fly app config (region `sin`, internal port `3001`, health check `/v1/health`)                |
+| `workers/jobs/Dockerfile`         | Node 22 worker image (build context = repo root; `Dockerfile.dockerignore` beside it)         |
+| `workers/jobs/fly.toml`           | Worker Fly app config (region `sin`, no `[http_service]`, `kill_timeout` 90s)                 |
+| `apps/client/wrangler.jsonc`      | Worker config: `.open-next/worker.js`, `nodejs_compat`, `ASSETS` binding, envs `dev` / `prod` |
+| `apps/client/open-next.config.ts` | OpenNext config (read-only static-assets incremental cache — no R2/KV yet)                    |
 
 ### New — GitHub Actions workflows
 
-| Path                                            | Triggers                                 | Jobs                                                   |
-| ----------------------------------------------- | ---------------------------------------- | ------------------------------------------------------ |
-| `.github/workflows/ci.yml` _(replace existing)_ | PR open + push to `dev` + push to `prod` | `lint` · `typecheck` · `test` · `build`                |
-| `.github/workflows/deploy-web.yml`              | push to `dev` or `prod`                  | Build Next.js w/ CF adapter → `wrangler pages deploy`  |
-| `.github/workflows/deploy-admin.yml`            | push to `dev` or `prod`                  | Build Vite → `wrangler pages deploy ./apps/admin/dist` |
-| `.github/workflows/deploy-server.yml`           | push to `dev` or `prod`                  | `flyctl deploy --app $APP --remote-only`               |
+| Path                                            | Triggers                                 | Jobs                                                                          |
+| ----------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------- |
+| `.github/workflows/ci.yml` _(replace existing)_ | PR open + push to `dev` + push to `prod` | `lint` · `typecheck` · `test` · `build`                                       |
+| `.github/workflows/deploy-web.yml`              | push to `dev` or `prod`                  | `opennextjs-cloudflare build` → `opennextjs-cloudflare deploy --env <branch>` |
+| `.github/workflows/deploy-admin.yml`            | push to `dev` or `prod`                  | Build Vite → `wrangler pages deploy ./apps/admin/dist`                        |
+| `.github/workflows/deploy-server.yml`           | push to `dev` or `prod`                  | `flyctl deploy --app $APP --remote-only`                                      |
+| `.github/workflows/deploy-worker.yml`           | push to `dev` or `prod` (worker paths)   | `flyctl deploy --app elma-worker-<branch> --remote-only` (no smoke check)     |
 
 Each deploy workflow:
 
@@ -73,26 +79,40 @@ Each deploy workflow:
 
 ### Edits
 
-| Path                      | Change                                                                         |
-| ------------------------- | ------------------------------------------------------------------------------ |
-| `apps/web/package.json`   | Add devDep `@cloudflare/next-on-pages` + `wrangler`; add `pages:build` script  |
-| `apps/web/next.config.ts` | No code change yet — adapter is run as a CLI step, not via config              |
-| `apps/admin/package.json` | Add devDep `wrangler`                                                          |
-| `.env.example`            | Add comment block listing the GitHub secret keys + Fly secret keys (no values) |
-| `README.md`               | Add a brief "Deploy" section pointing at the workflows + the 6 public URLs     |
+| Path                         | Change                                                                                        |
+| ---------------------------- | --------------------------------------------------------------------------------------------- |
+| `apps/client/package.json`   | Add `@opennextjs/cloudflare` + devDep `wrangler`; scripts `preview` / `deploy` / `cf-typegen` |
+| `apps/client/next.config.ts` | No `output: 'export'`; next-intl plugin + `initOpenNextCloudflareForDev()`                    |
+| `apps/admin/package.json`    | Add devDep `wrangler`                                                                         |
+| `.env.example`               | Add comment block listing the GitHub secret keys + Fly secret keys (no values)                |
+| `README.md`                  | Add a brief "Deploy" section pointing at the workflows + the 6 public URLs                    |
 
 ---
 
-## Cloudflare Pages — projects to create
+## Cloudflare Workers — storefront (`apps/client`)
+
+The storefront renders SSR on a Worker built by `@opennextjs/cloudflare` (roadmap D1). Nothing to create by hand: the first `opennextjs-cloudflare deploy --env <branch>` creates the Worker.
+
+| Branch | wrangler env | Worker          | Public URL                                    |
+| ------ | ------------ | --------------- | --------------------------------------------- |
+| `dev`  | `dev`        | `elma-web-dev`  | `https://elma-web-dev.<account>.workers.dev`  |
+| `prod` | `prod`       | `elma-web-prod` | `https://elma-web-prod.<account>.workers.dev` |
+
+`deploy-web.yml` steps: `pnpm install --frozen-lockfile` → `pnpm turbo run build --filter=@apps/web^...` (builds `@repo/core` / `@repo/i18n` / `@repo/sdk` dist) → in `apps/client`: `pnpm exec opennextjs-cloudflare build --env $BRANCH` (runs `next build`, writes `.open-next/`) → `pnpm exec opennextjs-cloudflare deploy --env $BRANCH`. `NEXT_PUBLIC_API_URL` is set at build time (inlined); `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` are exposed to the deploy step only.
+
+Caching: `open-next.config.ts` uses the read-only static-assets incremental cache, so no R2 bucket / KV / Durable Object is needed yet. When pages start using ISR or `revalidate`, switch to the R2 incremental cache and add the bucket + `WORKER_SELF_REFERENCE` service binding to `wrangler.jsonc` (https://opennext.js.org/cloudflare/caching). Custom domains: add a `routes` entry per env in `wrangler.jsonc`.
+
+Local check of the Workers build: `pnpm --filter @apps/web preview` (OpenNext build + `wrangler dev`).
+
+## Cloudflare Pages — admin project to create
 
 Create via dashboard (one-time, manual):
 
 | CF Pages project | Production branch | Preview branches | Public URL                                                   |
 | ---------------- | ----------------- | ---------------- | ------------------------------------------------------------ |
-| `elma-web`       | `prod`            | `dev`            | prod `elma-web.pages.dev` · dev `dev.elma-web.pages.dev`     |
 | `elma-admin`     | `prod`            | `dev`            | prod `elma-admin.pages.dev` · dev `dev.elma-admin.pages.dev` |
 
-Connect each project's GitHub source to the repo so CF's own auto-deploy is **disabled** — Actions drive the deploys via `wrangler pages deploy`. (CF auto-deploy can't run our pnpm/Turbo monorepo build correctly.)
+Connect the project's GitHub source to the repo so CF's own auto-deploy is **disabled** — Actions drive the deploy via `wrangler pages deploy`. (CF auto-deploy can't run our pnpm/Turbo monorepo build correctly.)
 
 ---
 
@@ -106,6 +126,18 @@ fly launch --no-deploy --name elma-api-prod --region sin --copy-config server/fl
 Size: `shared-cpu-1x 256mb` for `elma-api-dev` (~$1.94 / mo), `512mb` for `elma-api-prod`.
 
 Secrets set per app via `fly secrets set --app elma-api-{dev|prod} KEY=value` (see secret list below).
+
+Worker apps (`workers/jobs`, outbox dispatcher — see `workers/jobs/CLAUDE.md`):
+
+```bash
+fly launch --no-deploy --name elma-worker-dev  --region sin --copy-config workers/jobs/fly.toml
+fly launch --no-deploy --name elma-worker-prod --region sin --copy-config workers/jobs/fly.toml
+fly secrets set --app elma-worker-dev DATABASE_URL=... REDIS_URL=... SMTP_HOST=... SMTP_PORT=... SMTP_USER=... SMTP_PASS=... SMTP_FROM=... \
+  WEB_ORIGIN=... ADMIN_ORIGIN=... API_PUBLIC_URL=https://elma-api-dev.fly.dev VNPAY_TMN_CODE=... VNPAY_HASH_SECRET=... \
+  VNPAY_PAY_URL=... VNPAY_API_URL=... STRIPE_SECRET_KEY=...
+```
+
+Run exactly one machine per worker app for now (`fly scale count 1`); more are safe (claims use `FOR UPDATE SKIP LOCKED`) but not needed.
 
 `server/fly.toml`:
 
@@ -186,7 +218,7 @@ Connection URLs stored as `REDIS_URL_DEV` / `REDIS_URL_PROD`.
 **GitHub repo secrets** (one of each per env unless noted):
 
 ```
-CLOUDFLARE_API_TOKEN          # one — both envs share; scoped to "Pages: edit"
+CLOUDFLARE_API_TOKEN          # one — both envs share; scoped to "Workers Scripts: edit" (storefront) + "Pages: edit" (admin)
 CLOUDFLARE_ACCOUNT_ID         # one
 FLY_API_TOKEN                 # one — generate with `fly tokens create deploy`
 
@@ -257,7 +289,7 @@ Same pattern for `VITE_API_URL` in the admin workflow. Because `github.ref_name`
 2. External account prep (manual, one-time, **user does this**)
    - Create Neon project `elma` + `dev` branch; copy 4 connection strings.
    - Create Upstash DBs `elma-dev` + `elma-prod`; copy URLs.
-   - Create CF Pages projects `elma-web` + `elma-admin` linked to GitHub repo, **auto-deploy off**, prod branch = `prod`.
+   - Create CF Pages project `elma-admin` linked to GitHub repo, **auto-deploy off**, prod branch = `prod`. (The storefront Workers `elma-web-dev` / `elma-web-prod` are created by their first deploy.)
    - Create Fly apps `elma-api-dev` + `elma-api-prod`; `fly secrets set` for each.
    - Create CF API token + Fly deploy token + add all GitHub repo secrets listed above.
 
@@ -265,7 +297,7 @@ Same pattern for `VITE_API_URL` in the admin workflow. Because `github.ref_name`
    - Add `server/Dockerfile`, `server/.dockerignore`, `server/fly.toml`.
    - Add 3 deploy workflows.
    - Update `ci.yml` triggers to `dev` + `prod`.
-   - Add `@cloudflare/next-on-pages` + `wrangler` to `apps/web` devDeps; add `wrangler` to `apps/admin` devDeps.
+   - Add `@opennextjs/cloudflare` + `wrangler` to `apps/client` (+ `wrangler.jsonc`, `open-next.config.ts`); add `wrangler` to `apps/admin` devDeps.
    - Update `.env.example` + `README.md` deploy section.
    - Commit on `dev`.
 
@@ -289,12 +321,14 @@ curl -sS https://elma-api-dev.fly.dev/v1/health     # → {"status":"ok"} expect
 fly status --app elma-api-dev                      # at least 1 machine "passing"
 
 # 3. Web + admin
-curl -sS -o /dev/null -w "%{http_code}\n" https://dev.elma-web.pages.dev/
-curl -sS -o /dev/null -w "%{http_code}\n" https://dev.elma-web.pages.dev/design-system
+WEB=https://elma-web-dev.<account>.workers.dev
+curl -sS -o /dev/null -w "%{http_code}\n" $WEB/                    # 307 → /vi
+curl -sS -o /dev/null -w "%{http_code}\n" $WEB/vi                  # 200, <html lang="vi">
+curl -sS -o /dev/null -w "%{http_code}\n" $WEB/en/design-system    # 200, <html lang="en">
 curl -sS -o /dev/null -w "%{http_code}\n" https://dev.elma-admin.pages.dev/
 
 # 4. Browser smoke test
-open https://dev.elma-web.pages.dev/design-system     # tokens render, no console errors
+open $WEB/vi/design-system     # tokens render, no console errors
 open https://dev.elma-admin.pages.dev/
 
 # 5. DB connectivity
@@ -306,11 +340,26 @@ After merging `dev → prod`:
 ```bash
 gh run watch
 curl -sS https://elma-api-prod.fly.dev/v1/health
-curl -sS -o /dev/null -w "%{http_code}\n" https://elma-web.pages.dev/
+curl -sS -o /dev/null -w "%{http_code}\n" https://elma-web-prod.<account>.workers.dev/vi
 curl -sS -o /dev/null -w "%{http_code}\n" https://elma-admin.pages.dev/
 ```
 
 Rollback drill: revert the last commit on `prod` and push — workflow redeploys the previous artifact within ~3 minutes.
+
+---
+
+## CI details (T6.1)
+
+- **`ci.yml`** (push/PR to `dev`/`prod`): a `postgres:16` service for the `@repo/db` tests, with `DATABASE_URL` /
+  `SHADOW_DATABASE_URL` exported for the job (a `ecommerce_shadow` database is created by a step) and forwarded to
+  `@repo/db#test` by `turbo.json` (`passThroughEnv`, uncached; `DOCKER_HOST` / `TESTCONTAINERS_*` are passed to every task).
+  The API and worker integration suites start their own Testcontainers (Docker is preinstalled on `ubuntu-latest`).
+  The SDK drift check (`pnpm sdk:generate`, fails on any change to `packages/sdk/openapi.json` / `src/schema.d.ts`) is unchanged.
+- **Node version:** every workflow reads `.nvmrc` (`node-version-file`), now `22` (worker `engines`, Dockerfiles and the
+  deploy workflows were already on 22; only `ci.yml` was on 20).
+- **`e2e.yml`**: PRs into `prod` + manual dispatch. Postgres + Redis services, installs Chromium, runs `pnpm e2e`
+  (builds the API, worker and both frontends for the e2e ports, boots them, runs the Playwright flows), uploads the
+  Playwright report on failure. See `e2e/CLAUDE.md`.
 
 ---
 
@@ -321,14 +370,14 @@ Rollback drill: revert the last commit on `prod` and push — workflow redeploys
 - Custom domains (waiting on user to buy / point CNAMEs).
 - Sentry / OpenTelemetry wiring.
 - Migration runner step (`prisma migrate deploy`) — should be added once `packages/db` is real; placeholder in plan.
-- E2E (Playwright) post-deploy smoke tests in CI.
+- E2E (Playwright) smoke tests **against the deployed** environments (the pre-merge suite already exists, see "CI details" below).
 
 ---
 
 ## Public URLs (after first deploy)
 
-| Service    | Dev                                | Production                      |
-| ---------- | ---------------------------------- | ------------------------------- |
-| Storefront | `https://dev.elma-web.pages.dev`   | `https://elma-web.pages.dev`    |
-| Admin      | `https://dev.elma-admin.pages.dev` | `https://elma-admin.pages.dev`  |
-| API        | `https://elma-api-dev.fly.dev`     | `https://elma-api-prod.fly.dev` |
+| Service    | Dev                                          | Production                                    |
+| ---------- | -------------------------------------------- | --------------------------------------------- |
+| Storefront | `https://elma-web-dev.<account>.workers.dev` | `https://elma-web-prod.<account>.workers.dev` |
+| Admin      | `https://dev.elma-admin.pages.dev`           | `https://elma-admin.pages.dev`                |
+| API        | `https://elma-api-dev.fly.dev`               | `https://elma-api-prod.fly.dev`               |

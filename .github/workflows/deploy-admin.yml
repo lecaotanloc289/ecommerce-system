@@ -33,14 +33,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Turbo builds the workspace deps first (@repo/core → @repo/i18n, @repo/sdk ship dist/),
+      # then the admin `build` script (tsc -b && vite build).
       - name: Build (Vite)
-        run: pnpm --filter @apps/admin exec vite build
+        run: pnpm turbo build --filter=@apps/admin
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

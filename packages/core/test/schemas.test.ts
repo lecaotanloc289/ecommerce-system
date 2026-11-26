@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AddressInputSchema,
   AddressSchema,
+  AddressUpdateSchema,
   CartLineInputSchema,
   CartLineSchema,
   CategorySchema,
@@ -96,6 +97,26 @@ describe('Address', () => {
   });
 });
 
+describe('AddressUpdateSchema', () => {
+  it('accepts a partial body without applying defaults', () => {
+    expect(AddressUpdateSchema.parse({ city: ' Hà Nội ' })).toEqual({ city: 'Hà Nội' });
+  });
+
+  it('blank or null line2 clears it', () => {
+    expect(AddressUpdateSchema.parse({ line2: '  ' }).line2).toBeNull();
+    expect(AddressUpdateSchema.parse({ line2: null }).line2).toBeNull();
+  });
+
+  it.each([
+    ['empty body', {}],
+    ['bad phone', { phone: 'abc' }],
+    ['lowercase country', { country: 'vn' }],
+    ['blank name', { recipientName: ' ' }],
+  ])('rejects %s', (_label, value) => {
+    expect(AddressUpdateSchema.safeParse(value).success).toBe(false);
+  });
+});
+
 describe('Category', () => {
   it('CategoryTranslationSchema', () => {
     expect(
@@ -184,7 +205,9 @@ describe('Cart', () => {
       imageUrl: null,
       unitPrice: vnd(199_000),
       quantity: 2,
+      lineTotal: vnd(398_000),
       stockAvailable: 12,
+      unavailable: false,
     };
     expect(CartLineSchema.parse(line)).toEqual(line);
     expect(CartLineSchema.safeParse({ ...line, unitPrice: vnd(-1) }).success).toBe(false);
@@ -212,6 +235,16 @@ describe('Checkout', () => {
     expect(CheckoutSchema.parse({ ...request, couponCodes: [' SALE10 '] }).couponCodes).toEqual([
       'SALE10',
     ]);
+  });
+
+  it('normalises coupon codes to uppercase (case-insensitive)', () => {
+    expect(CheckoutSchema.parse({ ...request, couponCodes: [' welcome10 '] }).couponCodes).toEqual([
+      'WELCOME10',
+    ]);
+    expect(CouponCodeSchema.parse('Sale-10')).toBe('SALE-10');
+    expect(
+      CheckoutSchema.safeParse({ ...request, couponCodes: ['sale10', 'SALE10'] }).success,
+    ).toBe(false);
   });
 
   it.each([

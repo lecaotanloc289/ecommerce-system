@@ -29,20 +29,22 @@ describe('seed idempotency', () => {
     expect(count).toBe(2);
   });
 
-  it('creates exactly one product variant', async () => {
+  it('creates exactly five product variants', async () => {
     const count = await prisma.productVariant.count();
-    expect(count).toBe(1);
+    expect(count).toBe(5);
   });
 
   it('does not duplicate any other seeded row on re-run', async () => {
-    expect(await prisma.user.count()).toBe(3); // demo customer + 2 vendor owners
-    expect(await prisma.userRole.count()).toBe(3); // CUSTOMER + 2 × VENDOR_OWNER
+    expect(await prisma.user.count()).toBe(4); // customer + admin + 2 vendor owners
+    expect(await prisma.userRole.count()).toBe(4); // CUSTOMER + PLATFORM_ADMIN + 2 × VENDOR_OWNER
     expect(await prisma.wallet.count()).toBe(2);
-    expect(await prisma.category.count()).toBe(2);
-    expect(await prisma.categoryTranslation.count()).toBe(2);
-    expect(await prisma.product.count()).toBe(1);
-    expect(await prisma.productTranslation.count()).toBe(2);
-    expect(await prisma.productCategory.count()).toBe(1);
+    expect(await prisma.shippingMethod.count()).toBe(3);
+    expect(await prisma.category.count()).toBe(3);
+    expect(await prisma.categoryTranslation.count()).toBe(4);
+    expect(await prisma.product.count()).toBe(4);
+    expect(await prisma.productTranslation.count()).toBe(8);
+    expect(await prisma.productCategory.count()).toBe(4);
+    expect(await prisma.coupon.count()).toBe(2);
   });
 
   it('gives every seeded row a canonical ULID id (parses through @repo/core id schemas)', async () => {
@@ -58,10 +60,54 @@ describe('seed idempotency', () => {
       ...(await prisma.product.findMany(select)),
       ...(await prisma.productTranslation.findMany(select)),
       ...(await prisma.productVariant.findMany(select)),
+      ...(await prisma.shippingMethod.findMany(select)),
+      ...(await prisma.coupon.findMany(select)),
     ];
     expect(rows.length).toBeGreaterThan(0);
     const invalid = rows.filter((r) => !UlidSchema.safeParse(r.id).success).map((r) => r.id);
     expect(invalid).toEqual([]);
+  });
+
+  it('seeds demo data that later waves rely on', async () => {
+    const vendors = await prisma.vendor.findMany({
+      where: { status: 'ACTIVE' },
+      include: { wallet: true, shippingMethods: { where: { isActive: true } } },
+    });
+    expect(vendors).toHaveLength(2);
+    for (const v of vendors) {
+      expect(v.wallet).not.toBeNull();
+      expect(v.shippingMethods.length).toBeGreaterThanOrEqual(1);
+    }
+
+    const products = await prisma.product.findMany({
+      where: { status: 'ACTIVE' },
+      include: { translations: true, variants: true, categories: true },
+    });
+    expect(products.length).toBeGreaterThanOrEqual(3);
+    expect(new Set(products.map((p) => p.vendorId)).size).toBe(2);
+    for (const p of products) {
+      expect(p.translations.map((t) => t.locale).sort()).toEqual(['EN', 'VI']);
+      expect(p.categories.length).toBeGreaterThanOrEqual(1);
+      expect(p.variants.length).toBeGreaterThanOrEqual(1);
+      for (const variant of p.variants) {
+        expect(variant.stockOnHand).toBeGreaterThan(0);
+        expect(variant.priceCurrency).toBe('VND');
+      }
+    }
+
+    const coupons = await prisma.coupon.findMany();
+    expect(coupons.map((c) => c.scope).sort()).toEqual(['PLATFORM', 'VENDOR']);
+    for (const c of coupons) {
+      expect(c.discountType).toBe('PERCENT');
+      expect(c.discountValue).toBeGreaterThanOrEqual(1n); // basis points, 1..10000
+      expect(c.discountValue).toBeLessThanOrEqual(10_000n);
+    }
+
+    const admin = await prisma.userRole.findMany({ where: { role: 'PLATFORM_ADMIN' } });
+    expect(admin.map((r) => r.userId)).toEqual([SEED_IDS.adminUser]);
+
+    const emails = (await prisma.user.findMany({ select: { email: true } })).map((u) => u.email);
+    for (const email of emails) expect(email).toBe(email?.toLowerCase());
   });
 
   it('stores money above the int4 range in BIGINT columns (rolled back)', async () => {

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Minus, Plus } from 'lucide-react';
-import { useT } from '../../i18n/locale-provider';
+import { useT } from '../../i18n/use-locale';
 import { MAX_LINE_QTY } from '../../lib/cart';
 import { cn } from '../../lib/utils';
 

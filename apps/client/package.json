@@ -3,22 +3,29 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "NEXT_DIST_DIR=.next-dev next dev --port 3000",
+    "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start --port 3000",
-    "clean": "rm -rf .next .next-dev out",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "clean": "rm -rf .next .open-next .wrangler",
     "lint": "echo 'TODO: eslint'",
     "typecheck": "tsc --noEmit",
-    "test": "echo 'TODO: vitest / playwright'"
+    "test": "vitest run"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.20.18",
     "@repo/core": "workspace:*",
     "@repo/i18n": "workspace:*",
+    "@repo/sdk": "workspace:*",
     "@repo/ui": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.469.0",
-    "next": "^15.1.0",
+    "next": "^15.5.29",
+    "next-intl": "^4.15.3",
+    "openapi-fetch": "^0.17.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.5"
@@ -32,6 +39,7 @@
     "tailwindcss": "^4.0.0",
     "tw-animate-css": "^1.1.7",
     "typescript": "^5.7.0",
-    "wrangler": "^4.93.1"
+    "vitest": "^4.1.8",
+    "wrangler": "^4.166.0"
   }
 }

@@ -1,4 +1,19 @@
-// PaymentProvider interface + VNPay / Stripe adapters.
-// Pure logic, no DB access; apps/api injects implementations into services.
-// Adding a new provider = new adapter + register it; no business-logic changes.
-export {};
+// PaymentProvider interface + VNPay / Stripe adapters (see CLAUDE.md).
+// Pure logic: no DB, no env reads — config comes in through the factory params; HTTP (`fetch`)
+// and the Stripe client are injectable. Adding a provider = new adapter implementing
+// `PaymentProvider`; no business-logic changes.
+export type {
+  CreateSessionInput,
+  CreateSessionResult,
+  FetchLike,
+  PaymentProvider,
+  RefundInput,
+  RefundOutcome,
+  RefundResult,
+  WebhookIgnoredResult,
+  WebhookPaymentResult,
+  WebhookRequest,
+  WebhookResult,
+} from './types';
+export * from './vnpay';
+export * from './stripe';

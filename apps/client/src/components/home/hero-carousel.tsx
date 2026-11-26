@@ -4,7 +4,7 @@ import * as React from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { Container } from '../layout/container';
 import { ButtonLink } from '../common/button-link';
-import { useT, type MessageKey } from '../../i18n/locale-provider';
+import { useT, type MessageKey } from '../../i18n/use-locale';
 import { cn } from '../../lib/utils';
 
 type Slide = {

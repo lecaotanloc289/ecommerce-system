@@ -1,7 +1,7 @@
 'use client';
 
 import { Star } from 'lucide-react';
-import { useT } from '../../i18n/locale-provider';
+import { useT } from '../../i18n/use-locale';
 import { cn } from '../../lib/utils';
 
 /** Read-only star rating. Half-stars approximated by rounding to nearest 0.5. */
@@ -14,7 +14,7 @@ export function StarRating({
   value: number;
   count?: number;
   size?: 'sm' | 'md';
-  className?: string;
+  className?: string | undefined;
 }) {
   const t = useT();
   const px = size === 'sm' ? 'size-3.5' : 'size-5';

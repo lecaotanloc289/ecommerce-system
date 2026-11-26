@@ -1,11 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { ArrowRight, X } from 'lucide-react';
 import { toIsoDate } from '@repo/core';
 import { Container } from '../layout/container';
-import { useLocale } from '../../i18n/locale-provider';
+import { useLocale } from '../../i18n/use-locale';
 import { SEASONAL_VISUALS } from '../../lib/seasonal-themes';
 import { countdownLabel } from '../../lib/seasonal-format';
 import { useAppearance } from '../../store/appearance-store';

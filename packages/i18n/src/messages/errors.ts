@@ -33,6 +33,7 @@ export const errorsEn: ErrorMessages = {
   'product.error.not-available': 'This product can’t be purchased right now.',
   'product.error.variant-not-found': 'This product option is no longer available.',
   'cart.error.quantity-exceeds-stock': 'Not enough stock for the quantity you chose.',
+  'cart.error.too-many-lines': 'Your cart has too many different items.',
   'checkout.error.empty-cart': 'Your cart is empty.',
   'checkout.error.out-of-stock': 'Some items are out of stock. Please review your cart.',
   'checkout.error.price-changed': 'Some prices have changed. Please review your order.',
@@ -54,6 +55,36 @@ export const errorsEn: ErrorMessages = {
   'payment.error.signature-invalid': 'The payment could not be verified.',
   'payment.error.amount-mismatch': 'The paid amount does not match the order total.',
   'payment.error.already-confirmed': 'This payment has already been confirmed.',
+  'address.error.not-found': 'We couldn’t find this address.',
+  'vendor.error.suspended': 'This shop is suspended.',
+  'vendor.error.not-found': 'We couldn’t find this shop.',
+  'product.error.blocked': 'This product has been blocked by the platform.',
+  'sub-order.error.not-found': 'We couldn’t find this shop order.',
+  'review.error.not-eligible': 'You can only review a product after it has been delivered.',
+  'review.error.already-exists': 'You have already reviewed this product.',
+  'upload.error.invalid-key': 'The uploaded file reference is invalid.',
+  'upload.error.content-type-not-allowed': 'This file type is not supported.',
+  'upload.error.too-large': 'The file is too large.',
+  'invitation.error.invalid': 'This invitation is invalid or has already been used.',
+  'invitation.error.expired': 'This invitation has expired.',
+  'invitation.error.email-mismatch':
+    'This invitation was sent to a different email than your account.',
+  'refund.error.not-refundable': 'This order can’t be refunded.',
+  'payment.error.session-not-ready': 'The payment session isn’t ready yet. Please wait a moment.',
+  'payment.error.retry-not-allowed':
+    'You can’t start a new payment for this order right now. Please refresh the order.',
+  'payment.error.provider-currency-unsupported':
+    'This payment method doesn’t support the order’s currency. Please choose another one.',
+  'product.error.not-publishable':
+    'This product can’t be published yet. Add a Vietnamese name and at least one variant with a price above zero.',
+  'product.error.variant-in-use':
+    'This variant already appears in orders or carts and can’t be removed. Set its stock to 0 instead.',
+  'product.error.stock-below-reserved':
+    'Stock can’t be lower than the quantity already reserved by pending orders.',
+  'zalo.error.account-not-connected': 'No Zalo account is connected to this shop.',
+  'zalo.error.login-not-found': 'This Zalo login request has expired. Please start a new one.',
+  'zalo.error.unknown-placeholder':
+    'The message uses a {{…}} field that doesn’t exist. Please check it.',
 };
 
 export const errorsVi: ErrorMessages = {
@@ -82,6 +113,7 @@ export const errorsVi: ErrorMessages = {
   'product.error.not-available': 'Sản phẩm này hiện không thể mua.',
   'product.error.variant-not-found': 'Phân loại sản phẩm này không còn được bán.',
   'cart.error.quantity-exceeds-stock': 'Không đủ hàng cho số lượng bạn chọn.',
+  'cart.error.too-many-lines': 'Giỏ hàng có quá nhiều sản phẩm khác nhau.',
   'checkout.error.empty-cart': 'Giỏ hàng của bạn đang trống.',
   'checkout.error.out-of-stock': 'Một số sản phẩm đã hết hàng. Vui lòng kiểm tra lại giỏ hàng.',
   'checkout.error.price-changed':
@@ -104,4 +136,34 @@ export const errorsVi: ErrorMessages = {
   'payment.error.signature-invalid': 'Không thể xác thực giao dịch thanh toán.',
   'payment.error.amount-mismatch': 'Số tiền thanh toán không khớp với tổng đơn hàng.',
   'payment.error.already-confirmed': 'Giao dịch thanh toán này đã được xác nhận.',
+  'address.error.not-found': 'Không tìm thấy địa chỉ này.',
+  'vendor.error.suspended': 'Cửa hàng này đang bị tạm khóa.',
+  'vendor.error.not-found': 'Không tìm thấy cửa hàng này.',
+  'product.error.blocked': 'Sản phẩm này đã bị nền tảng chặn.',
+  'sub-order.error.not-found': 'Không tìm thấy đơn hàng con này.',
+  'review.error.not-eligible': 'Bạn chỉ có thể đánh giá sản phẩm sau khi đã nhận hàng.',
+  'review.error.already-exists': 'Bạn đã đánh giá sản phẩm này rồi.',
+  'upload.error.invalid-key': 'Tệp tải lên không hợp lệ.',
+  'upload.error.content-type-not-allowed': 'Định dạng tệp này không được hỗ trợ.',
+  'upload.error.too-large': 'Tệp quá lớn.',
+  'invitation.error.invalid': 'Lời mời không hợp lệ hoặc đã được sử dụng.',
+  'invitation.error.expired': 'Lời mời đã hết hạn.',
+  'invitation.error.email-mismatch':
+    'Lời mời này được gửi cho một email khác với tài khoản của bạn.',
+  'refund.error.not-refundable': 'Đơn hàng này không thể hoàn tiền.',
+  'payment.error.session-not-ready': 'Phiên thanh toán chưa sẵn sàng. Vui lòng đợi trong giây lát.',
+  'payment.error.retry-not-allowed':
+    'Hiện chưa thể tạo lần thanh toán mới cho đơn hàng này. Vui lòng tải lại đơn hàng.',
+  'payment.error.provider-currency-unsupported':
+    'Phương thức thanh toán này không hỗ trợ loại tiền của đơn hàng. Vui lòng chọn phương thức khác.',
+  'product.error.not-publishable':
+    'Chưa thể đăng bán sản phẩm này. Hãy thêm tên tiếng Việt và ít nhất một biến thể có giá lớn hơn 0.',
+  'product.error.variant-in-use':
+    'Biến thể này đã có trong đơn hàng hoặc giỏ hàng nên không thể xóa. Hãy đặt tồn kho về 0.',
+  'product.error.stock-below-reserved':
+    'Tồn kho không thể thấp hơn số lượng đang được giữ cho các đơn chờ xử lý.',
+  'zalo.error.account-not-connected': 'Cửa hàng chưa kết nối tài khoản Zalo.',
+  'zalo.error.login-not-found': 'Yêu cầu đăng nhập Zalo đã hết hạn. Vui lòng thử lại.',
+  'zalo.error.unknown-placeholder':
+    'Tin nhắn dùng trường {{…}} không tồn tại. Vui lòng kiểm tra lại.',
 };

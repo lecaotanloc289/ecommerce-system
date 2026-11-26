@@ -1,0 +1,6 @@
+{
+  "//": "Lets ESLint's project service find scripts/ (nearest tsconfig.json). ts-node uses ../tsconfig.scripts.json.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["./**/*", "../src/**/*"]
+}

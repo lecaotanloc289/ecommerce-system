@@ -1,0 +1,14 @@
+{
+  "$comment": "Used only by ts-node for scripts/ (ts-node does not realpath the symlinked @repo/config base, so it cannot resolve tsconfig.base.json through tsconfig.json).",
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "types": ["node"],
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": ["src/**/*", "scripts/**/*"]
+}

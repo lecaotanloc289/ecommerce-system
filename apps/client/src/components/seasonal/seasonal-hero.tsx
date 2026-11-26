@@ -2,7 +2,7 @@
 
 import { ButtonLink } from '../common/button-link';
 import { Container } from '../layout/container';
-import { useLocale } from '../../i18n/locale-provider';
+import { useLocale } from '../../i18n/use-locale';
 import { SEASONAL_VISUALS } from '../../lib/seasonal-themes';
 import { countdownLabel, formatCalendarDate, lunarLabel } from '../../lib/seasonal-format';
 import { toIsoDate } from '@repo/core';

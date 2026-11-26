@@ -9,10 +9,23 @@ import {
   UseFilters,
   UseGuards,
 } from '@nestjs/common';
-import { DomainError } from '@repo/core';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiNoContentResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { DomainError, type MeResponse, type TokenResponse } from '@repo/core';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { ZodResponse } from 'nestjs-zod';
+import { RateLimit } from '../common/rate-limit';
 import { ENV } from '../config/config.module';
 import type { Env } from '../config/env';
+import { BEARER_AUTH, REFRESH_COOKIE_AUTH } from '../openapi/openapi';
+import { MeResponseDto, TokenResponseDto } from './auth.dto';
 import {
   clearRefreshCookie,
   oauthRedirectUrl,
@@ -20,7 +33,7 @@ import {
   readRefreshCookie,
   setRefreshCookie,
 } from './auth.http';
-import type { AuthUser, MeResponse, OAuthProfile, TokenResponse } from './auth.schemas';
+import type { AuthUser, OAuthProfile } from './auth.schemas';
 import { AuthService } from './auth.service';
 import { CurrentOAuthProfile, CurrentUser } from './decorators/current-user.decorator';
 import { ALL_ROLES, Roles } from './decorators/roles.decorator';
@@ -35,6 +48,7 @@ import { TokenService } from './token.service';
  * the callback sets the refresh cookie and redirects to the app, which then calls
  * `POST /auth/refresh` to obtain its in-memory access token.
  */
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -43,12 +57,21 @@ export class AuthController {
     @Inject(ENV) private readonly env: Env,
   ) {}
 
+  @ApiOperation({ summary: 'Start Google OAuth login (browser navigation, not an XHR call)' })
+  @ApiQuery({ name: 'app', enum: ['web', 'admin'], required: false })
+  @ApiResponse({ status: 302, description: 'Redirect to Google' })
   @Get('google')
+  @RateLimit('strict')
   @UseGuards(OAuthStartGuard('google'))
   googleStart(): void {
     // OAuthStartGuard redirects to Google; never reached.
   }
 
+  @ApiOperation({ summary: 'Google OAuth callback (browser redirect, not an XHR call)' })
+  @ApiResponse({
+    status: 302,
+    description: 'Sets the refresh cookie and redirects to the app (`?error=...` on failure)',
+  })
   @Get('google/callback')
   @UseGuards(OAuthCallbackGuard('google'))
   @UseFilters(OAuthCallbackFilter)
@@ -60,12 +83,21 @@ export class AuthController {
     return this.completeOAuthLogin(profile, request, reply);
   }
 
+  @ApiOperation({ summary: 'Start Facebook OAuth login (browser navigation, not an XHR call)' })
+  @ApiQuery({ name: 'app', enum: ['web', 'admin'], required: false })
+  @ApiResponse({ status: 302, description: 'Redirect to Facebook' })
   @Get('facebook')
+  @RateLimit('strict')
   @UseGuards(OAuthStartGuard('facebook'))
   facebookStart(): void {
     // OAuthStartGuard redirects to Facebook; never reached.
   }
 
+  @ApiOperation({ summary: 'Facebook OAuth callback (browser redirect, not an XHR call)' })
+  @ApiResponse({
+    status: 302,
+    description: 'Sets the refresh cookie and redirects to the app (`?error=...` on failure)',
+  })
   @Get('facebook/callback')
   @UseGuards(OAuthCallbackGuard('facebook'))
   @UseFilters(OAuthCallbackFilter)
@@ -78,8 +110,11 @@ export class AuthController {
   }
 
   /** Rotates the refresh cookie and returns a fresh access token. */
+  @ApiOperation({ summary: 'Rotate the refresh cookie and return a new access token' })
+  @ApiCookieAuth(REFRESH_COOKIE_AUTH)
+  @ZodResponse({ status: 200, description: 'New access token', type: TokenResponseDto })
   @Post('refresh')
-  @HttpCode(200)
+  @RateLimit('strict')
   async refresh(
     @Req() request: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -98,7 +133,11 @@ export class AuthController {
   }
 
   /** Revokes the session (token family) and clears the cookie. Idempotent. */
+  @ApiOperation({ summary: 'Revoke the session and clear the refresh cookie' })
+  @ApiCookieAuth(REFRESH_COOKIE_AUTH)
+  @ApiNoContentResponse({ description: 'Session revoked (idempotent)' })
   @Post('logout')
+  @RateLimit('strict')
   @HttpCode(204)
   async logout(
     @Req() request: FastifyRequest,
@@ -109,6 +148,9 @@ export class AuthController {
     clearRefreshCookie(reply);
   }
 
+  @ApiOperation({ summary: 'Current user profile, effective roles and vendor id' })
+  @ApiBearerAuth(BEARER_AUTH)
+  @ZodResponse({ status: 200, description: 'Current user', type: MeResponseDto })
   @Get('me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...ALL_ROLES)

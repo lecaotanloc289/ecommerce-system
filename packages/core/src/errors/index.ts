@@ -41,6 +41,7 @@ export const ERROR_CODES = [
   'product.error.variant-not-found',
   // cart
   'cart.error.quantity-exceeds-stock',
+  'cart.error.too-many-lines',
   // checkout
   'checkout.error.empty-cart',
   'checkout.error.out-of-stock',
@@ -65,6 +66,32 @@ export const ERROR_CODES = [
   'payment.error.signature-invalid',
   'payment.error.amount-mismatch',
   'payment.error.already-confirmed',
+  // marketplace additions
+  'address.error.not-found',
+  'vendor.error.suspended',
+  'vendor.error.not-found',
+  'product.error.blocked',
+  'sub-order.error.not-found',
+  'review.error.not-eligible',
+  'review.error.already-exists',
+  'upload.error.invalid-key',
+  'upload.error.content-type-not-allowed',
+  'upload.error.too-large',
+  'invitation.error.invalid',
+  'invitation.error.expired',
+  'invitation.error.email-mismatch',
+  'refund.error.not-refundable',
+  'payment.error.session-not-ready',
+  'payment.error.retry-not-allowed',
+  'payment.error.provider-currency-unsupported',
+  // vendor catalog
+  'product.error.not-publishable',
+  'product.error.variant-in-use',
+  'product.error.stock-below-reserved',
+  // zalo notifications
+  'zalo.error.account-not-connected',
+  'zalo.error.login-not-found',
+  'zalo.error.unknown-placeholder',
 ] as const;
 
 export const ErrorCodeSchema = z.enum(ERROR_CODES);
@@ -96,6 +123,7 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'product.error.not-available': 409,
   'product.error.variant-not-found': 404,
   'cart.error.quantity-exceeds-stock': 409,
+  'cart.error.too-many-lines': 422,
   'checkout.error.empty-cart': 422,
   'checkout.error.out-of-stock': 409,
   'checkout.error.price-changed': 409,
@@ -116,6 +144,29 @@ export const ERROR_HTTP_STATUS: Readonly<Record<ErrorCode, number>> = {
   'payment.error.signature-invalid': 400,
   'payment.error.amount-mismatch': 422,
   'payment.error.already-confirmed': 409,
+  'address.error.not-found': 404,
+  'vendor.error.suspended': 403,
+  'vendor.error.not-found': 404,
+  'product.error.blocked': 409,
+  'sub-order.error.not-found': 404,
+  'review.error.not-eligible': 422,
+  'review.error.already-exists': 409,
+  'upload.error.invalid-key': 422,
+  'upload.error.content-type-not-allowed': 422,
+  'upload.error.too-large': 413,
+  'invitation.error.invalid': 422,
+  'invitation.error.expired': 410,
+  'invitation.error.email-mismatch': 403,
+  'refund.error.not-refundable': 409,
+  'payment.error.session-not-ready': 409,
+  'payment.error.retry-not-allowed': 409,
+  'payment.error.provider-currency-unsupported': 422,
+  'product.error.not-publishable': 422,
+  'product.error.variant-in-use': 409,
+  'product.error.stock-below-reserved': 409,
+  'zalo.error.account-not-connected': 404,
+  'zalo.error.login-not-found': 404,
+  'zalo.error.unknown-placeholder': 422,
 };
 
 /** Interpolation values for the translated message (e.g. `{ sku, available }`). */

@@ -1,25 +1,15 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import {
-  Facebook,
-  Heart,
-  Instagram,
-  Menu,
-  Search,
-  ShoppingCart,
-  Twitter,
-  User,
-} from 'lucide-react';
+import { Link, useRouter } from '@/i18n/navigation';
+import { Facebook, Heart, Instagram, Menu, Search, ShoppingCart, Twitter } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@repo/ui';
 import { Container } from './container';
 import { LocaleToggle } from './locale-toggle';
 import { ThemeToggle } from './theme-toggle';
 import { AppearancePanel } from './appearance-panel';
-import { useT, type MessageKey } from '../../i18n/locale-provider';
-import { categories } from '../../mocks/categories';
+import { UserMenu } from './user-menu';
+import { useT, type MessageKey } from '../../i18n/use-locale';
 import { useCart } from '../../store/cart-store';
 import { cn } from '../../lib/utils';
 
@@ -48,12 +38,8 @@ export function Navbar() {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const q = form.get('q');
-    const category = form.get('category');
-    const params = new URLSearchParams();
-    if (typeof q === 'string' && q.trim()) params.set('q', q.trim());
-    if (typeof category === 'string' && category) params.set('category', category);
-    const qs = params.toString();
-    router.push(qs ? `/search?${qs}` : '/search');
+    const query = typeof q === 'string' ? q.trim() : '';
+    router.push(query ? `/search?${new URLSearchParams({ q: query }).toString()}` : '/search');
   };
 
   return (
@@ -119,21 +105,6 @@ export function Navbar() {
                   ),
                 )}
               </nav>
-              <div className="mt-4 border-t border-border-faint pt-4">
-                <p className="mb-2 px-3 text-body-s font-semibold text-text-muted">
-                  {t('nav.categories')}
-                </p>
-                {categories.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/search?category=${c.slug}`}
-                    className="flex items-center gap-2 rounded-md px-3 py-2 text-body-m text-text-body hover:bg-bg-muted"
-                  >
-                    <span>{c.icon}</span>
-                    {c.name}
-                  </Link>
-                ))}
-              </div>
             </DrawerContent>
           </Drawer>
 
@@ -145,7 +116,7 @@ export function Navbar() {
             {t('common.brand')}
           </Link>
 
-          {/* Search with category dropdown */}
+          {/* Product search (GET /v1/search via /search?q=) */}
           <form
             role="search"
             onSubmit={onSearch}
@@ -158,19 +129,6 @@ export function Navbar() {
               placeholder={t('nav.search')}
               className="h-full min-w-0 flex-1 bg-transparent px-4 text-body-m text-text-body outline-none placeholder:text-text-placeholder"
             />
-            <select
-              name="category"
-              aria-label={t('nav.categories')}
-              defaultValue=""
-              className="hidden h-full min-w-40 border-l border-border-subtle bg-transparent px-4 text-body-s text-text-muted outline-none lg:block"
-            >
-              <option value="">{t('common.viewAll')}</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.slug}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
             <button
               type="submit"
               aria-label={t('common.search')}
@@ -205,20 +163,7 @@ export function Navbar() {
             >
               <Heart className="size-5" />
             </button>
-            <Link
-              href="/sign-in"
-              className="ml-1 flex items-center gap-2 rounded-md px-2 py-1.5 text-text-body transition-colors hover:bg-bg-muted"
-            >
-              <User className="size-5" />
-              <span className="hidden text-left lg:block">
-                <span className="block text-[11px] leading-3 text-text-muted">
-                  {t('auth.account')}
-                </span>
-                <span className="block text-body-s font-semibold text-text-primary">
-                  {t('nav.account')}
-                </span>
-              </span>
-            </Link>
+            <UserMenu />
           </div>
         </Container>
       </div>

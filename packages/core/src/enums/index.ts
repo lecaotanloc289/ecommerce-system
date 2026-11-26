@@ -39,7 +39,7 @@ export const ApplicationStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED'
 export type ApplicationStatus = z.infer<typeof ApplicationStatusSchema>;
 export const ApplicationStatus = ApplicationStatusSchema.enum;
 
-export const ProductStatusSchema = z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']);
+export const ProductStatusSchema = z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED', 'BLOCKED']);
 export type ProductStatus = z.infer<typeof ProductStatusSchema>;
 export const ProductStatus = ProductStatusSchema.enum;
 
@@ -101,3 +101,29 @@ export const CouponScope = CouponScopeSchema.enum;
 export const DiscountTypeSchema = z.enum(['PERCENT', 'FIXED']);
 export type DiscountType = z.infer<typeof DiscountTypeSchema>;
 export const DiscountType = DiscountTypeSchema.enum;
+
+export const RefundStatusSchema = z.enum(['PENDING', 'SUCCEEDED', 'FAILED']);
+export type RefundStatus = z.infer<typeof RefundStatusSchema>;
+export const RefundStatus = RefundStatusSchema.enum;
+
+export const ZaloAccountStatusSchema = z.enum(['ACTIVE', 'EXPIRED', 'DISCONNECTED']);
+export type ZaloAccountStatus = z.infer<typeof ZaloAccountStatusSchema>;
+export const ZaloAccountStatus = ZaloAccountStatusSchema.enum;
+
+export const ZaloMessageEventSchema = z.enum([
+  'ORDER_PLACED',
+  'ORDER_PAID',
+  'ORDER_PROCESSING',
+  'ORDER_SHIPPED',
+  'ORDER_DELIVERED',
+  'ORDER_COMPLETED',
+  'ORDER_CANCELLED',
+  'ORDER_REFUNDED',
+  'AFTER_DELIVERY',
+]);
+export type ZaloMessageEvent = z.infer<typeof ZaloMessageEventSchema>;
+export const ZaloMessageEvent = ZaloMessageEventSchema.enum;
+
+export const ZaloMessageStatusSchema = z.enum(['PENDING', 'SENDING', 'SENT', 'SKIPPED', 'FAILED']);
+export type ZaloMessageStatus = z.infer<typeof ZaloMessageStatusSchema>;
+export const ZaloMessageStatus = ZaloMessageStatusSchema.enum;

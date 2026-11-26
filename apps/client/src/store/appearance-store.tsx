@@ -20,7 +20,7 @@ import { readStored, writeStored } from './persisted';
  * Appearance preferences (colour mode, accent, corners, text size, seasonal themes) + the
  * seasonal event the storefront is currently dressed for.
  *
- * Storage (read before first paint by the no-flash script in `app/layout.tsx` — keep in sync):
+ * Storage (read before first paint by the no-flash script in `components/layout/storefront-shell.tsx` — keep in sync):
  * - `appearance`         AppearancePrefs JSON (localStorage)
  * - `appearance-accent`  `{ accent, until }` — the accent a seasonal event resolved to and the
  *                        last day (VN, ISO) it applies, so event colours paint without a flash.

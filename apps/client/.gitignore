@@ -1,0 +1,4 @@
+# OpenNext / wrangler build output + local state
+.open-next/
+.wrangler/
+.dev.vars*

@@ -1,4 +1,8 @@
-import Link from 'next/link';
+'use client';
+
+// Client component: `buttonVariants` lives in @repo/ui's 'use client' button module, so it
+// can't be called while rendering a Server Component (home page is an RSC).
+import { Link } from '@/i18n/navigation';
 import type { ComponentProps } from 'react';
 import { buttonVariants } from '@repo/ui';
 import { cn } from '../../lib/utils';
@@ -14,7 +18,7 @@ type ButtonVariant =
 type ButtonSize = 'sm' | 'md' | 'lg' | 'xl' | 'icon';
 
 /**
- * next/link styled as a button. Preferred over `<Button asChild>` for navigation:
+ * Locale-aware Link (`@/i18n/navigation`) styled as a button. Preferred over `<Button asChild>` for navigation:
  * the shared Button renders icon slots, so Radix Slot's single-child rule breaks.
  */
 export function ButtonLink({

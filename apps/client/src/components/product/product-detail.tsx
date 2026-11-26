@@ -1,84 +1,114 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Check, Heart, ShoppingCart, ThumbsDown, ThumbsUp } from 'lucide-react';
-import {
-  Button,
-  Card,
-  Input,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Tag,
-  Textarea,
-} from '@repo/ui';
+import { Link, useRouter } from '@/i18n/navigation';
+import { ShoppingCart, Store } from 'lucide-react';
+import { Button, Card, Tag } from '@repo/ui';
+import type {
+  Category,
+  ProductDetail as ProductDetailData,
+  ProductSummary,
+  ReviewPage,
+} from '@repo/core';
+import { formatMoney, translateError } from '@repo/i18n';
+import { describeError } from '../../lib/api/error-message';
 import { Container } from '../layout/container';
+import { Breadcrumb } from '../common/breadcrumb';
 import { SectionHeading } from '../common/section-heading';
 import { ProductCard } from './product-card';
+import { ProductImage } from './product-image';
+import { ProductReviews } from './product-reviews';
+import { useReviewSubOrderId } from '../review/review-entry';
 import { StarRating } from './star-rating';
 import { QuantityStepper } from '../checkout/quantity-stepper';
-import { useLocale, type MessageKey } from '../../i18n/locale-provider';
-import { MAX_LINE_QTY } from '../../lib/cart';
-import { formatCompact, formatMoney, formatDate } from '@repo/i18n';
+import { useLocale, type MessageKey } from '../../i18n/use-locale';
+import { defaultVariant, maxQtyFor, toCartSnapshot, variantLabel } from '../../lib/cart';
 import { cn } from '../../lib/utils';
-import { categories } from '../../mocks/categories';
-import { products, reviews } from '../../mocks/products';
 import { useCart } from '../../store/cart-store';
-import type { Product } from '../../types';
 
-type Tab = 'overview' | 'reviews' | 'related';
+type Tab = 'description' | 'reviews' | 'related';
 const TAB_LABEL: Record<Tab, MessageKey> = {
-  overview: 'product.overview',
+  description: 'product.description',
   reviews: 'product.reviews',
   related: 'product.related',
 };
 
-/** Placeholder Select value when a product has no variants. */
-const STANDARD = 'standard';
-
-const dist: [number, number][] = [
-  [5, 88],
-  [4, 64],
-  [3, 24],
-  [2, 8],
-  [1, 4],
-];
-
-export function ProductDetail({ product }: { product: Product }) {
+/**
+ * Product page body (client: variant choice, quantity, add-to-cart, tabs). All data comes from
+ * the RSC page: `GET /v1/products/:slug`, its reviews, category path and related products.
+ */
+export function ProductDetail({
+  product,
+  reviews,
+  categoryPath,
+  related,
+}: {
+  product: ProductDetailData;
+  reviews: ReviewPage | null;
+  categoryPath: Pick<Category, 'id' | 'name' | 'slug'>[];
+  related: ProductSummary[];
+}) {
   const { locale, t } = useLocale();
   const router = useRouter();
   const { add } = useCart();
   const ids = React.useId();
+
+  const gallery = React.useMemo(() => {
+    const urls = [...product.images]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((img) => ({ url: img.url, alt: img.alt }));
+    if (urls.length === 0 && product.primaryImageUrl) {
+      urls.push({ url: product.primaryImageUrl, alt: null });
+    }
+    return urls;
+  }, [product]);
   const [activeImage, setActiveImage] = React.useState(0);
-  const [activeColor, setActiveColor] = React.useState(0);
 
-  const variants = product.variants ?? [];
-  const [variantId, setVariantId] = React.useState<string | undefined>(variants[0]?.id);
-  const selectedVariant = variants.find((v) => v.id === variantId);
-  const maxQty = selectedVariant ? Math.min(selectedVariant.stock, MAX_LINE_QTY) : MAX_LINE_QTY;
+  const [variantId, setVariantId] = React.useState(() => defaultVariant(product)?.id);
+  const selected = product.variants.find((v) => v.id === variantId);
+  const maxQty = selected ? maxQtyFor(selected.stockAvailable) : 0;
+  const canBuy = maxQty > 0;
   const [qty, setQty] = React.useState(1);
-  const canBuy = product.inStock && (!selectedVariant || selectedVariant.stock > 0);
+  const [message, setMessage] = React.useState<{ tone: 'success' | 'error'; text: string } | null>(
+    null,
+  );
+  const price = selected?.price ?? product.basePrice;
 
-  const price = selectedVariant?.price ?? product.price;
-  const showCompareAt = product.compareAt && product.compareAt.amount > price.amount;
-
-  const hasOverview = Boolean(product.specs?.length || product.boxItems?.length);
-  const tabs: Tab[] = hasOverview ? ['overview', 'reviews', 'related'] : ['reviews', 'related'];
-  const [tab, setTab] = React.useState<Tab>(tabs[0] ?? 'reviews');
+  const tabs: Tab[] = [
+    ...(product.description ? (['description'] as const) : []),
+    'reviews',
+    ...(related.length > 0 ? (['related'] as const) : []),
+  ];
+  // `?reviewSubOrderId=` (link from a delivered order) opens the reviews tab with the form.
+  const wantsReview = useReviewSubOrderId() !== null;
+  const [tab, setTab] = React.useState<Tab>(wantsReview ? 'reviews' : (tabs[0] ?? 'reviews'));
   const tabRefs = React.useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
   const tabId = (key: Tab) => `${ids}-tab-${key}`;
   const panelId = (key: Tab) => `${ids}-panel-${key}`;
 
-  const related = products
-    .filter((p) => p.categorySlug === product.categorySlug && p.id !== product.id)
-    .slice(0, 4);
-
-  const addToCart = () => add(product.id, selectedVariant?.id, qty);
+  /** Adds the selected variant; true when it landed in the cart. */
+  const addToCart = async (): Promise<boolean> => {
+    if (!selected) return false;
+    let result: Awaited<ReturnType<typeof add>>;
+    try {
+      result = await add(toCartSnapshot(product, selected), qty);
+    } catch (e) {
+      setMessage({ tone: 'error', text: describeError(locale, e) });
+      return false;
+    }
+    if (result === 'added') {
+      setMessage({ tone: 'success', text: t('product.added') });
+      return true;
+    }
+    setMessage({
+      tone: 'error',
+      text:
+        result === 'currency-mismatch'
+          ? translateError(locale, 'checkout.error.currency-mismatch')
+          : t('product.outOfStock'),
+    });
+    return false;
+  };
 
   // WAI-ARIA tabs: arrow keys move focus + selection, Home/End jump to the ends.
   const onTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -101,40 +131,39 @@ export function ProductDetail({ product }: { product: Product }) {
     tabRefs.current[next]?.focus();
   };
 
-  const typeLabelId = `${ids}-type`;
+  const variantLabelId = `${ids}-variant`;
   const qtyLabelId = `${ids}-qty`;
-  const colorLabelId = `${ids}-color`;
+  const active = gallery[activeImage] ?? gallery[0];
 
   return (
     <div className="flex flex-col">
       <Container className="py-6 lg:py-10">
-        {/* Breadcrumb */}
-        <nav className="mb-6 flex items-center gap-2 text-body-s text-text-muted">
-          <Link href="/" className="hover:text-brand-text">
-            {t('common.home')}
-          </Link>
-          <span>/</span>
-          <Link href={`/search?category=${product.categorySlug}`} className="hover:text-brand-text">
-            {categories.find((c) => c.slug === product.categorySlug)?.name ?? product.categorySlug}
-          </Link>
-        </nav>
+        <Breadcrumb
+          label={t('catalog.breadcrumb')}
+          className="mb-6"
+          items={[
+            { label: t('common.home'), href: '/' },
+            ...categoryPath.map((c) => ({ label: c.name, href: `/categories/${c.slug}` })),
+            { label: product.name },
+          ]}
+        />
 
-        {/* Product card details */}
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Gallery */}
           <div className="flex flex-col gap-4">
             <div className="overflow-hidden rounded-xl border border-border-subtle bg-bg-elevated">
-              <img
-                src={product.gallery[activeImage] ?? product.image}
-                alt={product.title}
-                className="aspect-square w-full object-cover"
+              <ProductImage
+                src={active?.url}
+                alt={active?.alt ?? product.name}
+                loading="eager"
+                className="aspect-square w-full"
               />
             </div>
-            {product.gallery.length > 1 ? (
-              <div className="flex gap-3">
-                {product.gallery.map((src, i) => (
+            {gallery.length > 1 ? (
+              <div className="flex gap-3 overflow-x-auto">
+                {gallery.map((img, i) => (
                   <button
-                    key={src}
+                    key={img.url}
                     type="button"
                     onClick={() => setActiveImage(i)}
                     aria-label={t('product.viewImage', { n: i + 1 })}
@@ -146,7 +175,7 @@ export function ProductDetail({ product }: { product: Product }) {
                         : 'border-border-subtle hover:border-border-default',
                     )}
                   >
-                    <img src={src} alt="" className="size-full object-cover" />
+                    <img src={img.url} alt="" className="size-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -157,60 +186,74 @@ export function ProductDetail({ product }: { product: Product }) {
           <div className="flex flex-col gap-5">
             <div>
               <h1 className="font-heading text-h4 font-bold tracking-tight text-text-primary lg:text-h3">
-                {product.title}
+                {product.name}
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-3">
-                <Tag variant="warning">
-                  <StarRating value={product.rating} />
-                </Tag>
-                <span className="text-body-s text-text-muted">
-                  {product.rating} · {product.reviewCount} {t('product.reviews')}
-                </span>
+                {product.rating.average !== null ? (
+                  <>
+                    <Tag variant="warning">
+                      <StarRating value={product.rating.average} />
+                    </Tag>
+                    <span className="text-body-s text-text-muted">
+                      {product.rating.average.toFixed(1)} ·{' '}
+                      {t('product.reviewsCount', { count: product.rating.count })}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-body-s text-text-muted">{t('product.noRating')}</span>
+                )}
               </div>
             </div>
 
-            {product.description ? (
-              <p className="text-body-m text-text-muted">{product.description}</p>
+            <span className="text-h3 font-bold text-text-price">{formatMoney(price, locale)}</span>
+
+            {/* Variants: one chip per variant; sold-out ones are disabled. */}
+            {product.variants.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <span id={variantLabelId} className="text-body-s text-text-muted">
+                  {t('product.variant')}
+                </span>
+                <div
+                  role="radiogroup"
+                  aria-labelledby={variantLabelId}
+                  className="flex flex-wrap gap-2"
+                >
+                  {product.variants.map((v) => {
+                    const soldOut = v.stockAvailable <= 0;
+                    const checked = v.id === variantId;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={checked}
+                        disabled={soldOut}
+                        onClick={() => {
+                          setVariantId(v.id);
+                          setQty((q) => Math.max(1, Math.min(q, maxQtyFor(v.stockAvailable))));
+                          setMessage(null);
+                        }}
+                        className={cn(
+                          'rounded-md border px-3 py-2 text-body-s font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+                          checked
+                            ? 'border-brand-solid bg-brand-soft text-brand-text'
+                            : 'border-border-default text-text-body hover:border-brand-solid',
+                          soldOut &&
+                            'cursor-not-allowed border-border-subtle text-text-disabled line-through hover:border-border-subtle',
+                        )}
+                      >
+                        {variantLabel(v)}
+                        {soldOut ? (
+                          <span className="sr-only"> — {t('product.outOfStock')}</span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             ) : null}
 
-            {/* Type / Quantity / Color */}
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <div className="flex flex-col gap-1.5">
-                <span id={typeLabelId} className="text-body-s text-text-muted">
-                  {t('product.type')}
-                </span>
-                {variants.length > 0 ? (
-                  <Select
-                    value={variantId ?? ''}
-                    onValueChange={(v) => {
-                      const next = variants.find((x) => x.id === v);
-                      if (!next) return;
-                      setVariantId(next.id);
-                      setQty((q) => Math.max(1, Math.min(q, next.stock)));
-                    }}
-                  >
-                    <SelectTrigger aria-labelledby={typeLabelId}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {variants.map((v) => (
-                        <SelectItem key={v.id} value={v.id}>
-                          {v.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Select value={STANDARD} disabled>
-                    <SelectTrigger aria-labelledby={typeLabelId}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={STANDARD}>{t('product.standard')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
+            <div className="flex flex-wrap items-end gap-4">
               <div className="flex flex-col gap-1.5">
                 <span id={qtyLabelId} className="text-body-s text-text-muted">
                   {t('product.quantity')}
@@ -222,43 +265,13 @@ export function ProductDetail({ product }: { product: Product }) {
                   labelledBy={qtyLabelId}
                 />
               </div>
-              {product.colors ? (
-                <div className="col-span-2 flex flex-col gap-1.5 sm:col-span-1">
-                  <span id={colorLabelId} className="text-body-s text-text-muted">
-                    {t('product.color')}
-                  </span>
-                  <div role="group" aria-labelledby={colorLabelId} className="flex gap-2">
-                    {product.colors.map((color, i) => (
-                      <button
-                        key={color.hex}
-                        type="button"
-                        onClick={() => setActiveColor(i)}
-                        aria-label={t(`colors.${color.name}`)}
-                        aria-pressed={i === activeColor}
-                        title={t(`colors.${color.name}`)}
-                        className={cn(
-                          'size-9 rounded-full border-2 transition',
-                          i === activeColor
-                            ? 'border-brand-solid ring-2 ring-brand-soft'
-                            : 'border-border-subtle',
-                        )}
-                        style={{ backgroundColor: color.hex }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="flex items-baseline gap-3">
-              <span className="text-h3 font-bold text-text-price">
-                {formatMoney(price, locale)}
+              <span
+                className={cn('pb-2 text-body-s', canBuy ? 'text-success-fg' : 'text-danger-fg')}
+              >
+                {canBuy
+                  ? t('product.stockLeft', { count: selected?.stockAvailable ?? 0 })
+                  : t('product.outOfStock')}
               </span>
-              {showCompareAt && product.compareAt ? (
-                <span className="text-h6 text-text-muted line-through">
-                  {formatMoney(product.compareAt, locale)}
-                </span>
-              ) : null}
             </div>
 
             {/* Actions */}
@@ -269,8 +282,9 @@ export function ProductDetail({ product }: { product: Product }) {
                 fullWidth
                 disabled={!canBuy}
                 onClick={() => {
-                  addToCart();
-                  router.push('/cart');
+                  void addToCart().then((added) => {
+                    if (added) router.push('/cart');
+                  });
                 }}
               >
                 {t('common.buyNow')}
@@ -280,24 +294,42 @@ export function ProductDetail({ product }: { product: Product }) {
                 fullWidth
                 iconLeft={<ShoppingCart className="size-5" />}
                 disabled={!canBuy}
-                onClick={addToCart}
+                onClick={() => void addToCart()}
               >
                 {canBuy ? t('common.addToCart') : t('product.outOfStock')}
               </Button>
-              <Button
-                size="lg"
-                variant="secondary"
-                aria-label={t('product.wishlist')}
-                className="sm:w-12 sm:shrink-0 sm:px-0"
-              >
-                <Heart className="size-5" />
-              </Button>
             </div>
-
-            <p className="text-body-s text-text-muted">
-              {t('product.soldBy')}{' '}
-              <span className="font-medium text-text-primary">{product.vendorName}</span>
+            <p
+              role="status"
+              className={cn(
+                'min-h-5 text-body-s',
+                message?.tone === 'error' ? 'text-danger-fg' : 'text-success-fg',
+              )}
+            >
+              {message?.text}
             </p>
+
+            {/* Vendor card */}
+            <Card className="flex items-center gap-4 p-4">
+              <ProductImage
+                src={product.vendor.logoUrl}
+                alt={product.vendor.displayName}
+                className="size-12 shrink-0 rounded-full"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-body-s text-text-muted">{t('product.soldBy')}</p>
+                <p className="truncate text-body-m font-semibold text-text-primary">
+                  {product.vendor.displayName}
+                </p>
+              </div>
+              <Link
+                href={`/vendors/${product.vendor.slug}`}
+                className="inline-flex items-center gap-1.5 text-body-s font-medium text-brand-text hover:underline"
+              >
+                <Store className="size-4" aria-hidden />
+                {t('product.visitShop')}
+              </Link>
+            </Card>
           </div>
         </div>
       </Container>
@@ -305,7 +337,7 @@ export function ProductDetail({ product }: { product: Product }) {
       {/* Tabs */}
       <div className="border-y border-border-subtle">
         <Container>
-          <div role="tablist" aria-label={product.title} className="flex gap-1">
+          <div role="tablist" aria-label={product.name} className="flex gap-1">
             {tabs.map((key, i) => (
               <button
                 key={key}
@@ -336,55 +368,21 @@ export function ProductDetail({ product }: { product: Product }) {
         </Container>
       </div>
 
-      {/* Overview: spec table beside what's-in-box (only when the product has them) */}
-      {tab === 'overview' && hasOverview ? (
+      {tab === 'description' && product.description ? (
         <div
           role="tabpanel"
           tabIndex={0}
-          id={panelId('overview')}
-          aria-labelledby={tabId('overview')}
+          id={panelId('description')}
+          aria-labelledby={tabId('description')}
         >
           <Container as="section" className="py-10">
-            <div className="grid gap-10 md:grid-cols-2">
-              {product.specs?.length ? (
-                <div>
-                  <h2 className="mb-4 font-heading text-h5 font-semibold text-text-primary">
-                    {t('product.specs')}
-                  </h2>
-                  <dl className="flex flex-col">
-                    {product.specs.map((spec) => (
-                      <div
-                        key={spec.label}
-                        className="grid grid-cols-[120px_1fr] gap-4 border-b border-border-subtle py-3"
-                      >
-                        <dt className="text-body-m text-text-muted">{spec.label}</dt>
-                        <dd className="text-body-m text-text-body">{spec.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-              ) : null}
-              {product.boxItems?.length ? (
-                <div>
-                  <h2 className="mb-4 font-heading text-h5 font-semibold text-text-primary">
-                    {t('product.whatsInBox')}
-                  </h2>
-                  <ul className="grid gap-3 sm:grid-cols-2">
-                    {product.boxItems.map((item) => (
-                      <li key={item} className="flex items-center gap-2 text-body-m text-text-body">
-                        <Check className="size-4 text-success-fg" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
+            <p className="max-w-3xl whitespace-pre-line text-body-m text-text-body">
+              {product.description}
+            </p>
           </Container>
         </div>
       ) : null}
 
-      {/* Reviews: distribution + comments left, form right */}
       {tab === 'reviews' ? (
         <div
           role="tabpanel"
@@ -393,106 +391,15 @@ export function ProductDetail({ product }: { product: Product }) {
           aria-labelledby={tabId('reviews')}
         >
           <Container as="section" className="py-10">
-            <div className="mb-8 grid items-center gap-8 rounded-xl border border-border-subtle bg-bg-muted/30 p-6 sm:grid-cols-[200px_1fr]">
-              <div className="flex flex-col items-center gap-1 text-center">
-                <span className="text-h1 font-bold text-text-primary">{product.rating}</span>
-                <StarRating value={product.rating} size="md" />
-                <span className="text-body-s text-text-muted">
-                  {t('product.of5')} · {product.reviewCount} {t('product.reviews')}
-                </span>
-              </div>
-              <div className="flex flex-col gap-2">
-                {dist.map(([star, pct]) => (
-                  <div key={star} className="flex items-center gap-3">
-                    <span className="w-6 text-body-s text-text-muted">{star}.0</span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-bg-muted">
-                      <div
-                        className="h-full rounded-full bg-success-solid"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="w-10 text-right text-body-s text-text-muted">{pct}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-              {/* Comments */}
-              <ul className="flex flex-col divide-y divide-border-faint">
-                {reviews.map((r) => (
-                  <li key={r.id} className="flex flex-col gap-2 py-5 first:pt-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="flex size-9 items-center justify-center rounded-full bg-brand-soft text-body-s font-semibold text-brand-text">
-                          {r.author.charAt(0)}
-                        </span>
-                        <div>
-                          <p className="text-body-m font-medium text-text-primary">{r.author}</p>
-                          <span className="text-body-s text-text-muted">
-                            {formatDate(r.date, locale)}
-                          </span>
-                        </div>
-                      </div>
-                      <StarRating value={r.rating} />
-                    </div>
-                    <p className="text-body-m text-text-body">{r.body}</p>
-                    <div className="flex items-center gap-4 text-text-muted">
-                      <button
-                        type="button"
-                        aria-label={t('product.helpful', { count: r.helpfulCount })}
-                        className="inline-flex items-center gap-1 text-body-s hover:text-brand-text"
-                      >
-                        <ThumbsUp className="size-4" aria-hidden />
-                        {formatCompact(r.helpfulCount, locale)}
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={t('product.notHelpful', { count: r.notHelpfulCount })}
-                        className="inline-flex items-center gap-1 text-body-s hover:text-brand-text"
-                      >
-                        <ThumbsDown className="size-4" aria-hidden />
-                        {formatCompact(r.notHelpfulCount, locale)}
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Write review form */}
-              <Card className="flex h-fit flex-col gap-3 p-5">
-                <h3 className="text-body-m font-semibold text-text-primary">
-                  {t('product.addReview')}
-                </h3>
-                <form className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor={`${ids}-review-name`}>{t('product.reviewName')}</Label>
-                    <Input id={`${ids}-review-name`} name="name" autoComplete="name" />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor={`${ids}-review-email`}>{t('product.reviewEmail')}</Label>
-                    <Input
-                      id={`${ids}-review-email`}
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor={`${ids}-review-body`}>{t('product.reviewBody')}</Label>
-                    <Textarea id={`${ids}-review-body`} name="body" rows={3} />
-                  </div>
-                  <Button type="submit" size="md">
-                    {t('product.addReview')}
-                  </Button>
-                </form>
-              </Card>
-            </div>
+            <ProductReviews
+              productId={product.id}
+              initialPage={reviews}
+              fallbackSummary={product.rating}
+            />
           </Container>
         </div>
       ) : null}
 
-      {/* Related */}
       {tab === 'related' ? (
         <div
           role="tabpanel"
